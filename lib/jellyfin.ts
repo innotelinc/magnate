@@ -88,25 +88,42 @@ export async function createUser(
   name: string,
   password: string,
 ): Promise<JellyfinUser> {
-  return request<JellyfinUser>("POST", "/Users/New", {
-    Name: name,
-    Password: password,
-  });
+  const user = await request<JellyfinUser & { HasPassword?: boolean }>(
+    "POST",
+    "/Users/New",
+    {
+      Name: name,
+      Password: password,
+    },
+  );
+  // Jellyfin 10.11 ignores the password in POST /Users/New (the created user
+  // comes back with HasPassword: false). Set it explicitly so the generated
+  // credentials actually work.
+  if (!user.HasPassword) {
+    await request<void>("POST", `/Users/${user.Id}/Password`, {
+      CurrentPw: "",
+      NewPw: password,
+      ResetPassword: false,
+    });
+  }
+  return user;
 }
 
 export async function setUserEnabled(
   userId: string,
   enabled: boolean,
 ): Promise<void> {
-  // Fetch current policy first so we don't clobber other settings.
-  const policy = await request<Record<string, unknown>>(
+  // Jellyfin 10.11 dropped GET /Users/{id}/Policy (it 405s) — the policy is
+  // embedded in the user object. Fetch it from there so we don't clobber other
+  // settings, and use IsDisabled (there is no `Enabled` field).
+  const user = await request<{ Policy?: Record<string, unknown> }>(
     "GET",
-    `/Users/${userId}/Policy`,
+    `/Users/${userId}`,
   );
   await request<void>("POST", `/Users/${userId}/Policy`, {
-    ...policy,
+    ...(user.Policy ?? {}),
     IsAdministrator: false,
-    Enabled: enabled,
+    IsDisabled: !enabled,
   });
 }
 
