@@ -43,7 +43,7 @@ Visitor ──▶ Landing page ──▶ /signup ──▶ Stripe Checkout
 
 ## 1. Configuration
 
-Copy `.env.example` to `.env` and fill it in:
+Copy `.env.sample` to `.env` and fill it in:
 
 | Variable | Description |
 | --- | --- |
