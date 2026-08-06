@@ -6,20 +6,22 @@ services:
     ports:
       - "3000:3000"
     environment:
-      # Public URL users are redirected to after payment
-      APP_URL: "https://your-domain.example.com"
+      # All values come from .env (gitignored — keep secrets out of git!).
+      # Copy .env.example to .env and fill in the real values, or run
+      # `docker compose up -d` and let Compose read them from .env.
+      APP_URL: "${APP_URL:-http://localhost:3000}"
       # Stripe (create keys at https://dashboard.stripe.com/apikeys)
-      STRIPE_SECRET_KEY: "sk_live_xxx"
-      STRIPE_WEBHOOK_SECRET: "whsec_xxx"
-      STRIPE_CURRENCY: "usd"
+      STRIPE_SECRET_KEY: "${STRIPE_SECRET_KEY:-sk_live_xxx}"
+      STRIPE_WEBHOOK_SECRET: "${STRIPE_WEBHOOK_SECRET:-whsec_xxx}"
+      STRIPE_CURRENCY: "${STRIPE_CURRENCY:-usd}"
       # Jellyfin server + API key (Dashboard → Advanced → API Keys)
-      JELLYFIN_URL: "https://media.innotel.us"
-      JELLYFIN_API_KEY: "your-jellyfin-api-key"
+      JELLYFIN_URL: "${JELLYFIN_URL:-https://media.innotel.us}"
+      JELLYFIN_API_KEY: "${JELLYFIN_API_KEY:-your-jellyfin-api-key}"
       # jfa-go account portal (linked from the footer and success page)
-      JFA_GO_URL: "https://accounts.innotel.us"
+      JFA_GO_URL: "${JFA_GO_URL:-https://accounts.innotel.us}"
       # Admin panel
-      ADMIN_PASSWORD: "change-me-to-a-strong-password"
+      ADMIN_PASSWORD: "${ADMIN_PASSWORD:-change-me-to-a-strong-password}"
       # Used to encrypt stored credentials and sign admin sessions
-      SESSION_SECRET: "change-me-to-a-long-random-string"
+      SESSION_SECRET: "${SESSION_SECRET:-change-me-to-a-long-random-string}"
     volumes:
       - ./data:/app/data
