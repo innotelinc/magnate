@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { PlayIcon } from "./icons";
 
+const APP_URL = process.env.APP_URL || "http://localhost:3000";
+
 export default function Nav() {
   return (
     <header className="sticky top-0 z-50 border-b border-white/[0.06] bg-[#06070c]/70 backdrop-blur-xl">
@@ -28,7 +30,7 @@ export default function Nav() {
 
         <div className="flex items-center gap-3">
           <Link
-            href="/manage"
+            href={`${APP_URL}/manage`}
             className="hidden text-sm text-zinc-400 transition-colors hover:text-white sm:block"
           >
             Manage subscription

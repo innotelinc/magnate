@@ -123,11 +123,26 @@ export function parseFeatures(plan: Pick<Plan, "features">): string[] {
 
 const DEFAULT_PLANS = [
   {
+    name: "Basic",
+    slug: "basic",
+    description: "Great for getting started on a single device.",
+    price_monthly_cents: 300,
+    price_yearly_cents: 3000,
+    features: JSON.stringify([
+      "Unlimited movies & TV shows",
+      "Stream on 1 device at a time",
+      "480p Standard Definition",
+      "Watch on TV, phone & tablet",
+    ]),
+    highlighted: 0,
+    sort_order: 0,
+  },
+  {
     name: "Standard",
     slug: "standard",
     description: "Perfect for streaming on a couple of devices.",
-    price_monthly_cents: 500,
-    price_yearly_cents: 5000,
+    price_monthly_cents: 700,
+    price_yearly_cents: 7000,
     features: JSON.stringify([
       "Unlimited movies & TV shows",
       "Stream on 2 devices at once",
@@ -141,14 +156,15 @@ const DEFAULT_PLANS = [
     name: "Premium",
     slug: "premium",
     description: "The full experience for the whole household.",
-    price_monthly_cents: 800,
-    price_yearly_cents: 8000,
+    price_monthly_cents: 1000,
+    price_yearly_cents: 10000,
     features: JSON.stringify([
       "Everything in Standard",
       "Stream on 4 devices at once",
       "4K HDR quality",
       "Priority support",
       "Early access to new content",
+      "Exclusive movie & TV request access",
     ]),
     highlighted: 1,
     sort_order: 2,

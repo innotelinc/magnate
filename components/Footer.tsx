@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { PlayIcon } from "./icons";
 
+const APP_URL = process.env.APP_URL || "http://localhost:3000";
 const JELLYFIN_URL = process.env.JELLYFIN_URL || "https://media.innotel.us";
 const JFA_GO_URL = process.env.JFA_GO_URL || "https://accounts.innotel.us";
 
@@ -34,7 +35,7 @@ export default function Footer() {
               >
                 Jellyfin server
               </a>
-              <Link href="/manage" className="text-zinc-500 transition-colors hover:text-white">
+              <Link href={`${APP_URL}/manage`} className="text-zinc-500 transition-colors hover:text-white">
                 Manage subscription
               </Link>
             </div>
@@ -48,7 +49,7 @@ export default function Footer() {
               >
                 Account portal
               </a>
-              <Link href="/admin" className="text-zinc-500 transition-colors hover:text-white">
+              <Link href={`${APP_URL}/admin`} className="text-zinc-500 transition-colors hover:text-white">
                 Admin
               </Link>
             </div>

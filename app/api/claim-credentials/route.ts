@@ -34,7 +34,11 @@ export async function GET(req: Request) {
   const user = db
     .prepare("SELECT * FROM users WHERE lower(username) = lower(?)")
     .get(username) as
-    | { password_enc: string | null; credentials_claimed_at: string | null }
+    | {
+        password_enc: string | null;
+        credentials_claimed_at: string | null;
+        plan_id: number | null;
+      }
     | undefined;
 
   if (!user || !user.password_enc) {
@@ -59,10 +63,18 @@ export async function GET(req: Request) {
     ).run(username);
   }
 
+  // Used by the success page to gate Premium-only perks (e.g. request access).
+  const plan = user.plan_id
+    ? (db.prepare("SELECT slug FROM plans WHERE id = ?").get(user.plan_id) as
+        | { slug: string }
+        | undefined)
+    : undefined;
+
   return NextResponse.json({
     ready: true,
     username,
     password,
     alreadyClaimed,
+    planSlug: plan?.slug ?? null,
   });
 }

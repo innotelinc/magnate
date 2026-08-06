@@ -14,6 +14,8 @@ import {
 } from "@/components/icons";
 import { listActivePlans, planPublic } from "@/lib/plans";
 
+const APP_URL = process.env.APP_URL || "http://localhost:3000";
+
 export const dynamic = "force-dynamic";
 
 export default async function Home() {
@@ -143,7 +145,7 @@ export default async function Home() {
                 <ArrowRightIcon className="h-4 w-4 transition-transform group-hover:translate-x-1" />
               </Link>
               <Link
-                href="/manage"
+                href={`${APP_URL}/manage`}
                 className="rounded-full border border-white/15 bg-white/[0.04] px-8 py-3.5 text-base font-medium text-white transition-all hover:border-white/30 hover:bg-white/[0.08]"
               >
                 Manage subscription

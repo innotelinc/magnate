@@ -19,6 +19,8 @@ services:
       JELLYFIN_API_KEY: "${JELLYFIN_API_KEY:-your-jellyfin-api-key}"
       # jfa-go account portal (linked from the footer and success page)
       JFA_GO_URL: "${JFA_GO_URL:-https://accounts.innotel.us}"
+      # Jellyseerr request portal (movie/TV requests, tied to Jellyfin)
+      REQUEST_URL: "${REQUEST_URL:-https://req.innotel.us}"
       # Admin panel
       ADMIN_PASSWORD: "${ADMIN_PASSWORD:-change-me-to-a-strong-password}"
       # Used to encrypt stored credentials and sign admin sessions

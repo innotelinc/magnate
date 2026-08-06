@@ -9,6 +9,7 @@ import {
   UserIcon,
   FilmIcon,
   LockIcon,
+  SparklesIcon,
 } from "./icons";
 
 interface ClaimResult {
@@ -16,12 +17,19 @@ interface ClaimResult {
   username?: string;
   password?: string;
   alreadyClaimed?: boolean;
+  planSlug?: string | null;
   error?: string;
 }
 
 type Phase =
   | { kind: "polling" }
-  | { kind: "ready"; username: string; password: string; alreadyClaimed: boolean }
+  | {
+      kind: "ready";
+      username: string;
+      password: string;
+      alreadyClaimed: boolean;
+      planSlug: string | null;
+    }
   | { kind: "error"; message: string };
 
 function CopyButton({ value }: { value: string }) {
@@ -46,10 +54,12 @@ export default function SuccessClient({
   sessionId,
   jellyfinUrl,
   jfaGoUrl,
+  requestUrl,
 }: {
   sessionId: string | null;
   jellyfinUrl: string;
   jfaGoUrl: string;
+  requestUrl: string;
 }) {
   const [phase, setPhase] = useState<Phase>({ kind: "polling" });
   const [attempt, setAttempt] = useState(0);
@@ -71,6 +81,7 @@ export default function SuccessClient({
           username: data.username!,
           password: data.password!,
           alreadyClaimed: Boolean(data.alreadyClaimed),
+          planSlug: data.planSlug ?? null,
         });
         return;
       }
@@ -186,7 +197,11 @@ export default function SuccessClient({
         </div>
       </div>
 
-      <div className="mt-7 grid gap-3 sm:grid-cols-2">
+      <div
+        className={`mt-7 grid gap-3 ${
+          phase.planSlug === "premium" ? "sm:grid-cols-3" : "sm:grid-cols-2"
+        }`}
+      >
         <Link
           href={jellyfinUrl}
           target="_blank"
@@ -196,6 +211,17 @@ export default function SuccessClient({
           <FilmIcon className="h-4 w-4" />
           Start watching now
         </Link>
+        {phase.planSlug === "premium" && (
+          <Link
+            href={requestUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center justify-center gap-2 rounded-xl border border-white/15 bg-white/[0.04] py-3.5 text-sm font-medium transition-all hover:border-white/30 hover:bg-white/[0.08]"
+          >
+            <SparklesIcon className="h-4 w-4" />
+            Request movies
+          </Link>
+        )}
         <Link
           href={jfaGoUrl}
           target="_blank"
