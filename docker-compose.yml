@@ -1,0 +1,25 @@
+services:
+  jellyfin-subscription:
+    build: .
+    container_name: jellyfin-subscription
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      # Public URL users are redirected to after payment
+      APP_URL: "https://your-domain.example.com"
+      # Stripe (create keys at https://dashboard.stripe.com/apikeys)
+      STRIPE_SECRET_KEY: "sk_live_xxx"
+      STRIPE_WEBHOOK_SECRET: "whsec_xxx"
+      STRIPE_CURRENCY: "usd"
+      # Jellyfin server + API key (Dashboard → Advanced → API Keys)
+      JELLYFIN_URL: "https://media.innotel.us"
+      JELLYFIN_API_KEY: "your-jellyfin-api-key"
+      # jfa-go account portal (linked from the footer and success page)
+      JFA_GO_URL: "https://accounts.innotel.us"
+      # Admin panel
+      ADMIN_PASSWORD: "change-me-to-a-strong-password"
+      # Used to encrypt stored credentials and sign admin sessions
+      SESSION_SECRET: "change-me-to-a-long-random-string"
+    volumes:
+      - ./data:/app/data

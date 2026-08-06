@@ -1,0 +1,653 @@
+"use client";
+
+import { useCallback, useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import {
+  CheckIcon,
+  EyeIcon,
+  LogoutIcon,
+  PencilIcon,
+  PlusIcon,
+  RefreshIcon,
+  TrashIcon,
+  UserIcon,
+  CreditCardIcon,
+} from "./icons";
+
+/* ---------- types ---------- */
+
+interface Plan {
+  id: number;
+  name: string;
+  slug: string;
+  description: string | null;
+  priceMonthlyCents: number;
+  priceYearlyCents: number;
+  features: string[];
+  highlighted: boolean;
+  active: boolean;
+}
+
+interface AppUser {
+  id: number;
+  email: string;
+  username: string;
+  jellyfin_user_id: string | null;
+  plan_name: string | null;
+  status: string;
+  current_period_end: number | null;
+  credentials_claimed_at: string | null;
+  provisioning_error: string | null;
+  created_at: string;
+}
+
+interface StatusInfo {
+  stripeConfigured: boolean;
+  stripeWebhookConfigured: boolean;
+  jellyfinConfigured: boolean;
+  jellyfinUrl: string;
+  stripeCurrency: string;
+  adminPasswordSet: boolean;
+}
+
+/* ---------- helpers ---------- */
+
+async function api<T>(path: string, opts?: RequestInit): Promise<T> {
+  const res = await fetch(path, {
+    ...opts,
+    headers: { "Content-Type": "application/json", ...(opts?.headers ?? {}) },
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    throw new Error((data as { error?: string }).error ?? `Request failed (${res.status})`);
+  }
+  return data as T;
+}
+
+function money(cents: number, currency: string) {
+  return new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: currency.toUpperCase(),
+  }).format(cents / 100);
+}
+
+const STATUS_STYLES: Record<string, string> = {
+  active: "bg-emerald-400/10 text-emerald-300 ring-emerald-400/30",
+  pending: "bg-amber-400/10 text-amber-300 ring-amber-400/30",
+  past_due: "bg-orange-400/10 text-orange-300 ring-orange-400/30",
+  unpaid: "bg-rose-400/10 text-rose-300 ring-rose-400/30",
+  cancelled: "bg-zinc-400/10 text-zinc-400 ring-zinc-400/30",
+  disabled: "bg-zinc-400/10 text-zinc-400 ring-zinc-400/30",
+  error: "bg-rose-400/10 text-rose-300 ring-rose-400/30",
+};
+
+function StatusBadge({ status }: { status: string }) {
+  return (
+    <span
+      className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium capitalize ring-1 ${
+        STATUS_STYLES[status] ?? STATUS_STYLES.pending
+      }`}
+    >
+      {status.replace("_", " ")}
+    </span>
+  );
+}
+
+/* ---------- plan editor ---------- */
+
+function PlanEditor({
+  initial,
+  onDone,
+  onSaved,
+}: {
+  initial?: Plan;
+  onDone: () => void;
+  onSaved: (msg: string) => void;
+}) {
+  const [name, setName] = useState(initial?.name ?? "");
+  const [slug, setSlug] = useState(initial?.slug ?? "");
+  const [description, setDescription] = useState(initial?.description ?? "");
+  const [monthly, setMonthly] = useState(
+    initial ? String(initial.priceMonthlyCents / 100) : "",
+  );
+  const [yearly, setYearly] = useState(
+    initial ? String(initial.priceYearlyCents / 100) : "",
+  );
+  const [features, setFeatures] = useState(initial?.features.join("\n") ?? "");
+  const [highlighted, setHighlighted] = useState(initial?.highlighted ?? false);
+  const [active, setActive] = useState(initial ? true : true);
+  const [error, setError] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
+
+  async function save() {
+    setError(null);
+    const payload = {
+      name,
+      slug: slug || name.toLowerCase().replace(/[^a-z0-9]+/g, "-"),
+      description: description || null,
+      priceMonthlyCents: Math.round(parseFloat(monthly || "0") * 100),
+      priceYearlyCents: Math.round(parseFloat(yearly || "0") * 100),
+      features: features
+        .split("\n")
+        .map((f) => f.trim())
+        .filter(Boolean),
+      highlighted,
+      active,
+      sortOrder: 0,
+    };
+    setSaving(true);
+    try {
+      if (initial) {
+        const res = await api<{ stripeWarning?: string }>(
+          `/api/admin/plans/${initial.id}`,
+          { method: "PUT", body: JSON.stringify(payload) },
+        );
+        onSaved(
+          `Plan updated.${res.stripeWarning ? ` ${res.stripeWarning}` : ""}`,
+        );
+      } else {
+        const res = await api<{ stripeWarning?: string }>("/api/admin/plans", {
+          method: "POST",
+          body: JSON.stringify(payload),
+        });
+        onSaved(
+          `Plan created.${res.stripeWarning ? ` ${res.stripeWarning}` : ""}`,
+        );
+      }
+      onDone();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Save failed");
+      setSaving(false);
+    }
+  }
+
+  const inputCls =
+    "w-full rounded-lg border border-white/10 bg-white/[0.04] px-3 py-2 text-sm text-white placeholder-zinc-600 outline-none transition-colors focus:border-brand-400 focus:ring-2 focus:ring-brand-500/25";
+
+  return (
+    <div className="rounded-2xl border border-brand-400/30 bg-brand-500/[0.06] p-5">
+      <p className="mb-4 text-sm font-semibold text-brand-200">
+        {initial ? `Edit ${initial.name}` : "New plan"}
+      </p>
+      <div className="grid gap-4 sm:grid-cols-2">
+        <div>
+          <label className="mb-1 block text-xs text-zinc-400">Name</label>
+          <input className={inputCls} value={name} onChange={(e) => setName(e.target.value)} placeholder="Standard" />
+        </div>
+        <div>
+          <label className="mb-1 block text-xs text-zinc-400">Slug</label>
+          <input className={inputCls} value={slug} onChange={(e) => setSlug(e.target.value)} placeholder="standard" />
+        </div>
+        <div className="sm:col-span-2">
+          <label className="mb-1 block text-xs text-zinc-400">Description</label>
+          <input className={inputCls} value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Perfect for streaming on a couple of devices." />
+        </div>
+        <div>
+          <label className="mb-1 block text-xs text-zinc-400">Monthly price ($)</label>
+          <input className={inputCls} type="number" min="0" step="0.01" value={monthly} onChange={(e) => setMonthly(e.target.value)} placeholder="5.00" />
+        </div>
+        <div>
+          <label className="mb-1 block text-xs text-zinc-400">Yearly price ($)</label>
+          <input className={inputCls} type="number" min="0" step="0.01" value={yearly} onChange={(e) => setYearly(e.target.value)} placeholder="50.00" />
+        </div>
+        <div className="sm:col-span-2">
+          <label className="mb-1 block text-xs text-zinc-400">
+            Features (one per line)
+          </label>
+          <textarea
+            className={`${inputCls} min-h-24 resize-y font-mono text-xs`}
+            value={features}
+            onChange={(e) => setFeatures(e.target.value)}
+            placeholder={"4K streaming\n2 devices at once"}
+          />
+        </div>
+        <label className="flex cursor-pointer items-center gap-2 text-sm text-zinc-300">
+          <input type="checkbox" checked={highlighted} onChange={(e) => setHighlighted(e.target.checked)} className="h-4 w-4 accent-indigo-500" />
+          Highlight (most popular)
+        </label>
+        <label className="flex cursor-pointer items-center gap-2 text-sm text-zinc-300">
+          <input type="checkbox" checked={active} onChange={(e) => setActive(e.target.checked)} className="h-4 w-4 accent-emerald-500" />
+          Active (visible on site)
+        </label>
+      </div>
+
+      {error && (
+        <div className="mt-4 rounded-lg border border-rose-500/30 bg-rose-500/10 px-3 py-2 text-sm text-rose-300">
+          {error}
+        </div>
+      )}
+
+      <div className="mt-5 flex gap-3">
+        <button
+          onClick={save}
+          disabled={saving || !name}
+          className="rounded-lg bg-gradient-to-r from-indigo-500 to-fuchsia-500 px-4 py-2 text-sm font-semibold text-white transition-all hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          {saving ? "Saving…" : initial ? "Save changes" : "Create plan"}
+        </button>
+        <button
+          onClick={onDone}
+          className="rounded-lg border border-white/15 px-4 py-2 text-sm transition-colors hover:border-white/30"
+        >
+          Cancel
+        </button>
+      </div>
+    </div>
+  );
+}
+
+/* ---------- dashboard ---------- */
+
+export default function AdminDashboard() {
+  const router = useRouter();
+  const [tab, setTab] = useState<"plans" | "users">("plans");
+  const [status, setStatus] = useState<StatusInfo | null>(null);
+  const [plans, setPlans] = useState<Plan[]>([]);
+  const [users, setUsers] = useState<AppUser[]>([]);
+  const [editing, setEditing] = useState<Plan | "new" | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
+  const [revealed, setRevealed] = useState<{ id: number; username: string; password: string } | null>(null);
+  const [busy, setBusy] = useState<number | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  const refresh = useCallback(async () => {
+    try {
+      const [statusData, plansData, usersData] = await Promise.all([
+        api<StatusInfo>("/api/admin/status"),
+        api<{ plans: Plan[] }>("/api/admin/plans"),
+        api<{ users: AppUser[] }>("/api/admin/users"),
+      ]);
+      setStatus(statusData);
+      setPlans(plansData.plans);
+      setUsers(usersData.users);
+    } catch {
+      router.push("/admin/login");
+      return;
+    } finally {
+      setLoading(false);
+    }
+  }, [router]);
+
+  useEffect(() => {
+    // Defer the first load so we don't synchronously set state in the effect.
+    const timer = setTimeout(refresh, 0);
+    return () => clearTimeout(timer);
+  }, [refresh]);
+
+  async function logout() {
+    await api("/api/admin/logout", { method: "POST" }).catch(() => {});
+    router.push("/admin/login");
+  }
+
+  async function userAction(user: AppUser, action: string, extra?: Record<string, boolean>) {
+    setBusy(user.id);
+    setNotice(null);
+    try {
+      if (action === "delete") {
+        const ok = window.confirm(
+          `Delete ${user.username} from Jellyfin${extra?.cancelStripe ? " and cancel their Stripe subscription" : ""}? This cannot be undone.`,
+        );
+        if (!ok) return;
+      }
+      const res = await api<{ username?: string; password?: string }>(
+        `/api/admin/users/${user.id}/action`,
+        { method: "POST", body: JSON.stringify({ action, ...extra }) },
+      );
+      if (action === "reveal" && res.password) {
+        setRevealed({ id: user.id, username: res.username!, password: res.password });
+      }
+      await refresh();
+      setNotice(`${action} completed.`);
+    } catch (err) {
+      setNotice(err instanceof Error ? err.message : "Action failed.");
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  async function deletePlan(plan: Plan) {
+    if (!window.confirm(`Delete plan "${plan.name}"?`)) return;
+    try {
+      await api(`/api/admin/plans/${plan.id}`, { method: "DELETE" });
+      setNotice("Plan deleted.");
+      refresh();
+    } catch (err) {
+      setNotice(err instanceof Error ? err.message : "Delete failed.");
+    }
+  }
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-32 text-zinc-500">
+        <span className="h-8 w-8 animate-spin rounded-full border-2 border-white/10 border-t-brand-400" />
+      </div>
+    );
+  }
+
+  return (
+    <div className="mx-auto max-w-6xl px-4 py-10 sm:px-6">
+      {/* header */}
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">Admin panel</h1>
+          <p className="mt-1 text-sm text-zinc-500">
+            Manage subscription plans and users.
+          </p>
+        </div>
+        <button
+          onClick={logout}
+          className="flex items-center justify-center gap-2 rounded-xl border border-white/15 px-4 py-2 text-sm transition-colors hover:border-white/30"
+        >
+          <LogoutIcon className="h-4 w-4" />
+          Log out
+        </button>
+      </div>
+
+      {/* config banner */}
+      {status && (
+        <div className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          {[
+            {
+              label: "Stripe billing",
+              ok: status.stripeConfigured,
+              detail: status.stripeConfigured
+                ? `Configured (${status.stripeCurrency.toUpperCase()})`
+                : "Missing STRIPE_SECRET_KEY",
+            },
+            {
+              label: "Stripe webhook",
+              ok: status.stripeWebhookConfigured,
+              detail: status.stripeWebhookConfigured
+                ? "Webhook secret set"
+                : "Missing STRIPE_WEBHOOK_SECRET",
+            },
+            {
+              label: "Jellyfin",
+              ok: status.jellyfinConfigured,
+              detail: status.jellyfinConfigured
+                ? status.jellyfinUrl
+                : "Missing JELLYFIN_API_KEY",
+            },
+            {
+              label: "Admin password",
+              ok: status.adminPasswordSet,
+              detail: status.adminPasswordSet
+                ? "Set"
+                : "Missing ADMIN_PASSWORD",
+            },
+          ].map((item) => (
+            <div key={item.label} className="glass flex items-center gap-3 rounded-xl px-4 py-3">
+              <span
+                className={`flex h-2.5 w-2.5 shrink-0 rounded-full ${
+                  item.ok ? "bg-emerald-400" : "bg-rose-400 animate-pulse-glow"
+                }`}
+              />
+              <div className="min-w-0">
+                <p className="text-xs font-medium text-zinc-400">{item.label}</p>
+                <p className="truncate text-xs text-zinc-500">{item.detail}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {notice && (
+        <div className="mt-4 rounded-xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm text-zinc-300">
+          {notice}
+        </div>
+      )}
+
+      {/* tabs */}
+      <div className="mt-8 flex gap-2 border-b border-white/[0.08]">
+        {(["plans", "users"] as const).map((t) => (
+          <button
+            key={t}
+            onClick={() => setTab(t)}
+            className={`-mb-px rounded-t-xl px-5 py-2.5 text-sm font-medium transition-colors ${
+              tab === t
+                ? "border-b-2 border-brand-400 text-white"
+                : "text-zinc-500 hover:text-zinc-300"
+            }`}
+          >
+            {t === "plans" ? "Plans" : `Users (${users.length})`}
+          </button>
+        ))}
+      </div>
+
+      {/* plans tab */}
+      {tab === "plans" && (
+        <div className="mt-6 space-y-4">
+          {editing === "new" && (
+            <PlanEditor
+              onDone={() => setEditing(null)}
+              onSaved={(msg) => {
+                setNotice(msg);
+                refresh();
+              }}
+            />
+          )}
+          {plans.map((plan) => (
+            <div key={plan.id} className="glass rounded-2xl p-5">
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                <div className="flex items-center gap-3">
+                  {plan.highlighted && (
+                    <span className="rounded-full bg-gradient-to-r from-indigo-500 to-fuchsia-500 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white">
+                      Popular
+                    </span>
+                  )}
+                  <div>
+                    <p className="font-semibold">
+                      {plan.name}
+                      <span className="ml-2 text-xs font-normal text-zinc-500">
+                        {plan.active ? "active" : "inactive"}
+                      </span>
+                    </p>
+                    <p className="text-xs text-zinc-500">
+                      {money(plan.priceMonthlyCents, status?.stripeCurrency ?? "usd")}/mo ·{" "}
+                      {money(plan.priceYearlyCents, status?.stripeCurrency ?? "usd")}/yr
+                    </p>
+                  </div>
+                </div>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() =>
+                      setEditing(
+                        editing !== null && editing !== "new" && editing.id === plan.id
+                          ? null
+                          : plan,
+                      )
+                    }
+                    className="flex items-center gap-1.5 rounded-lg border border-white/15 px-3 py-1.5 text-xs font-medium transition-colors hover:border-white/30"
+                  >
+                    <PencilIcon className="h-3.5 w-3.5" />
+                    Edit
+                  </button>
+                  <button
+                    onClick={() => deletePlan(plan)}
+                    className="flex items-center gap-1.5 rounded-lg border border-rose-500/30 px-3 py-1.5 text-xs font-medium text-rose-300 transition-colors hover:bg-rose-500/10"
+                  >
+                    <TrashIcon className="h-3.5 w-3.5" />
+                    Delete
+                  </button>
+                </div>
+              </div>
+
+              {plan.features.length > 0 && (
+                <div className="mt-3 flex flex-wrap gap-1.5">
+                  {plan.features.map((f) => (
+                    <span
+                      key={f}
+                      className="flex items-center gap-1 rounded-full border border-white/10 bg-white/[0.03] px-2.5 py-0.5 text-xs text-zinc-400"
+                    >
+                      <CheckIcon className="h-3 w-3 text-emerald-400" />
+                      {f}
+                    </span>
+                  ))}
+                </div>
+              )}
+
+              {editing !== null && editing !== "new" && editing.id === plan.id && (
+                <div className="mt-4">
+                  <PlanEditor
+                    initial={plan}
+                    onDone={() => setEditing(null)}
+                    onSaved={(msg) => {
+                      setNotice(msg);
+                      refresh();
+                    }}
+                  />
+                </div>
+              )}
+            </div>
+          ))}
+
+          <button
+            onClick={() => setEditing("new")}
+            className="flex w-full items-center justify-center gap-2 rounded-2xl border border-dashed border-white/20 py-4 text-sm font-medium text-zinc-400 transition-colors hover:border-brand-400/50 hover:text-white"
+          >
+            <PlusIcon className="h-4 w-4" />
+            Create a new plan
+          </button>
+        </div>
+      )}
+
+      {/* users tab */}
+      {tab === "users" && (
+        <div className="mt-6 overflow-hidden rounded-2xl border border-white/[0.08]">
+          {users.length === 0 ? (
+            <div className="flex flex-col items-center gap-3 py-16 text-zinc-500">
+              <UserIcon className="h-8 w-8" />
+              <p className="text-sm">No users yet. Share the signup link!</p>
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full min-w-[760px] text-left text-sm">
+                <thead>
+                  <tr className="border-b border-white/[0.08] bg-white/[0.02] text-xs uppercase tracking-wide text-zinc-500">
+                    <th className="px-4 py-3 font-medium">User</th>
+                    <th className="px-4 py-3 font-medium">Plan</th>
+                    <th className="px-4 py-3 font-medium">Status</th>
+                    <th className="px-4 py-3 font-medium">Period end</th>
+                    <th className="px-4 py-3 text-right font-medium">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {users.map((user) => (
+                    <tr
+                      key={user.id}
+                      className="border-b border-white/[0.05] transition-colors hover:bg-white/[0.02]"
+                    >
+                      <td className="px-4 py-3">
+                        <p className="font-medium">{user.username}</p>
+                        <p className="text-xs text-zinc-500">{user.email}</p>
+                        {user.provisioning_error && (
+                          <p className="mt-1 max-w-60 truncate text-xs text-rose-400" title={user.provisioning_error}>
+                            ⚠ {user.provisioning_error}
+                          </p>
+                        )}
+                      </td>
+                      <td className="px-4 py-3 text-zinc-300">
+                        {user.plan_name ?? "—"}
+                      </td>
+                      <td className="px-4 py-3">
+                        <StatusBadge status={user.provisioning_error ? "error" : user.status} />
+                      </td>
+                      <td className="px-4 py-3 text-zinc-400">
+                        {user.current_period_end
+                          ? new Date(user.current_period_end * 1000).toLocaleDateString()
+                          : "—"}
+                      </td>
+                      <td className="px-4 py-3">
+                        <div className="flex items-center justify-end gap-1.5">
+                          <button
+                            title="Reveal credentials"
+                            onClick={() => userAction(user, "reveal")}
+                            disabled={busy === user.id}
+                            className="rounded-lg border border-white/10 px-2 py-1 text-xs transition-colors hover:border-white/30 disabled:opacity-50"
+                          >
+                            <EyeIcon className="h-3.5 w-3.5" />
+                          </button>
+                          <button
+                            title="Re-provision in Jellyfin"
+                            onClick={() => userAction(user, "reprovision")}
+                            disabled={busy === user.id}
+                            className="rounded-lg border border-white/10 px-2 py-1 text-xs transition-colors hover:border-white/30 disabled:opacity-50"
+                          >
+                            <RefreshIcon className="h-3.5 w-3.5" />
+                          </button>
+                          <button
+                            title="Disable access"
+                            onClick={() => userAction(user, "disable")}
+                            disabled={busy === user.id}
+                            className="rounded-lg border border-white/10 px-2 py-1 text-xs text-amber-300 transition-colors hover:border-amber-400/40 disabled:opacity-50"
+                          >
+                            Off
+                          </button>
+                          <button
+                            title="Enable access"
+                            onClick={() => userAction(user, "enable")}
+                            disabled={busy === user.id}
+                            className="rounded-lg border border-white/10 px-2 py-1 text-xs text-emerald-300 transition-colors hover:border-emerald-400/40 disabled:opacity-50"
+                          >
+                            On
+                          </button>
+                          <button
+                            title="Delete from Jellyfin + cancel subscription"
+                            onClick={() => userAction(user, "delete", { cancelStripeSubscription: true })}
+                            disabled={busy === user.id}
+                            className="rounded-lg border border-rose-500/30 px-2 py-1 text-xs text-rose-300 transition-colors hover:bg-rose-500/10 disabled:opacity-50"
+                          >
+                            <TrashIcon className="h-3.5 w-3.5" />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* reveal modal */}
+      {revealed && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm"
+          onClick={() => setRevealed(null)}
+        >
+          <div
+            className="animate-pop-in w-full max-w-sm rounded-3xl border border-white/10 bg-[#0b0d15] p-7"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 className="flex items-center gap-2 text-lg font-semibold">
+              <CreditCardIcon className="h-5 w-5 text-brand-300" />
+              {revealed.username}&apos;s credentials
+            </h3>
+            <p className="mt-2 text-xs text-zinc-500">
+              Stored encrypted. Share only over a secure channel.
+            </p>
+            <div className="mt-4 space-y-3">
+              <div>
+                <p className="text-xs text-zinc-500">Username</p>
+                <p className="font-mono text-sm font-semibold">{revealed.username}</p>
+              </div>
+              <div>
+                <p className="text-xs text-zinc-500">Password</p>
+                <p className="break-all font-mono text-sm font-semibold text-fuchsia-300">
+                  {revealed.password}
+                </p>
+              </div>
+            </div>
+            <button
+              onClick={() => setRevealed(null)}
+              className="mt-6 w-full rounded-xl border border-white/15 py-2.5 text-sm transition-colors hover:border-white/30"
+            >
+              Close
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
