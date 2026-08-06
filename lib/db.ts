@@ -8,8 +8,18 @@ const dbPath =
 
 fs.mkdirSync(path.dirname(dbPath), { recursive: true });
 
-export const db = new Database(dbPath);
-db.pragma("journal_mode = WAL");
+// `next build` imports this module from several parallel workers at once, and
+// every one opens the same SQLite file. A generous busy timeout plus tolerating
+// a transient lock failure on the WAL pragma keeps concurrent first-open from
+// crashing the build with SQLITE_BUSY ("database is locked").
+export const db = new Database(dbPath, { timeout: 15_000 });
+try {
+  db.pragma("busy_timeout = 15000");
+  db.pragma("journal_mode = WAL");
+} catch {
+  // Another worker is initializing the same database right now. WAL is only an
+  // optimization — the database works fine without it.
+}
 db.pragma("foreign_keys = ON");
 
 db.exec(`
