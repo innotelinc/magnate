@@ -1,7 +1,7 @@
 services:
-  jellyfin-subscription:
+  jellyfin-subscription-platform:
     build: .
-    container_name: jellyfin-subscription
+    container_name: jellyfin-subscription-platform
     restart: unless-stopped
     ports:
       - "3000:3000"
