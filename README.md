@@ -173,3 +173,4 @@ components/           React components (pricing, forms, admin dashboard, icons)
 lib/                  db.ts, stripe.ts, jellyfin.ts, crypto.ts, auth.ts, plans.ts
 data/                 SQLite database (created at runtime, gitignored)
 ```
+
