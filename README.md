@@ -12,13 +12,30 @@ portal (`accounts.innotel.us`).
   credential reveal after payment, Customer Portal for upgrades/downgrades/cancellations
 - 📺 **Jellyfin provisioning** — creates the user via the Jellyfin API the moment
   payment is confirmed; disables access when a subscription is cancelled
-- 🗓️ **Monthly & yearly plans** — editable from the admin panel; prices sync to
-  Stripe automatically (new prices are created when you change an amount)
+- 🗓️ **3 subscription tiers** — Basic, Standard & Premium, each with monthly
+  and yearly pricing; editable from the admin panel; prices sync to Stripe
+  automatically (new prices are created when you change an amount)
+- 🎬 **Premium request access** — Premium subscribers get exclusive access to a
+  Jellyseerr request portal (`req.innotel.us`) for requesting movies & shows;
+  the request link appears only on the success page for Premium purchases
 - 🔐 **Admin panel** — edit/create/delete plans, view users, reveal (encrypted)
   credentials, enable/disable/delete Jellyfin users, re-provision failed accounts
 - 🗄️ **Local SQLite database** — no external database service needed
 - 🌐 **jfa-go integration** — account portal is linked everywhere; users reset
   passwords and manage devices there
+
+## Plans
+
+| Plan | Monthly | Yearly | Quality | Highlights |
+| --- | --- | --- | --- | --- |
+| Basic | $3.00 | $30.00 | 480p | 1 stream, watch on TV, phone & tablet |
+| Standard | $7.00 | $70.00 | 1080p | 2 streams, watch on TV, phone & tablet |
+| Premium | $10.00 | $100.00 | 4K HDR | 4 streams, priority support, **request access** |
+
+- Yearly pricing equals 10 months of the monthly price (“2 months free”).
+- There are **no free trials** — access starts when payment succeeds.
+- Plans are seeded on first run and editable from the **admin panel** (prices
+  sync to Stripe automatically).
 
 ## Architecture
 
@@ -40,6 +57,8 @@ Visitor ──▶ Landing page ──▶ /signup ──▶ Stripe Checkout
 - A Jellyfin server with an **API key**
 - Stripe account (test mode is fine to start)
 - An existing jfa-go instance (for the account portal link)
+- A Jellyseerr (or similar) request portal for the Premium request perk — its
+  access must be restricted to Premium Jellyfin users on the Jellyseerr side
 
 ## 1. Configuration
 
@@ -54,6 +73,7 @@ Copy `.env.sample` to `.env` and fill it in:
 | `JELLYFIN_URL` | Your Jellyfin server, e.g. `https://media.innotel.us` |
 | `JELLYFIN_API_KEY` | Jellyfin **Dashboard → Advanced → API Keys** |
 | `JFA_GO_URL` | Your jfa-go portal, e.g. `https://accounts.innotel.us` |
+| `REQUEST_URL` | Jellyseerr movie/TV request portal (Premium perk), e.g. `https://req.innotel.us` |
 | `ADMIN_PASSWORD` | Password for the admin panel (`/admin`) |
 | `SESSION_SECRET` | Long random string (encrypts stored credentials, signs sessions) |
 
@@ -113,7 +133,8 @@ npm run dev
    Stripe customer/subscription IDs.
 4. The success page reveals the username + password **once** (polling until the
    webhook completes). Users are pointed to Jellyfin and to the jfa-go portal
-   (`accounts.innotel.us`) for future password resets.
+   (`accounts.innotel.us`) for future password resets. **Premium** purchases also
+   get a link to the request portal (`req.innotel.us`).
 5. `customer.subscription.deleted` → the Jellyfin user is **disabled** (not
    deleted) so re-subscribing is instant. The admin can fully delete users from
    the panel.
