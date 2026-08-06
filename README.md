@@ -6,6 +6,15 @@ account is provisioned automatically. Plans are managed from an **admin
 panel**; users manage their Jellyfin account on your existing **jfa-go**
 portal (`accounts.innotel.us`).
 
+## About
+
+**Innotel Media** is a private, self-hosted streaming service built on
+[Jellyfin](https://jellyfin.org). We run and manage our own media server and
+subscription infrastructure — Stripe handles payments, jfa-go powers the
+account portal, and Jellyseerr handles movie & TV requests for Premium
+subscribers. No ads, no tracking: just a fast, private library for you and
+your family.
+
 ## Features
 
 - 💳 **Stripe billing** — hosted Checkout (cards, Apple Pay, Google Pay), one-time
@@ -85,8 +94,20 @@ Copy `.env.sample` to `.env` and fill it in:
 
 ### Docker (recommended)
 
+Build from source:
+
 ```bash
 docker compose up -d --build
+```
+
+Or pull the prebuilt image published to **GitHub Container Registry** for each
+[release](https://github.com/innotelinc/jellyfin-subscription-platform/releases).
+Because the repo is private, authenticate to GHCR first with a token that has
+`read:packages`:
+
+```bash
+echo YOUR_GH_PAT | docker login ghcr.io -u YOUR_GITHUB_USERNAME --password-stdin
+docker pull ghcr.io/innotelinc/jellyfin-subscription-platform:v1.0.0
 ```
 
 The site is served on port 3000 (persisted DB lives in `./data`). Point your
@@ -163,6 +184,27 @@ admin password) so you can spot missing setup at a glance.
   Stripe's default behavior.
 - Username uniqueness is checked against the live Jellyfin server before
   checkout; the webhook also handles rare race conditions gracefully.
+
+## Releases & Docker image
+
+Each tagged release is published as a container image to GitHub Container
+Registry:
+
+```
+ghcr.io/innotelinc/jellyfin-subscription-platform:v1.0.0
+```
+
+The image runs as a non-root user and expects `/app/data` to be writable for
+uid 1001 (the startup entrypoint handles this automatically). After the GHCR
+login above, run it directly:
+
+```bash
+docker run -d --name jellyfin-subscription \
+  -p 3000:3000 \
+  -v "$(pwd)/data:/app/data" \
+  --env-file .env \
+  ghcr.io/innotelinc/jellyfin-subscription-platform:v1.0.0
+```
 
 ## Project structure
 
