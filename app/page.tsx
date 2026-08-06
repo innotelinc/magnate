@@ -11,6 +11,9 @@ import {
   ShieldIcon,
   UserIcon,
   ArrowRightIcon,
+  CheckIcon,
+  CreditCardIcon,
+  ServerIcon,
 } from "@/components/icons";
 import { listActivePlans, planPublic } from "@/lib/plans";
 
@@ -228,6 +231,94 @@ export default async function Home() {
                   </div>
                 </div>
               ))}
+            </div>
+          </div>
+        </section>
+
+        {/* ABOUT */}
+        <section
+          id="about"
+          className="scroll-mt-20 border-t border-white/[0.06] py-24"
+        >
+          <div className="mx-auto max-w-6xl px-4 sm:px-6">
+            <div className="grid items-center gap-12 lg:grid-cols-2 lg:gap-16">
+              <div className="animate-fade-up">
+                <h2 className="text-4xl font-bold tracking-tight sm:text-5xl">
+                  About <span className="text-gradient">Innotel Media</span>
+                </h2>
+                <p className="mt-6 text-lg leading-relaxed text-zinc-300">
+                  Innotel Media is a private streaming service run on our own
+                  self-hosted Jellyfin server — no ads, no tracking, no
+                  algorithmic noise. Just the movies and shows you want, in
+                  quality up to 4K HDR.
+                </p>
+                <p className="mt-4 leading-relaxed text-zinc-400">
+                  Every account is created and managed on our own
+                  infrastructure: payments are handled securely by Stripe,
+                  subscriptions are managed from one place, and passwords can
+                  be reset anytime through the account portal. Because the
+                  server is ours, your data stays with us — and so does the
+                  speed.
+                </p>
+
+                <ul className="mt-8 grid gap-3 sm:grid-cols-2">
+                  {[
+                    "Private & ad-free streaming",
+                    "Self-hosted & family-friendly",
+                    "Secure Stripe payments",
+                    "Works on every device",
+                  ].map((item) => (
+                    <li
+                      key={item}
+                      className="flex items-center gap-2.5 text-sm text-zinc-300"
+                    >
+                      <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-emerald-500/15 text-emerald-400 ring-1 ring-emerald-400/30">
+                        <CheckIcon className="h-3 w-3" />
+                      </span>
+                      {item}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+
+              <div className="grid gap-4 sm:grid-cols-2">
+                {[
+                  {
+                    icon: ServerIcon,
+                    title: "Self-hosted",
+                    text: "Runs on our dedicated Jellyfin server, tuned for direct play and zero buffering.",
+                  },
+                  {
+                    icon: ShieldIcon,
+                    title: "Private by design",
+                    text: "No ads, no tracking, no selling your data. Just your library, your rules.",
+                  },
+                  {
+                    icon: CreditCardIcon,
+                    title: "Simple billing",
+                    text: "Monthly or yearly plans billed securely through Stripe. Cancel anytime.",
+                  },
+                  {
+                    icon: HeadphonesIcon,
+                    title: "Real support",
+                    text: "Reset passwords in the account portal, or request movies & shows via Jellyseerr.",
+                  },
+                ].map(({ icon: Icon, title, text }, i) => (
+                  <div
+                    key={title}
+                    style={{ animationDelay: `${i * 80}ms` }}
+                    className="animate-fade-up group rounded-2xl border border-white/[0.07] bg-white/[0.02] p-6 transition-all duration-300 hover:-translate-y-1 hover:border-brand-400/40 hover:bg-white/[0.04]"
+                  >
+                    <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-500/20 to-fuchsia-500/20 text-brand-300 ring-1 ring-white/10 transition-transform duration-300 group-hover:scale-110">
+                      <Icon className="h-5 w-5" />
+                    </span>
+                    <h3 className="mt-4 font-semibold">{title}</h3>
+                    <p className="mt-1.5 text-sm leading-relaxed text-zinc-400">
+                      {text}
+                    </p>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
         </section>

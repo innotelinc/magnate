@@ -23,6 +23,9 @@ export default function Nav() {
           <Link href="/#features" className="transition-colors hover:text-white">
             Features
           </Link>
+          <Link href="/#about" className="transition-colors hover:text-white">
+            About
+          </Link>
           <Link href="/#faq" className="transition-colors hover:text-white">
             FAQ
           </Link>
