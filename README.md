@@ -194,8 +194,8 @@ Registry:
 ghcr.io/innotelinc/jellyfin-subscription-platform:v1.0.0
 ```
 
-The image runs as a non-root user and expects `/app/data` to be writable for
-uid 1001 (the startup entrypoint handles this automatically). After the GHCR
+The image runs as a non-root `node` user and expects `/app/data` to be writable for
+uid 1000 (the startup entrypoint handles this automatically). After the GHCR
 login above, run it directly:
 
 ```bash
@@ -215,4 +215,24 @@ components/           React components (pricing, forms, admin dashboard, icons)
 lib/                  db.ts, stripe.ts, jellyfin.ts, crypto.ts, auth.ts, plans.ts
 data/                 SQLite database (created at runtime, gitignored)
 ```
+
+## Troubleshooting
+
+### AppArmor errors during Docker build (`apparmor failed to apply profile`)
+
+If you see this error on a host with broken AppArmor compatibility:
+
+```
+runc run failed: unable to start container process: error during container init:
+unable to apply apparmor profile: apparmor failed to apply profile
+```
+
+Copy the included daemon config to disable AppArmor in the Docker daemon:
+
+```bash
+sudo cp docker-daemon.json /etc/docker/daemon.json
+sudo systemctl restart docker
+```
+
+Then rebuild with `docker compose up --build -d`.
 
