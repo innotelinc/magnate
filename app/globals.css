@@ -48,6 +48,37 @@ body {
     color 0.3s ease;
 }
 
+/* Native <select> dropdown popups: some browsers only apply color-scheme to
+   the popup when it's declared on the <select> itself (not just inherited from
+   :root), so declare it per theme and pin explicit option colors. Without
+   this, options inherit the select's white text onto a light popup and are
+   invisible in dark mode. */
+select {
+  color-scheme: light;
+}
+
+select option {
+  background-color: #ffffff;
+  color: #16181f;
+}
+
+select option:checked {
+  background-color: #eef2ff;
+}
+
+[data-theme="dark"] select {
+  color-scheme: dark;
+}
+
+[data-theme="dark"] select option {
+  background-color: #12141c;
+  color: #e8eaf2;
+}
+
+[data-theme="dark"] select option:checked {
+  background-color: rgba(99, 102, 241, 0.35);
+}
+
 /* ---------- custom utilities ---------- */
 
 .text-gradient {
