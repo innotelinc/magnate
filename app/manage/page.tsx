@@ -17,25 +17,25 @@ export default function ManagePage() {
               Manage your{" "}
               <span className="text-gradient">subscription</span>
             </h1>
-            <p className="mt-4 max-w-md text-lg text-zinc-400">
+            <p className="mt-4 max-w-md text-lg text-zinc-600 dark:text-zinc-400">
               Upgrade, downgrade, update your payment method or cancel — all
               handled securely in the Stripe billing portal.
             </p>
 
             <div className="mt-10 space-y-4">
               <div className="flex gap-4">
-                <span className="mt-1 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-brand-500/15 text-brand-300 ring-1 ring-white/10">
+                <span className="mt-1 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-brand-500/15 text-brand-600 ring-1 ring-zinc-950/10 dark:text-brand-300 dark:ring-white/10">
                   <LockIcon className="h-3.5 w-3.5" />
                 </span>
                 <div>
                   <p className="font-medium">Password & devices</p>
-                  <p className="text-sm text-zinc-500">
+                  <p className="text-sm text-zinc-600 dark:text-zinc-500">
                     For Jellyfin account settings (password, devices), head to{" "}
                     <a
                       href={process.env.JFA_GO_URL || "https://accounts.innotel.us"}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="text-brand-300 underline-offset-2 hover:underline"
+                      className="text-brand-600 underline-offset-2 hover:underline dark:text-brand-300"
                     >
                       accounts.innotel.us
                     </a>
@@ -44,12 +44,12 @@ export default function ManagePage() {
                 </div>
               </div>
               <div className="flex gap-4">
-                <span className="mt-1 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-emerald-500/15 text-emerald-300 ring-1 ring-white/10">
+                <span className="mt-1 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-emerald-500/15 text-emerald-600 ring-1 ring-zinc-950/10 dark:text-emerald-300 dark:ring-white/10">
                   <UserIcon className="h-3.5 w-3.5" />
                 </span>
                 <div>
                   <p className="font-medium">Billing</p>
-                  <p className="text-sm text-zinc-500">
+                  <p className="text-sm text-zinc-600 dark:text-zinc-500">
                     Invoices, payment methods and plan changes are managed via
                     Stripe&apos;s billing portal.
                   </p>
@@ -60,7 +60,7 @@ export default function ManagePage() {
 
           <div className="animate-fade-up delay-200 glass rounded-3xl p-7 sm:p-9">
             <h2 className="text-xl font-semibold">Billing portal</h2>
-            <p className="mt-2 text-sm text-zinc-400">
+            <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-400">
               Enter the email you subscribed with and we&apos;ll take you to your
               billing dashboard.
             </p>

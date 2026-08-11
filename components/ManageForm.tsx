@@ -37,14 +37,14 @@ export default function ManageForm() {
   return (
     <>
       {searchParams.get("success") && (
-        <div className="mb-5 rounded-xl border border-emerald-400/25 bg-emerald-400/10 px-4 py-3 text-sm text-emerald-200">
+        <div className="mb-5 rounded-xl border border-emerald-500/25 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-700 dark:border-emerald-400/25 dark:bg-emerald-400/10 dark:text-emerald-200">
           You&apos;ve returned from the billing portal.
         </div>
       )}
 
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
-          <label htmlFor="manage-email" className="mb-1.5 block text-sm font-medium text-zinc-300">
+          <label htmlFor="manage-email" className="mb-1.5 block text-sm font-medium text-zinc-800 dark:text-zinc-300">
             Subscription email
           </label>
           <input
@@ -55,12 +55,12 @@ export default function ManageForm() {
             placeholder="you@example.com"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            className="w-full rounded-xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm text-white placeholder-zinc-600 outline-none transition-colors focus:border-brand-400 focus:ring-2 focus:ring-brand-500/30"
+            className="w-full rounded-xl border border-zinc-950/10 bg-black/[0.04] px-4 py-3 text-sm text-zinc-950 placeholder-zinc-400 outline-none transition-colors focus:border-brand-400 focus:ring-2 focus:ring-brand-500/30 dark:border-white/10 dark:bg-white/[0.04] dark:text-white dark:placeholder-zinc-600"
           />
         </div>
 
         {error && (
-          <div className="rounded-xl border border-rose-500/30 bg-rose-500/10 px-4 py-3 text-sm text-rose-300">
+          <div className="rounded-xl border border-rose-500/30 bg-rose-500/10 px-4 py-3 text-sm text-rose-600 dark:text-rose-300">
             {error}
           </div>
         )}

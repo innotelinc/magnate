@@ -37,11 +37,11 @@ export default function AdminLogin() {
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       <div>
-        <label htmlFor="admin-password" className="mb-1.5 block text-sm font-medium text-zinc-300">
+        <label htmlFor="admin-password" className="mb-1.5 block text-sm font-medium text-zinc-800 dark:text-zinc-300">
           Admin password
         </label>
         <div className="relative">
-          <LockIcon className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-500" />
+          <LockIcon className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-600 dark:text-zinc-500" />
           <input
             id="admin-password"
             type="password"
@@ -49,13 +49,13 @@ export default function AdminLogin() {
             autoFocus
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            className="w-full rounded-xl border border-white/10 bg-white/[0.04] py-3 pl-10 pr-4 text-sm text-white placeholder-zinc-600 outline-none transition-colors focus:border-brand-400 focus:ring-2 focus:ring-brand-500/30"
+            className="w-full rounded-xl border border-zinc-950/10 bg-black/[0.04] py-3 pl-10 pr-4 text-sm text-zinc-950 placeholder-zinc-400 outline-none transition-colors focus:border-brand-400 focus:ring-2 focus:ring-brand-500/30 dark:border-white/10 dark:bg-white/[0.04] dark:text-white dark:placeholder-zinc-600"
           />
         </div>
       </div>
 
       {error && (
-        <div className="rounded-xl border border-rose-500/30 bg-rose-500/10 px-4 py-3 text-sm text-rose-300">
+        <div className="rounded-xl border border-rose-500/30 bg-rose-500/10 px-4 py-3 text-sm text-rose-600 dark:text-rose-300">
           {error}
         </div>
       )}

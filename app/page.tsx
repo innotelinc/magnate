@@ -115,10 +115,10 @@ export default async function Home() {
           <div className="pointer-events-none absolute top-40 right-[-120px] h-[360px] w-[360px] rounded-full bg-fuchsia-600/15 blur-[110px] animate-float-slow" />
 
           <div className="relative mx-auto max-w-4xl px-4 pb-24 pt-20 text-center sm:px-6 sm:pt-28">
-            <span className="animate-fade-up inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-4 py-1.5 text-xs font-medium text-zinc-300">
+            <span className="animate-fade-up inline-flex items-center gap-2 rounded-full border border-zinc-950/10 bg-black/[0.04] px-4 py-1.5 text-xs font-medium text-zinc-800 dark:border-white/10 dark:bg-white/[0.04] dark:text-zinc-300">
               <span className="relative flex h-2 w-2">
-                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
-                <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-400" />
+                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-500 opacity-75 dark:bg-emerald-400" />
+                <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500 dark:bg-emerald-400" />
               </span>
               Server online · Streaming in 4K
             </span>
@@ -129,10 +129,10 @@ export default async function Home() {
               <span className="text-gradient">everywhere you are.</span>
             </h1>
 
-            <p className="animate-fade-up delay-200 mx-auto mt-6 max-w-xl text-lg text-zinc-400 sm:text-xl">
+            <p className="animate-fade-up delay-200 mx-auto mt-6 max-w-xl text-lg text-zinc-600 sm:text-xl dark:text-zinc-400">
               Stream movies, shows and more on any device with a private,
               ad-free Jellyfin server. Plans start at just{" "}
-              <span className="font-semibold text-white">
+              <span className="font-semibold text-zinc-950 dark:text-white">
                 ${cheapestPrice % 1 === 0 ? cheapestPrice.toFixed(0) : cheapestPrice.toFixed(2)}
                 /mo
               </span>
@@ -149,14 +149,14 @@ export default async function Home() {
               </Link>
               <Link
                 href={`${APP_URL}/manage`}
-                className="rounded-full border border-white/15 bg-white/[0.04] px-8 py-3.5 text-base font-medium text-white transition-all hover:border-white/30 hover:bg-white/[0.08]"
+                className="rounded-full border border-zinc-950/15 bg-black/[0.04] px-8 py-3.5 text-base font-medium text-zinc-950 transition-all hover:border-zinc-950/30 hover:bg-black/[0.06] dark:border-white/15 dark:bg-white/[0.04] dark:text-white dark:hover:border-white/30 dark:hover:bg-white/[0.08]"
               >
                 Manage subscription
               </Link>
             </div>
 
             {/* Stats */}
-            <div className="animate-fade-up delay-500 mx-auto mt-16 grid max-w-lg grid-cols-3 gap-6 border-t border-white/[0.06] pt-8">
+            <div className="animate-fade-up delay-500 mx-auto mt-16 grid max-w-lg grid-cols-3 gap-6 border-t border-zinc-950/10 pt-8 dark:border-white/[0.06]">
               {[
                 ["4K HDR", "quality"],
                 ["0", "ads & tracking"],
@@ -164,7 +164,7 @@ export default async function Home() {
               ].map(([a, b]) => (
                 <div key={b}>
                   <p className="text-2xl font-bold">{a}</p>
-                  <p className="mt-1 text-xs text-zinc-500">{b}</p>
+                  <p className="mt-1 text-xs text-zinc-600 dark:text-zinc-500">{b}</p>
                 </div>
               ))}
             </div>
@@ -175,7 +175,7 @@ export default async function Home() {
         <PricingSection plans={plans} />
 
         {/* FEATURES */}
-        <section id="features" className="scroll-mt-20 border-t border-white/[0.06] py-24">
+        <section id="features" className="scroll-mt-20 border-t border-zinc-950/10 py-24 dark:border-white/[0.06]">
           <div className="mx-auto max-w-6xl px-4 sm:px-6">
             <div className="mx-auto max-w-2xl text-center">
               <h2 className="text-4xl font-bold tracking-tight sm:text-5xl">
@@ -188,13 +188,13 @@ export default async function Home() {
                 <div
                   key={title}
                   style={{ animationDelay: `${i * 70}ms` }}
-                  className="animate-fade-up group rounded-2xl border border-white/[0.07] bg-white/[0.02] p-6 transition-all duration-300 hover:-translate-y-1 hover:border-brand-400/40 hover:bg-white/[0.04]"
+                  className="animate-fade-up group rounded-2xl border border-zinc-950/10 bg-black/[0.02] p-6 transition-all duration-300 hover:-translate-y-1 hover:border-brand-400/50 hover:bg-black/[0.04] dark:border-white/[0.07] dark:bg-white/[0.02] dark:hover:bg-white/[0.04]"
                 >
-                  <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-500/20 to-fuchsia-500/20 text-brand-300 ring-1 ring-white/10 transition-transform duration-300 group-hover:scale-110">
+                  <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-500/20 to-fuchsia-500/20 text-brand-600 ring-1 ring-zinc-950/10 transition-transform duration-300 group-hover:scale-110 dark:text-brand-300 dark:ring-white/10">
                     <Icon className="h-5 w-5" />
                   </span>
                   <h3 className="mt-5 text-lg font-semibold">{title}</h3>
-                  <p className="mt-2 text-sm leading-relaxed text-zinc-400">
+                  <p className="mt-2 text-sm leading-relaxed text-zinc-600 dark:text-zinc-400">
                     {text}
                   </p>
                 </div>
@@ -204,7 +204,7 @@ export default async function Home() {
         </section>
 
         {/* HOW IT WORKS */}
-        <section className="border-t border-white/[0.06] py-24">
+        <section className="border-t border-zinc-950/10 py-24 dark:border-white/[0.06]">
           <div className="mx-auto max-w-6xl px-4 sm:px-6">
             <div className="mx-auto max-w-2xl text-center">
               <h2 className="text-4xl font-bold tracking-tight sm:text-5xl">
@@ -215,17 +215,17 @@ export default async function Home() {
               {steps.map((step, i) => (
                 <div key={step.n} className="relative">
                   {i < steps.length - 1 && (
-                    <div className="absolute left-full top-10 hidden h-px w-full -translate-x-1/2 bg-gradient-to-r from-white/20 to-transparent md:block" />
+                    <div className="absolute left-full top-10 hidden h-px w-full -translate-x-1/2 bg-gradient-to-r from-zinc-950/15 to-transparent md:block dark:from-white/20" />
                   )}
-                  <div className="rounded-2xl border border-white/[0.07] bg-white/[0.02] p-7 transition-all duration-300 hover:border-white/20">
+                  <div className="rounded-2xl border border-zinc-950/10 bg-black/[0.02] p-7 transition-all duration-300 hover:border-zinc-950/25 dark:border-white/[0.07] dark:bg-white/[0.02] dark:hover:border-white/20">
                     <span className="text-gradient text-4xl font-bold">
                       {step.n}
                     </span>
                     <h3 className="mt-4 flex items-center gap-2 text-lg font-semibold">
-                      <UserIcon className="h-4 w-4 text-brand-300" />
+                      <UserIcon className="h-4 w-4 text-brand-600 dark:text-brand-300" />
                       {step.title}
                     </h3>
-                    <p className="mt-2 text-sm leading-relaxed text-zinc-400">
+                    <p className="mt-2 text-sm leading-relaxed text-zinc-600 dark:text-zinc-400">
                       {step.text}
                     </p>
                   </div>
@@ -238,7 +238,7 @@ export default async function Home() {
         {/* ABOUT */}
         <section
           id="about"
-          className="scroll-mt-20 border-t border-white/[0.06] py-24"
+          className="scroll-mt-20 border-t border-zinc-950/10 py-24 dark:border-white/[0.06]"
         >
           <div className="mx-auto max-w-6xl px-4 sm:px-6">
             <div className="grid items-center gap-12 lg:grid-cols-2 lg:gap-16">
@@ -246,13 +246,13 @@ export default async function Home() {
                 <h2 className="text-4xl font-bold tracking-tight sm:text-5xl">
                   About <span className="text-gradient">Innotel Media</span>
                 </h2>
-                <p className="mt-6 text-lg leading-relaxed text-zinc-300">
+                <p className="mt-6 text-lg leading-relaxed text-zinc-800 dark:text-zinc-300">
                   Innotel Media is a private streaming service run on our own
                   self-hosted Jellyfin server — no ads, no tracking, no
                   algorithmic noise. Just the movies and shows you want, in
                   quality up to 4K HDR.
                 </p>
-                <p className="mt-4 leading-relaxed text-zinc-400">
+                <p className="mt-4 leading-relaxed text-zinc-600 dark:text-zinc-400">
                   Every account is created and managed on our own
                   infrastructure: payments are handled securely by Stripe,
                   subscriptions are managed from one place, and passwords can
@@ -270,9 +270,9 @@ export default async function Home() {
                   ].map((item) => (
                     <li
                       key={item}
-                      className="flex items-center gap-2.5 text-sm text-zinc-300"
+                      className="flex items-center gap-2.5 text-sm text-zinc-800 dark:text-zinc-300"
                     >
-                      <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-emerald-500/15 text-emerald-400 ring-1 ring-emerald-400/30">
+                      <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-emerald-500/15 text-emerald-600 ring-1 ring-emerald-500/30 dark:text-emerald-400 dark:ring-emerald-400/30">
                         <CheckIcon className="h-3 w-3" />
                       </span>
                       {item}
@@ -307,13 +307,13 @@ export default async function Home() {
                   <div
                     key={title}
                     style={{ animationDelay: `${i * 80}ms` }}
-                    className="animate-fade-up group rounded-2xl border border-white/[0.07] bg-white/[0.02] p-6 transition-all duration-300 hover:-translate-y-1 hover:border-brand-400/40 hover:bg-white/[0.04]"
+                    className="animate-fade-up group rounded-2xl border border-zinc-950/10 bg-black/[0.02] p-6 transition-all duration-300 hover:-translate-y-1 hover:border-brand-400/50 hover:bg-black/[0.04] dark:border-white/[0.07] dark:bg-white/[0.02] dark:hover:bg-white/[0.04]"
                   >
-                    <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-500/20 to-fuchsia-500/20 text-brand-300 ring-1 ring-white/10 transition-transform duration-300 group-hover:scale-110">
+                    <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-500/20 to-fuchsia-500/20 text-brand-600 ring-1 ring-zinc-950/10 transition-transform duration-300 group-hover:scale-110 dark:text-brand-300 dark:ring-white/10">
                       <Icon className="h-5 w-5" />
                     </span>
                     <h3 className="mt-4 font-semibold">{title}</h3>
-                    <p className="mt-1.5 text-sm leading-relaxed text-zinc-400">
+                    <p className="mt-1.5 text-sm leading-relaxed text-zinc-600 dark:text-zinc-400">
                       {text}
                     </p>
                   </div>
@@ -324,7 +324,7 @@ export default async function Home() {
         </section>
 
         {/* FAQ */}
-        <section id="faq" className="scroll-mt-20 border-t border-white/[0.06] py-24">
+        <section id="faq" className="scroll-mt-20 border-t border-zinc-950/10 py-24 dark:border-white/[0.06]">
           <div className="mx-auto max-w-3xl px-4 sm:px-6">
             <div className="text-center">
               <h2 className="text-4xl font-bold tracking-tight sm:text-5xl">
@@ -335,17 +335,17 @@ export default async function Home() {
               {faqs.map((faq) => (
                 <details
                   key={faq.q}
-                  className="group rounded-2xl border border-white/[0.07] bg-white/[0.02] transition-colors open:border-white/20 open:bg-white/[0.04]"
+                  className="group rounded-2xl border border-zinc-950/10 bg-black/[0.02] transition-colors open:border-zinc-950/20 open:bg-black/[0.04] dark:border-white/[0.07] dark:bg-white/[0.02] dark:open:border-white/20 dark:open:bg-white/[0.04]"
                 >
                   <summary className="flex cursor-pointer list-none items-center justify-between gap-4 px-6 py-5 text-base font-medium [&::-webkit-details-marker]:hidden">
                     {faq.q}
-                    <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-white/15 text-zinc-400 transition-transform duration-300 group-open:rotate-45">
+                    <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-zinc-950/20 text-zinc-600 transition-transform duration-300 group-open:rotate-45 dark:border-white/15 dark:text-zinc-400">
                       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" className="h-3.5 w-3.5">
                         <path d="M12 5v14M5 12h14" />
                       </svg>
                     </span>
                   </summary>
-                  <p className="px-6 pb-6 text-sm leading-relaxed text-zinc-400">
+                  <p className="px-6 pb-6 text-sm leading-relaxed text-zinc-600 dark:text-zinc-400">
                     {faq.a}
                   </p>
                 </details>
@@ -357,18 +357,18 @@ export default async function Home() {
         {/* CTA */}
         <section className="pb-24">
           <div className="mx-auto max-w-4xl px-4 sm:px-6">
-            <div className="relative overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-br from-indigo-600/20 via-violet-600/10 to-fuchsia-600/20 p-10 text-center sm:p-16">
+            <div className="relative overflow-hidden rounded-3xl border border-zinc-950/10 bg-gradient-to-br from-indigo-600/20 via-violet-600/10 to-fuchsia-600/20 p-10 text-center sm:p-16 dark:border-white/10">
               <div className="pointer-events-none absolute -top-24 left-1/2 h-64 w-[480px] -translate-x-1/2 rounded-full bg-indigo-500/30 blur-[100px]" />
               <h2 className="relative text-3xl font-bold tracking-tight sm:text-4xl">
                 Ready to start watching?
               </h2>
-              <p className="relative mx-auto mt-3 max-w-md text-zinc-300">
+              <p className="relative mx-auto mt-3 max-w-md text-zinc-800 dark:text-zinc-300">
                 Join today and stream instantly. Cancel whenever you like —
                 no questions asked.
               </p>
               <Link
                 href="/#pricing"
-                className="relative mt-8 inline-flex items-center gap-2 rounded-full bg-white px-8 py-3.5 text-base font-semibold text-zinc-900 transition-all hover:shadow-xl hover:shadow-white/20"
+                className="relative mt-8 inline-flex items-center gap-2 rounded-full bg-zinc-950 px-8 py-3.5 text-base font-semibold text-white transition-all hover:shadow-xl hover:shadow-zinc-950/20 dark:bg-white dark:text-zinc-900 dark:hover:shadow-white/20"
               >
                 Choose a plan
                 <ArrowRightIcon className="h-4 w-4" />
