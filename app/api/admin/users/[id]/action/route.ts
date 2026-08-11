@@ -9,12 +9,21 @@ import {
   setUserEnabled,
 } from "@/lib/jellyfin";
 import { decrypt } from "@/lib/crypto";
+import { getPlanById } from "@/lib/plans";
 
 export const dynamic = "force-dynamic";
 
 const schema = z.object({
-  action: z.enum(["enable", "disable", "delete", "reveal", "reprovision"]),
+  action: z.enum(["enable", "disable", "delete", "reveal", "reprovision", "edit"]),
   cancelStripeSubscription: z.boolean().optional().default(false),
+  email: z.string().email().max(255).optional(),
+  username: z
+    .string()
+    .min(1)
+    .max(64)
+    .regex(/^[a-zA-Z0-9_][a-zA-Z0-9._-]*$/, "Username must start with a letter/number and contain only letters, numbers, dots, dashes, and underscores.")
+    .optional(),
+  planId: z.number().int().positive().optional().nullable(),
 });
 
 export async function POST(
@@ -92,6 +101,55 @@ export async function POST(
           username: user.username,
           password: decrypt(user.password_enc),
         });
+      }
+      case "edit": {
+        const { email, username, planId } = parsed.data;
+
+        // Validate plan exists if provided.
+        if (planId !== undefined && planId !== null && !getPlanById(planId)) {
+          return NextResponse.json(
+            { error: "The selected plan does not exist." },
+            { status: 400 },
+          );
+        }
+
+        // Check for duplicate email/username (exclude the current user).
+        if (email && email !== user.email) {
+          const dup = db
+            .prepare("SELECT id FROM users WHERE lower(email) = lower(?) AND id != ?")
+            .get(email, user.id);
+          if (dup) {
+            return NextResponse.json(
+              { error: "Another user already has that email address." },
+              { status: 409 },
+            );
+          }
+        }
+        if (username && username !== user.username) {
+          const dup = db
+            .prepare("SELECT id FROM users WHERE lower(username) = lower(?) AND id != ?")
+            .get(username, user.id);
+          if (dup) {
+            return NextResponse.json(
+              { error: "Another user already has that username." },
+              { status: 409 },
+            );
+          }
+        }
+
+        db.prepare(
+          `UPDATE users SET
+             email = COALESCE(?, email),
+             username = COALESCE(?, username),
+             plan_id = ?
+           WHERE id = ?`,
+        ).run(
+          email ?? null,
+          username ?? null,
+          planId !== undefined ? planId : user.plan_id,
+          user.id,
+        );
+        break;
       }
       case "delete": {
         if (user.jellyfin_user_id) {
