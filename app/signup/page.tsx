@@ -26,14 +26,14 @@ export default async function SignupPage({
         <div className="relative mx-auto grid min-h-[calc(100vh-4rem)] max-w-5xl items-center gap-12 px-4 py-14 sm:px-6 lg:grid-cols-2">
           {/* Left: pitch */}
           <div className="animate-fade-up">
-            <Link href="/#pricing" className="text-sm text-zinc-500 transition-colors hover:text-white">
+            <Link href="/#pricing" className="text-sm text-zinc-600 transition-colors hover:text-zinc-950 dark:text-zinc-500 dark:hover:text-white">
               ← Back to plans
             </Link>
             <h1 className="mt-6 text-4xl font-bold tracking-tight sm:text-5xl">
               Almost there,{" "}
               <span className="text-gradient">let&apos;s get you streaming.</span>
             </h1>
-            <p className="mt-4 max-w-md text-lg text-zinc-400">
+            <p className="mt-4 max-w-md text-lg text-zinc-600 dark:text-zinc-400">
               Sign up in seconds. Your account is created the moment your
               payment is confirmed — no waiting.
             </p>
@@ -45,12 +45,12 @@ export default async function SignupPage({
                 ["Account portal", "Reset passwords and manage devices at accounts.innotel.us."],
               ].map(([title, text]) => (
                 <div key={title} className="flex gap-4">
-                  <span className="mt-1 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-indigo-500/25 to-fuchsia-500/25 text-brand-300 ring-1 ring-white/10">
+                  <span className="mt-1 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-indigo-500/25 to-fuchsia-500/25 text-brand-600 ring-1 ring-zinc-950/10 dark:text-brand-300 dark:ring-white/10">
                     <PlayIcon className="h-3.5 w-3.5" />
                   </span>
                   <div>
                     <p className="font-medium">{title}</p>
-                    <p className="text-sm text-zinc-500">{text}</p>
+                    <p className="text-sm text-zinc-600 dark:text-zinc-500">{text}</p>
                   </div>
                 </div>
               ))}

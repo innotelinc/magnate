@@ -85,13 +85,20 @@ function money(cents: number, currency: string) {
 }
 
 const STATUS_STYLES: Record<string, string> = {
-  active: "bg-emerald-400/10 text-emerald-300 ring-emerald-400/30",
-  pending: "bg-amber-400/10 text-amber-300 ring-amber-400/30",
-  past_due: "bg-orange-400/10 text-orange-300 ring-orange-400/30",
-  unpaid: "bg-rose-400/10 text-rose-300 ring-rose-400/30",
-  cancelled: "bg-zinc-400/10 text-zinc-400 ring-zinc-400/30",
-  disabled: "bg-zinc-400/10 text-zinc-400 ring-zinc-400/30",
-  error: "bg-rose-400/10 text-rose-300 ring-rose-400/30",
+  active:
+    "bg-emerald-500/10 text-emerald-600 ring-emerald-500/30 dark:bg-emerald-400/10 dark:text-emerald-300 dark:ring-emerald-400/30",
+  pending:
+    "bg-amber-500/10 text-amber-600 ring-amber-500/30 dark:bg-amber-400/10 dark:text-amber-300 dark:ring-amber-400/30",
+  past_due:
+    "bg-orange-500/10 text-orange-600 ring-orange-500/30 dark:bg-orange-400/10 dark:text-orange-300 dark:ring-orange-400/30",
+  unpaid:
+    "bg-rose-500/10 text-rose-600 ring-rose-500/30 dark:bg-rose-400/10 dark:text-rose-300 dark:ring-rose-400/30",
+  cancelled:
+    "bg-zinc-500/10 text-zinc-600 ring-zinc-500/30 dark:bg-zinc-400/10 dark:text-zinc-400 dark:ring-zinc-400/30",
+  disabled:
+    "bg-zinc-500/10 text-zinc-600 ring-zinc-500/30 dark:bg-zinc-400/10 dark:text-zinc-400 dark:ring-zinc-400/30",
+  error:
+    "bg-rose-500/10 text-rose-600 ring-rose-500/30 dark:bg-rose-400/10 dark:text-rose-300 dark:ring-rose-400/30",
 };
 
 function StatusBadge({ status }: { status: string }) {
@@ -107,7 +114,7 @@ function StatusBadge({ status }: { status: string }) {
 }
 
 const inputCls =
-  "w-full rounded-lg border border-white/10 bg-white/[0.04] px-3 py-2 text-sm text-white placeholder-zinc-600 outline-none transition-colors focus:border-brand-400 focus:ring-2 focus:ring-brand-500/25";
+  "w-full rounded-lg border border-zinc-950/10 bg-black/[0.03] px-3 py-2 text-sm text-zinc-950 placeholder-zinc-400 outline-none transition-colors focus:border-brand-400 focus:ring-2 focus:ring-brand-500/25 dark:border-white/10 dark:bg-white/[0.04] dark:text-white dark:placeholder-zinc-600";
 
 /* ---------- plan editor ---------- */
 
@@ -179,32 +186,32 @@ function PlanEditor({
 
   return (
     <div className="rounded-2xl border border-brand-400/30 bg-brand-500/[0.06] p-5">
-      <p className="mb-4 text-sm font-semibold text-brand-200">
+      <p className="mb-4 text-sm font-semibold text-brand-600 dark:text-brand-200">
         {initial ? `Edit ${initial.name}` : "New plan"}
       </p>
       <div className="grid gap-4 sm:grid-cols-2">
         <div>
-          <label className="mb-1 block text-xs text-zinc-400">Name</label>
+          <label className="mb-1 block text-xs text-zinc-600 dark:text-zinc-400">Name</label>
           <input className={inputCls} value={name} onChange={(e) => setName(e.target.value)} placeholder="Standard" />
         </div>
         <div>
-          <label className="mb-1 block text-xs text-zinc-400">Slug</label>
+          <label className="mb-1 block text-xs text-zinc-600 dark:text-zinc-400">Slug</label>
           <input className={inputCls} value={slug} onChange={(e) => setSlug(e.target.value)} placeholder="standard" />
         </div>
         <div className="sm:col-span-2">
-          <label className="mb-1 block text-xs text-zinc-400">Description</label>
+          <label className="mb-1 block text-xs text-zinc-600 dark:text-zinc-400">Description</label>
           <input className={inputCls} value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Perfect for streaming on a couple of devices." />
         </div>
         <div>
-          <label className="mb-1 block text-xs text-zinc-400">Monthly price ($)</label>
+          <label className="mb-1 block text-xs text-zinc-600 dark:text-zinc-400">Monthly price ($)</label>
           <input className={inputCls} type="number" min="0" step="0.01" value={monthly} onChange={(e) => setMonthly(e.target.value)} placeholder="5.00" />
         </div>
         <div>
-          <label className="mb-1 block text-xs text-zinc-400">Yearly price ($)</label>
+          <label className="mb-1 block text-xs text-zinc-600 dark:text-zinc-400">Yearly price ($)</label>
           <input className={inputCls} type="number" min="0" step="0.01" value={yearly} onChange={(e) => setYearly(e.target.value)} placeholder="50.00" />
         </div>
         <div className="sm:col-span-2">
-          <label className="mb-1 block text-xs text-zinc-400">
+          <label className="mb-1 block text-xs text-zinc-600 dark:text-zinc-400">
             Features (one per line)
           </label>
           <textarea
@@ -214,18 +221,18 @@ function PlanEditor({
             placeholder={"4K streaming\n2 devices at once"}
           />
         </div>
-        <label className="flex cursor-pointer items-center gap-2 text-sm text-zinc-300">
+        <label className="flex cursor-pointer items-center gap-2 text-sm text-zinc-800 dark:text-zinc-300">
           <input type="checkbox" checked={highlighted} onChange={(e) => setHighlighted(e.target.checked)} className="h-4 w-4 accent-indigo-500" />
           Highlight (most popular)
         </label>
-        <label className="flex cursor-pointer items-center gap-2 text-sm text-zinc-300">
+        <label className="flex cursor-pointer items-center gap-2 text-sm text-zinc-800 dark:text-zinc-300">
           <input type="checkbox" checked={active} onChange={(e) => setActive(e.target.checked)} className="h-4 w-4 accent-emerald-500" />
           Active (visible on site)
         </label>
       </div>
 
       {error && (
-        <div className="mt-4 rounded-lg border border-rose-500/30 bg-rose-500/10 px-3 py-2 text-sm text-rose-300">
+        <div className="mt-4 rounded-lg border border-rose-500/30 bg-rose-500/10 px-3 py-2 text-sm text-rose-600 dark:text-rose-300">
           {error}
         </div>
       )}
@@ -240,7 +247,7 @@ function PlanEditor({
         </button>
         <button
           onClick={onDone}
-          className="rounded-lg border border-white/15 px-4 py-2 text-sm transition-colors hover:border-white/30"
+          className="rounded-lg border border-zinc-950/15 px-4 py-2 text-sm transition-colors hover:border-zinc-950/30 dark:border-white/15 dark:hover:border-white/30"
         >
           Cancel
         </button>
@@ -300,10 +307,10 @@ function UserEditor({
 
   return (
     <div className="rounded-2xl border border-brand-400/30 bg-brand-500/[0.06] p-5">
-      <p className="mb-4 text-sm font-semibold text-brand-200">Add user</p>
+      <p className="mb-4 text-sm font-semibold text-brand-600 dark:text-brand-200">Add user</p>
       <div className="grid gap-4 sm:grid-cols-2">
         <div>
-          <label className="mb-1 block text-xs text-zinc-400">Email</label>
+          <label className="mb-1 block text-xs text-zinc-600 dark:text-zinc-400">Email</label>
           <input
             className={inputCls}
             type="email"
@@ -313,7 +320,7 @@ function UserEditor({
           />
         </div>
         <div>
-          <label className="mb-1 block text-xs text-zinc-400">Username</label>
+          <label className="mb-1 block text-xs text-zinc-600 dark:text-zinc-400">Username</label>
           <input
             className={inputCls}
             value={username}
@@ -322,7 +329,7 @@ function UserEditor({
           />
         </div>
         <div>
-          <label className="mb-1 block text-xs text-zinc-400">Password</label>
+          <label className="mb-1 block text-xs text-zinc-600 dark:text-zinc-400">Password</label>
           <input
             className={inputCls}
             type="password"
@@ -332,7 +339,7 @@ function UserEditor({
           />
         </div>
         <div>
-          <label className="mb-1 block text-xs text-zinc-400">Plan (optional)</label>
+          <label className="mb-1 block text-xs text-zinc-600 dark:text-zinc-400">Plan (optional)</label>
           <select
             className={inputCls}
             value={planId}
@@ -348,7 +355,7 @@ function UserEditor({
               ))}
           </select>
         </div>
-        <label className="flex cursor-pointer items-center gap-2 text-sm text-zinc-300 sm:col-span-2">
+        <label className="flex cursor-pointer items-center gap-2 text-sm text-zinc-800 sm:col-span-2 dark:text-zinc-300">
           <input
             type="checkbox"
             checked={provision}
@@ -360,7 +367,7 @@ function UserEditor({
       </div>
 
       {error && (
-        <div className="mt-4 rounded-lg border border-rose-500/30 bg-rose-500/10 px-3 py-2 text-sm text-rose-300">
+        <div className="mt-4 rounded-lg border border-rose-500/30 bg-rose-500/10 px-3 py-2 text-sm text-rose-600 dark:text-rose-300">
           {error}
         </div>
       )}
@@ -375,7 +382,7 @@ function UserEditor({
         </button>
         <button
           onClick={onDone}
-          className="rounded-lg border border-white/15 px-4 py-2 text-sm transition-colors hover:border-white/30"
+          className="rounded-lg border border-zinc-950/15 px-4 py-2 text-sm transition-colors hover:border-zinc-950/30 dark:border-white/15 dark:hover:border-white/30"
         >
           Cancel
         </button>
@@ -436,12 +443,12 @@ function UserEditEditor({
 
   return (
     <div className="rounded-2xl border border-brand-400/30 bg-brand-500/[0.06] p-5">
-      <p className="mb-4 text-sm font-semibold text-brand-200">
+      <p className="mb-4 text-sm font-semibold text-brand-600 dark:text-brand-200">
         Edit {user.username}
       </p>
       <div className="grid gap-4 sm:grid-cols-2">
         <div>
-          <label className="mb-1 block text-xs text-zinc-400">Email</label>
+          <label className="mb-1 block text-xs text-zinc-600 dark:text-zinc-400">Email</label>
           <input
             className={inputCls}
             type="email"
@@ -451,7 +458,7 @@ function UserEditEditor({
           />
         </div>
         <div>
-          <label className="mb-1 block text-xs text-zinc-400">Username</label>
+          <label className="mb-1 block text-xs text-zinc-600 dark:text-zinc-400">Username</label>
           <input
             className={inputCls}
             value={username}
@@ -460,7 +467,7 @@ function UserEditEditor({
           />
         </div>
         <div className="sm:col-span-2">
-          <label className="mb-1 block text-xs text-zinc-400">Plan</label>
+          <label className="mb-1 block text-xs text-zinc-600 dark:text-zinc-400">Plan</label>
           <select
             className={inputCls}
             value={planId}
@@ -479,7 +486,7 @@ function UserEditEditor({
       </div>
 
       {error && (
-        <div className="mt-4 rounded-lg border border-rose-500/30 bg-rose-500/10 px-3 py-2 text-sm text-rose-300">
+        <div className="mt-4 rounded-lg border border-rose-500/30 bg-rose-500/10 px-3 py-2 text-sm text-rose-600 dark:text-rose-300">
           {error}
         </div>
       )}
@@ -494,7 +501,7 @@ function UserEditEditor({
         </button>
         <button
           onClick={onDone}
-          className="rounded-lg border border-white/15 px-4 py-2 text-sm transition-colors hover:border-white/30"
+          className="rounded-lg border border-zinc-950/15 px-4 py-2 text-sm transition-colors hover:border-zinc-950/30 dark:border-white/15 dark:hover:border-white/30"
         >
           Cancel
         </button>
@@ -599,7 +606,7 @@ function SettingsEditor({
 
   return (
     <div className="rounded-2xl border border-brand-400/30 bg-brand-500/[0.06] p-5">
-      <p className="mb-4 text-sm font-semibold text-brand-200">Edit settings</p>
+      <p className="mb-4 text-sm font-semibold text-brand-600 dark:text-brand-200">Edit settings</p>
 
       <div className="grid gap-4 sm:grid-cols-2">
         {SETTING_FIELDS.map((field) => {
@@ -609,14 +616,14 @@ function SettingsEditor({
               key={field.key}
               className={field.key === "stripe_secret_key" || field.key === "jellyfin_url" ? "sm:col-span-2" : ""}
             >
-              <label className="mb-1 flex items-center gap-2 text-xs text-zinc-400">
+              <label className="mb-1 flex items-center gap-2 text-xs text-zinc-600 dark:text-zinc-400">
                 {field.label}
                 {current && (
                   <span
                     className={`rounded-full px-1.5 py-0.5 text-[10px] font-medium ${
                       current.source === "db"
-                        ? "bg-fuchsia-400/10 text-fuchsia-300"
-                        : "bg-zinc-400/10 text-zinc-500"
+                        ? "bg-fuchsia-400/10 text-fuchsia-600 dark:text-fuchsia-300"
+                        : "bg-zinc-400/10 text-zinc-600 dark:text-zinc-500"
                     }`}
                   >
                     {current.source === "db" ? "custom" : "env"}
@@ -624,7 +631,7 @@ function SettingsEditor({
                 )}
               </label>
               {current && current.masked !== current.value && current.source === "env" && !values[field.key] && (
-                <p className="mb-1 font-mono text-xs text-zinc-500">{current.masked}</p>
+                <p className="mb-1 font-mono text-xs text-zinc-600 dark:text-zinc-500">{current.masked}</p>
               )}
               <input
                 className={inputCls}
@@ -640,7 +647,7 @@ function SettingsEditor({
                 placeholder={field.placeholder}
               />
               {current && current.source === "db" && (
-                <p className="mt-1 text-[10px] text-fuchsia-400/70">
+                <p className="mt-1 text-[10px] text-fuchsia-600/80 dark:text-fuchsia-400/70">
                   Overrides env var. Clear to restore env fallback.
                 </p>
               )}
@@ -650,7 +657,7 @@ function SettingsEditor({
       </div>
 
       {error && (
-        <div className="mt-4 rounded-lg border border-rose-500/30 bg-rose-500/10 px-3 py-2 text-sm text-rose-300">
+        <div className="mt-4 rounded-lg border border-rose-500/30 bg-rose-500/10 px-3 py-2 text-sm text-rose-600 dark:text-rose-300">
           {error}
         </div>
       )}
@@ -665,7 +672,7 @@ function SettingsEditor({
         </button>
         <button
           onClick={onCancel}
-          className="rounded-lg border border-white/15 px-4 py-2 text-sm transition-colors hover:border-white/30"
+          className="rounded-lg border border-zinc-950/15 px-4 py-2 text-sm transition-colors hover:border-zinc-950/30 dark:border-white/15 dark:hover:border-white/30"
         >
           Cancel
         </button>
@@ -812,8 +819,8 @@ export default function AdminDashboard() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center py-32 text-zinc-500">
-        <span className="h-8 w-8 animate-spin rounded-full border-2 border-white/10 border-t-brand-400" />
+      <div className="flex items-center justify-center py-32 text-zinc-600 dark:text-zinc-500">
+        <span className="h-8 w-8 animate-spin rounded-full border-2 border-zinc-950/15 border-t-brand-400 dark:border-white/10" />
       </div>
     );
   }
@@ -824,13 +831,13 @@ export default function AdminDashboard() {
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Admin panel</h1>
-          <p className="mt-1 text-sm text-zinc-500">
+          <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-500">
             Manage subscription plans, users, and settings.
           </p>
         </div>
         <button
           onClick={logout}
-          className="flex items-center justify-center gap-2 rounded-xl border border-white/15 px-4 py-2 text-sm transition-colors hover:border-white/30"
+          className="flex items-center justify-center gap-2 rounded-xl border border-zinc-950/15 px-4 py-2 text-sm transition-colors hover:border-zinc-950/30 dark:border-white/15 dark:hover:border-white/30"
         >
           <LogoutIcon className="h-4 w-4" />
           Log out
@@ -873,12 +880,12 @@ export default function AdminDashboard() {
             <div key={item.label} className="glass flex items-center gap-3 rounded-xl px-4 py-3">
               <span
                 className={`flex h-2.5 w-2.5 shrink-0 rounded-full ${
-                  item.ok ? "bg-emerald-400" : "bg-rose-400 animate-pulse-glow"
+                  item.ok ? "bg-emerald-500 dark:bg-emerald-400" : "bg-rose-500 animate-pulse-glow dark:bg-rose-400"
                 }`}
               />
               <div className="min-w-0">
-                <p className="text-xs font-medium text-zinc-400">{item.label}</p>
-                <p className="truncate text-xs text-zinc-500">{item.detail}</p>
+                <p className="text-xs font-medium text-zinc-600 dark:text-zinc-400">{item.label}</p>
+                <p className="truncate text-xs text-zinc-600 dark:text-zinc-500">{item.detail}</p>
               </div>
             </div>
           ))}
@@ -886,21 +893,21 @@ export default function AdminDashboard() {
       )}
 
       {notice && (
-        <div className="mt-4 rounded-xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm text-zinc-300">
+        <div className="mt-4 rounded-xl border border-zinc-950/10 bg-black/[0.04] px-4 py-3 text-sm text-zinc-800 dark:border-white/10 dark:bg-white/[0.04] dark:text-zinc-300">
           {notice}
         </div>
       )}
 
       {/* tabs */}
-      <div className="mt-8 flex gap-2 border-b border-white/[0.08]">
+      <div className="mt-8 flex gap-2 border-b border-zinc-950/10 dark:border-white/[0.08]">
         {(["plans", "users", "settings"] as const).map((t) => (
           <button
             key={t}
             onClick={() => setTab(t)}
             className={`-mb-px rounded-t-xl px-5 py-2.5 text-sm font-medium transition-colors ${
               tab === t
-                ? "border-b-2 border-brand-400 text-white"
-                : "text-zinc-500 hover:text-zinc-300"
+                ? "border-b-2 border-brand-400 text-zinc-950 dark:text-white"
+                : "text-zinc-600 hover:text-zinc-950 dark:text-zinc-500 dark:hover:text-zinc-300"
             }`}
           >
             {t === "plans" ? "Plans" : t === "users" ? `Users (${users.length})` : (
@@ -937,11 +944,11 @@ export default function AdminDashboard() {
                   <div>
                     <p className="font-semibold">
                       {plan.name}
-                      <span className="ml-2 text-xs font-normal text-zinc-500">
+                      <span className="ml-2 text-xs font-normal text-zinc-600 dark:text-zinc-500">
                         {plan.active ? "active" : "inactive"}
                       </span>
                     </p>
-                    <p className="text-xs text-zinc-500">
+                    <p className="text-xs text-zinc-600 dark:text-zinc-500">
                       {money(plan.priceMonthlyCents, status?.stripeCurrency ?? "usd")}/mo ·{" "}
                       {money(plan.priceYearlyCents, status?.stripeCurrency ?? "usd")}/yr
                     </p>
@@ -956,14 +963,14 @@ export default function AdminDashboard() {
                           : plan,
                       )
                     }
-                    className="flex items-center gap-1.5 rounded-lg border border-white/15 px-3 py-1.5 text-xs font-medium transition-colors hover:border-white/30"
+                    className="flex items-center gap-1.5 rounded-lg border border-zinc-950/15 px-3 py-1.5 text-xs font-medium transition-colors hover:border-zinc-950/30 dark:border-white/15 dark:hover:border-white/30"
                   >
                     <PencilIcon className="h-3.5 w-3.5" />
                     Edit
                   </button>
                   <button
                     onClick={() => deletePlan(plan)}
-                    className="flex items-center gap-1.5 rounded-lg border border-rose-500/30 px-3 py-1.5 text-xs font-medium text-rose-300 transition-colors hover:bg-rose-500/10"
+                    className="flex items-center gap-1.5 rounded-lg border border-rose-500/30 px-3 py-1.5 text-xs font-medium text-rose-600 transition-colors hover:bg-rose-500/10 dark:text-rose-300"
                   >
                     <TrashIcon className="h-3.5 w-3.5" />
                     Delete
@@ -976,9 +983,9 @@ export default function AdminDashboard() {
                   {plan.features.map((f) => (
                     <span
                       key={f}
-                      className="flex items-center gap-1 rounded-full border border-white/10 bg-white/[0.03] px-2.5 py-0.5 text-xs text-zinc-400"
+                      className="flex items-center gap-1 rounded-full border border-zinc-950/10 bg-black/[0.03] px-2.5 py-0.5 text-xs text-zinc-600 dark:border-white/10 dark:bg-white/[0.03] dark:text-zinc-400"
                     >
-                      <CheckIcon className="h-3 w-3 text-emerald-400" />
+                      <CheckIcon className="h-3 w-3 text-emerald-600 dark:text-emerald-400" />
                       {f}
                     </span>
                   ))}
@@ -1002,7 +1009,7 @@ export default function AdminDashboard() {
 
           <button
             onClick={() => setEditing("new")}
-            className="flex w-full items-center justify-center gap-2 rounded-2xl border border-dashed border-white/20 py-4 text-sm font-medium text-zinc-400 transition-colors hover:border-brand-400/50 hover:text-white"
+            className="flex w-full items-center justify-center gap-2 rounded-2xl border border-dashed border-zinc-950/20 py-4 text-sm font-medium text-zinc-600 transition-colors hover:border-brand-400/50 hover:text-zinc-950 dark:border-white/20 dark:text-zinc-400 dark:hover:text-white"
           >
             <PlusIcon className="h-4 w-4" />
             Create a new plan
@@ -1027,7 +1034,7 @@ export default function AdminDashboard() {
           {!addingUser && (
             <button
               onClick={() => setAddingUser(true)}
-              className="flex w-full items-center justify-center gap-2 rounded-2xl border border-dashed border-white/20 py-4 text-sm font-medium text-zinc-400 transition-colors hover:border-brand-400/50 hover:text-white"
+              className="flex w-full items-center justify-center gap-2 rounded-2xl border border-dashed border-zinc-950/20 py-4 text-sm font-medium text-zinc-600 transition-colors hover:border-brand-400/50 hover:text-zinc-950 dark:border-white/20 dark:text-zinc-400 dark:hover:text-white"
             >
               <PlusIcon className="h-4 w-4" />
               Add user
@@ -1051,11 +1058,11 @@ export default function AdminDashboard() {
           })()}
 
           {users.length > 0 && (
-            <div className="overflow-hidden rounded-2xl border border-white/[0.08]">
+            <div className="overflow-hidden rounded-2xl border border-zinc-950/10 dark:border-white/[0.08]">
               <div className="overflow-x-auto">
                 <table className="w-full min-w-[760px] text-left text-sm">
                   <thead>
-                    <tr className="border-b border-white/[0.08] bg-white/[0.02] text-xs uppercase tracking-wide text-zinc-500">
+                    <tr className="border-b border-zinc-950/10 bg-black/[0.02] text-xs uppercase tracking-wide text-zinc-600 dark:border-white/[0.08] dark:bg-white/[0.02] dark:text-zinc-500">
                       <th className="px-4 py-3 font-medium">User</th>
                       <th className="px-4 py-3 font-medium">Plan</th>
                       <th className="px-4 py-3 font-medium">Status</th>
@@ -1067,24 +1074,24 @@ export default function AdminDashboard() {
                     {users.map((user) => (
                       <tr
                         key={user.id}
-                        className="border-b border-white/[0.05] transition-colors hover:bg-white/[0.02]"
+                        className="border-b border-zinc-950/[0.06] transition-colors hover:bg-black/[0.02] dark:border-white/[0.05] dark:hover:bg-white/[0.02]"
                       >
                         <td className="px-4 py-3">
                           <p className="font-medium">{user.username}</p>
-                          <p className="text-xs text-zinc-500">{user.email}</p>
+                          <p className="text-xs text-zinc-600 dark:text-zinc-500">{user.email}</p>
                           {user.provisioning_error && (
-                            <p className="mt-1 max-w-60 truncate text-xs text-rose-400" title={user.provisioning_error}>
+                            <p className="mt-1 max-w-60 truncate text-xs text-rose-600 dark:text-rose-400" title={user.provisioning_error}>
                               ⚠ {user.provisioning_error}
                             </p>
                           )}
                         </td>
-                        <td className="px-4 py-3 text-zinc-300">
+                        <td className="px-4 py-3 text-zinc-800 dark:text-zinc-300">
                           {user.plan_name ?? "—"}
                         </td>
                         <td className="px-4 py-3">
                           <StatusBadge status={user.provisioning_error ? "error" : user.status} />
                         </td>
-                        <td className="px-4 py-3 text-zinc-400">
+                        <td className="px-4 py-3 text-zinc-600 dark:text-zinc-400">
                           {user.current_period_end
                             ? new Date(user.current_period_end * 1000).toLocaleDateString()
                             : "—"}
@@ -1095,7 +1102,7 @@ export default function AdminDashboard() {
                               title="Edit user"
                               onClick={() => setEditingUserId(editingUserId === user.id ? null : user.id)}
                               disabled={busy === user.id}
-                              className="rounded-lg border border-white/10 px-2 py-1 text-xs transition-colors hover:border-white/30 disabled:opacity-50"
+                              className="rounded-lg border border-zinc-950/15 px-2 py-1 text-xs transition-colors hover:border-zinc-950/30 disabled:opacity-50 dark:border-white/10 dark:hover:border-white/30"
                             >
                               <PencilIcon className="h-3.5 w-3.5" />
                             </button>
@@ -1103,7 +1110,7 @@ export default function AdminDashboard() {
                               title="Reveal credentials"
                               onClick={() => userAction(user, "reveal")}
                               disabled={busy === user.id}
-                              className="rounded-lg border border-white/10 px-2 py-1 text-xs transition-colors hover:border-white/30 disabled:opacity-50"
+                              className="rounded-lg border border-zinc-950/15 px-2 py-1 text-xs transition-colors hover:border-zinc-950/30 disabled:opacity-50 dark:border-white/10 dark:hover:border-white/30"
                             >
                               <EyeIcon className="h-3.5 w-3.5" />
                             </button>
@@ -1111,7 +1118,7 @@ export default function AdminDashboard() {
                               title="Re-provision in Jellyfin"
                               onClick={() => userAction(user, "reprovision")}
                               disabled={busy === user.id}
-                              className="rounded-lg border border-white/10 px-2 py-1 text-xs transition-colors hover:border-white/30 disabled:opacity-50"
+                              className="rounded-lg border border-zinc-950/15 px-2 py-1 text-xs transition-colors hover:border-zinc-950/30 disabled:opacity-50 dark:border-white/10 dark:hover:border-white/30"
                             >
                               <RefreshIcon className="h-3.5 w-3.5" />
                             </button>
@@ -1119,7 +1126,7 @@ export default function AdminDashboard() {
                               title="Disable access"
                               onClick={() => userAction(user, "disable")}
                               disabled={busy === user.id}
-                              className="rounded-lg border border-white/10 px-2 py-1 text-xs text-amber-300 transition-colors hover:border-amber-400/40 disabled:opacity-50"
+                              className="rounded-lg border border-zinc-950/15 px-2 py-1 text-xs text-amber-600 transition-colors hover:border-amber-500/40 disabled:opacity-50 dark:border-white/10 dark:text-amber-300 dark:hover:border-amber-400/40"
                             >
                               Off
                             </button>
@@ -1127,7 +1134,7 @@ export default function AdminDashboard() {
                               title="Enable access"
                               onClick={() => userAction(user, "enable")}
                               disabled={busy === user.id}
-                              className="rounded-lg border border-white/10 px-2 py-1 text-xs text-emerald-300 transition-colors hover:border-emerald-400/40 disabled:opacity-50"
+                              className="rounded-lg border border-zinc-950/15 px-2 py-1 text-xs text-emerald-600 transition-colors hover:border-emerald-500/40 disabled:opacity-50 dark:border-white/10 dark:text-emerald-300 dark:hover:border-emerald-400/40"
                             >
                               On
                             </button>
@@ -1135,7 +1142,7 @@ export default function AdminDashboard() {
                               title="Delete from Jellyfin + cancel subscription"
                               onClick={() => userAction(user, "delete", { cancelStripeSubscription: true })}
                               disabled={busy === user.id}
-                              className="rounded-lg border border-rose-500/30 px-2 py-1 text-xs text-rose-300 transition-colors hover:bg-rose-500/10 disabled:opacity-50"
+                              className="rounded-lg border border-rose-500/30 px-2 py-1 text-xs text-rose-600 transition-colors hover:bg-rose-500/10 disabled:opacity-50 dark:text-rose-300"
                             >
                               <TrashIcon className="h-3.5 w-3.5" />
                             </button>
@@ -1150,7 +1157,7 @@ export default function AdminDashboard() {
           )}
 
           {users.length === 0 && !addingUser && (
-            <div className="flex flex-col items-center gap-3 py-16 text-zinc-500">
+            <div className="flex flex-col items-center gap-3 py-16 text-zinc-600 dark:text-zinc-500">
               <UserIcon className="h-8 w-8" />
               <p className="text-sm">No users yet. Add one above or share the signup link!</p>
             </div>
@@ -1186,26 +1193,26 @@ export default function AdminDashboard() {
                       <div className="flex items-center justify-between">
                         <div className="min-w-0 flex-1">
                           <div className="flex items-center gap-2">
-                            <p className="text-xs font-medium text-zinc-400">{field.label}</p>
+                            <p className="text-xs font-medium text-zinc-600 dark:text-zinc-400">{field.label}</p>
                             {s && (
                               <span
                                 className={`rounded-full px-1.5 py-0.5 text-[10px] font-medium ${
                                   s.source === "db"
-                                    ? "bg-fuchsia-400/10 text-fuchsia-300"
-                                    : "bg-zinc-400/10 text-zinc-500"
+                                    ? "bg-fuchsia-400/10 text-fuchsia-600 dark:text-fuchsia-300"
+                                    : "bg-zinc-400/10 text-zinc-600 dark:text-zinc-500"
                                 }`}
                               >
                                 {s.source === "db" ? "custom" : "env"}
                               </span>
                             )}
                           </div>
-                          <p className="mt-0.5 truncate font-mono text-xs text-zinc-500">
+                          <p className="mt-0.5 truncate font-mono text-xs text-zinc-600 dark:text-zinc-500">
                             {s ? (isSecret ? s.masked : s.value || "(empty)") : "(not set)"}
                           </p>
                         </div>
                         <span
                           className={`ml-3 flex h-2 w-2 shrink-0 rounded-full ${
-                            s && s.value ? "bg-emerald-400" : "bg-rose-400"
+                            s && s.value ? "bg-emerald-500 dark:bg-emerald-400" : "bg-rose-500 dark:bg-rose-400"
                           }`}
                         />
                       </div>
@@ -1218,7 +1225,7 @@ export default function AdminDashboard() {
               <div className="flex gap-3">
                 <button
                   onClick={handleExport}
-                  className="flex flex-1 items-center justify-center gap-2 rounded-2xl border border-dashed border-white/20 py-4 text-sm font-medium text-zinc-400 transition-colors hover:border-emerald-400/50 hover:text-white"
+                  className="flex flex-1 items-center justify-center gap-2 rounded-2xl border border-dashed border-zinc-950/20 py-4 text-sm font-medium text-zinc-600 transition-colors hover:border-emerald-500/50 hover:text-zinc-950 dark:border-white/20 dark:text-zinc-400 dark:hover:text-white"
                 >
                   <DownloadIcon className="h-4 w-4" />
                   Export backup
@@ -1226,7 +1233,7 @@ export default function AdminDashboard() {
                 <button
                   onClick={() => fileInputRef.current?.click()}
                   disabled={importing}
-                  className="flex flex-1 items-center justify-center gap-2 rounded-2xl border border-dashed border-white/20 py-4 text-sm font-medium text-zinc-400 transition-colors hover:border-amber-400/50 hover:text-white disabled:opacity-50"
+                  className="flex flex-1 items-center justify-center gap-2 rounded-2xl border border-dashed border-zinc-950/20 py-4 text-sm font-medium text-zinc-600 transition-colors hover:border-amber-500/50 hover:text-zinc-950 disabled:opacity-50 dark:border-white/20 dark:text-zinc-400 dark:hover:text-white"
                 >
                   <UploadIcon className="h-4 w-4" />
                   {importing ? "Importing…" : "Import backup"}
@@ -1247,7 +1254,7 @@ export default function AdminDashboard() {
 
               <button
                 onClick={() => setEditingSettings(true)}
-                className="flex w-full items-center justify-center gap-2 rounded-2xl border border-dashed border-white/20 py-4 text-sm font-medium text-zinc-400 transition-colors hover:border-brand-400/50 hover:text-white"
+                className="flex w-full items-center justify-center gap-2 rounded-2xl border border-dashed border-zinc-950/20 py-4 text-sm font-medium text-zinc-600 transition-colors hover:border-brand-400/50 hover:text-zinc-950 dark:border-white/20 dark:text-zinc-400 dark:hover:text-white"
               >
                 <PencilIcon className="h-4 w-4" />
                 Edit settings
@@ -1264,31 +1271,31 @@ export default function AdminDashboard() {
           onClick={() => setRevealed(null)}
         >
           <div
-            className="animate-pop-in w-full max-w-sm rounded-3xl border border-white/10 bg-[#0b0d15] p-7"
+            className="animate-pop-in w-full max-w-sm rounded-3xl border border-zinc-950/10 bg-white p-7 dark:border-white/10 dark:bg-[#0b0d15]"
             onClick={(e) => e.stopPropagation()}
           >
             <h3 className="flex items-center gap-2 text-lg font-semibold">
-              <CreditCardIcon className="h-5 w-5 text-brand-300" />
+              <CreditCardIcon className="h-5 w-5 text-brand-600 dark:text-brand-300" />
               {revealed.username}&apos;s credentials
             </h3>
-            <p className="mt-2 text-xs text-zinc-500">
+            <p className="mt-2 text-xs text-zinc-600 dark:text-zinc-500">
               Stored encrypted. Share only over a secure channel.
             </p>
             <div className="mt-4 space-y-3">
               <div>
-                <p className="text-xs text-zinc-500">Username</p>
+                <p className="text-xs text-zinc-600 dark:text-zinc-500">Username</p>
                 <p className="font-mono text-sm font-semibold">{revealed.username}</p>
               </div>
               <div>
-                <p className="text-xs text-zinc-500">Password</p>
-                <p className="break-all font-mono text-sm font-semibold text-fuchsia-300">
+                <p className="text-xs text-zinc-600 dark:text-zinc-500">Password</p>
+                <p className="break-all font-mono text-sm font-semibold text-fuchsia-600 dark:text-fuchsia-300">
                   {revealed.password}
                 </p>
               </div>
             </div>
             <button
               onClick={() => setRevealed(null)}
-              className="mt-6 w-full rounded-xl border border-white/15 py-2.5 text-sm transition-colors hover:border-white/30"
+              className="mt-6 w-full rounded-xl border border-zinc-950/15 py-2.5 text-sm transition-colors hover:border-zinc-950/30 dark:border-white/15 dark:hover:border-white/30"
             >
               Close
             </button>

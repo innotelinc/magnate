@@ -42,9 +42,9 @@ function CopyButton({ value }: { value: string }) {
         setCopied(true);
         setTimeout(() => setCopied(false), 1600);
       }}
-      className="flex items-center gap-1.5 rounded-lg border border-white/10 bg-white/[0.05] px-2.5 py-1.5 text-xs font-medium text-zinc-300 transition-all hover:border-white/25 hover:text-white"
+      className="flex items-center gap-1.5 rounded-lg border border-zinc-950/15 bg-black/[0.05] px-2.5 py-1.5 text-xs font-medium text-zinc-700 transition-all hover:border-zinc-950/30 hover:text-zinc-950 dark:border-white/10 dark:bg-white/[0.05] dark:text-zinc-300 dark:hover:border-white/25 dark:hover:text-white"
     >
-      {copied ? <CheckIcon className="h-3.5 w-3.5 text-emerald-400" /> : <CopyIcon className="h-3.5 w-3.5" />}
+      {copied ? <CheckIcon className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" /> : <CopyIcon className="h-3.5 w-3.5" />}
       {copied ? "Copied" : "Copy"}
     </button>
   );
@@ -114,12 +114,12 @@ export default function SuccessClient({
     return (
       <div className="animate-fade-in w-full text-center">
         <div className="relative mx-auto h-16 w-16">
-          <div className="absolute inset-0 animate-spin rounded-full border-2 border-white/10 border-t-brand-400" />
+          <div className="absolute inset-0 animate-spin rounded-full border-2 border-zinc-950/15 border-t-brand-400 dark:border-white/10" />
         </div>
         <h1 className="mt-8 text-3xl font-bold tracking-tight">
           Payment received 🎉
         </h1>
-        <p className="mt-3 text-zinc-400">
+        <p className="mt-3 text-zinc-600 dark:text-zinc-400">
           Setting up your account on the media server… this takes just a moment.
         </p>
       </div>
@@ -130,11 +130,11 @@ export default function SuccessClient({
     return (
       <div className="animate-fade-up w-full rounded-3xl glass p-8 text-center">
         <h1 className="text-2xl font-bold">Almost there</h1>
-        <p className="mt-3 text-zinc-400">{phase.message}</p>
+        <p className="mt-3 text-zinc-600 dark:text-zinc-400">{phase.message}</p>
         <div className="mt-6 flex justify-center gap-3">
           <Link
             href="/#pricing"
-            className="rounded-full border border-white/15 px-5 py-2.5 text-sm font-medium transition-colors hover:border-white/30"
+            className="rounded-full border border-zinc-950/15 px-5 py-2.5 text-sm font-medium transition-colors hover:border-zinc-950/30 dark:border-white/15 dark:hover:border-white/30"
           >
             Back to plans
           </Link>
@@ -152,16 +152,16 @@ export default function SuccessClient({
         <h1 className="mt-6 text-3xl font-bold tracking-tight sm:text-4xl">
           You&apos;re all set!
         </h1>
-        <p className="mt-3 text-zinc-400">
+        <p className="mt-3 text-zinc-600 dark:text-zinc-400">
           Your account is active. Here are your credentials —{" "}
-          <span className="font-medium text-amber-300">
+          <span className="font-medium text-amber-600 dark:text-amber-300">
             save them now, they&apos;re only shown once.
           </span>
         </p>
       </div>
 
       {phase.alreadyClaimed && (
-        <div className="mt-5 rounded-xl border border-amber-400/25 bg-amber-400/10 px-4 py-3 text-sm text-amber-200">
+        <div className="mt-5 rounded-xl border border-amber-500/25 bg-amber-500/10 px-4 py-3 text-sm text-amber-700 dark:border-amber-400/25 dark:bg-amber-400/10 dark:text-amber-200">
           These credentials were already displayed earlier. If you lost them,
           reset your password via the account portal below.
         </div>
@@ -170,11 +170,11 @@ export default function SuccessClient({
       <div className="mt-7 space-y-3">
         <div className="glass flex items-center justify-between gap-3 rounded-2xl px-5 py-4">
           <div className="flex items-center gap-3">
-            <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-brand-500/15 text-brand-300 ring-1 ring-white/10">
+            <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-brand-500/15 text-brand-600 ring-1 ring-zinc-950/10 dark:text-brand-300 dark:ring-white/10">
               <UserIcon className="h-5 w-5" />
             </span>
             <div>
-              <p className="text-xs text-zinc-500">Username</p>
+              <p className="text-xs text-zinc-600 dark:text-zinc-500">Username</p>
               <p className="font-mono text-base font-semibold">{phase.username}</p>
             </div>
           </div>
@@ -183,11 +183,11 @@ export default function SuccessClient({
 
         <div className="glass flex items-center justify-between gap-3 rounded-2xl px-5 py-4">
           <div className="flex items-center gap-3">
-            <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-fuchsia-500/15 text-fuchsia-300 ring-1 ring-white/10">
+            <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-fuchsia-500/15 text-fuchsia-600 ring-1 ring-zinc-950/10 dark:text-fuchsia-300 dark:ring-white/10">
               <KeyIcon className="h-5 w-5" />
             </span>
             <div>
-              <p className="text-xs text-zinc-500">Password</p>
+              <p className="text-xs text-zinc-600 dark:text-zinc-500">Password</p>
               <p className="font-mono text-base font-semibold break-all">
                 {phase.password}
               </p>
@@ -216,7 +216,7 @@ export default function SuccessClient({
             href={requestUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="flex items-center justify-center gap-2 rounded-xl border border-white/15 bg-white/[0.04] py-3.5 text-sm font-medium transition-all hover:border-white/30 hover:bg-white/[0.08]"
+            className="flex items-center justify-center gap-2 rounded-xl border border-zinc-950/15 bg-black/[0.04] py-3.5 text-sm font-medium transition-all hover:border-zinc-950/30 hover:bg-black/[0.06] dark:border-white/15 dark:bg-white/[0.04] dark:hover:border-white/30 dark:hover:bg-white/[0.08]"
           >
             <SparklesIcon className="h-4 w-4" />
             Request movies
@@ -226,16 +226,16 @@ export default function SuccessClient({
           href={jfaGoUrl}
           target="_blank"
           rel="noopener noreferrer"
-          className="flex items-center justify-center gap-2 rounded-xl border border-white/15 bg-white/[0.04] py-3.5 text-sm font-medium transition-all hover:border-white/30 hover:bg-white/[0.08]"
+          className="flex items-center justify-center gap-2 rounded-xl border border-zinc-950/15 bg-black/[0.04] py-3.5 text-sm font-medium transition-all hover:border-zinc-950/30 hover:bg-black/[0.06] dark:border-white/15 dark:bg-white/[0.04] dark:hover:border-white/30 dark:hover:bg-white/[0.08]"
         >
           <LockIcon className="h-4 w-4" />
           Account portal
         </Link>
       </div>
 
-      <p className="mt-6 text-center text-xs text-zinc-500">
+      <p className="mt-6 text-center text-xs text-zinc-600 dark:text-zinc-500">
         Prefer a web browser? Open{" "}
-        <span className="font-mono text-zinc-400">{jellyfinUrl}</span> and sign
+        <span className="font-mono text-zinc-800 dark:text-zinc-400">{jellyfinUrl}</span> and sign
         in with these details.
       </p>
     </div>

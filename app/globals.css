@@ -1,5 +1,9 @@
 @import "tailwindcss";
 
+/* Class-based dark mode driven by the data-theme attribute set by the inline
+   script in app/layout.tsx (before first paint) and by ThemeToggle. */
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
+
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
@@ -15,9 +19,19 @@
   --color-brand-700: #4338ca;
 }
 
+/* Light theme is the default; dark overrides via [data-theme="dark"].
+   color-scheme follows the theme so native controls (e.g. <select> dropdown
+   popups) render readable in both themes. */
 :root {
+  --background: #f6f7fb;
+  --foreground: #16181f;
+  color-scheme: light;
+}
+
+[data-theme="dark"] {
   --background: #06070c;
   --foreground: #e8eaf2;
+  color-scheme: dark;
 }
 
 html {
@@ -29,21 +43,33 @@ body {
   color: var(--foreground);
   font-family: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
+  transition:
+    background-color 0.3s ease,
+    color 0.3s ease;
 }
 
 /* ---------- custom utilities ---------- */
 
 .text-gradient {
-  background: linear-gradient(100deg, #818cf8 0%, #c084fc 45%, #f472b6 100%);
+  background: linear-gradient(100deg, #6366f1 0%, #a855f7 45%, #ec4899 100%);
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
 }
 
+[data-theme="dark"] .text-gradient {
+  background: linear-gradient(100deg, #818cf8 0%, #c084fc 45%, #f472b6 100%);
+}
+
 .glass {
+  background: rgba(9, 10, 15, 0.03);
+  border: 1px solid rgba(9, 10, 15, 0.1);
+  backdrop-filter: blur(12px);
+}
+
+[data-theme="dark"] .glass {
   background: rgba(255, 255, 255, 0.03);
   border: 1px solid rgba(255, 255, 255, 0.08);
-  backdrop-filter: blur(12px);
 }
 
 .glow-ring {
@@ -54,10 +80,16 @@ body {
 
 .grid-bg {
   background-image:
-    linear-gradient(rgba(255, 255, 255, 0.035) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255, 255, 255, 0.035) 1px, transparent 1px);
+    linear-gradient(rgba(9, 10, 15, 0.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(9, 10, 15, 0.05) 1px, transparent 1px);
   background-size: 56px 56px;
   mask-image: radial-gradient(ellipse 90% 60% at 50% 0%, black 40%, transparent 100%);
+}
+
+[data-theme="dark"] .grid-bg {
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.035) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.035) 1px, transparent 1px);
 }
 
 /* ---------- animations ---------- */
