@@ -36,6 +36,7 @@ interface AppUser {
   email: string;
   username: string;
   jellyfin_user_id: string | null;
+  stripe_subscription_id: string | null;
   plan_name: string | null;
   status: string;
   current_period_end: number | null;
@@ -247,6 +248,141 @@ function PlanEditor({
   );
 }
 
+/* ---------- user editor ---------- */
+
+function UserEditor({
+  plans,
+  onDone,
+  onSaved,
+}: {
+  plans: Plan[];
+  onDone: () => void;
+  onSaved: (msg: string) => void;
+}) {
+  const [email, setEmail] = useState("");
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
+  const [planId, setPlanId] = useState("");
+  const [provision, setProvision] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
+
+  async function save() {
+    setError(null);
+    setSaving(true);
+    try {
+      const res = await api<{
+        ok?: boolean;
+        user?: AppUser;
+        provisioningError?: string;
+      }>("/api/admin/users", {
+        method: "POST",
+        body: JSON.stringify({
+          email,
+          username,
+          password,
+          planId: planId ? Number(planId) : null,
+          provisionJellyfin: provision,
+        }),
+      });
+      let msg = `User "${username}" created.`;
+      if (res.provisioningError) {
+        msg += ` ⚠ Jellyfin: ${res.provisioningError}`;
+      }
+      onSaved(msg);
+      onDone();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Save failed");
+      setSaving(false);
+    }
+  }
+
+  return (
+    <div className="rounded-2xl border border-brand-400/30 bg-brand-500/[0.06] p-5">
+      <p className="mb-4 text-sm font-semibold text-brand-200">Add user</p>
+      <div className="grid gap-4 sm:grid-cols-2">
+        <div>
+          <label className="mb-1 block text-xs text-zinc-400">Email</label>
+          <input
+            className={inputCls}
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            placeholder="user@example.com"
+          />
+        </div>
+        <div>
+          <label className="mb-1 block text-xs text-zinc-400">Username</label>
+          <input
+            className={inputCls}
+            value={username}
+            onChange={(e) => setUsername(e.target.value)}
+            placeholder="johndoe"
+          />
+        </div>
+        <div>
+          <label className="mb-1 block text-xs text-zinc-400">Password</label>
+          <input
+            className={inputCls}
+            type="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            placeholder="Min 4 characters"
+          />
+        </div>
+        <div>
+          <label className="mb-1 block text-xs text-zinc-400">Plan (optional)</label>
+          <select
+            className={inputCls}
+            value={planId}
+            onChange={(e) => setPlanId(e.target.value)}
+          >
+            <option value="">No plan</option>
+            {plans
+              .filter((p) => p.active)
+              .map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.name}
+                </option>
+              ))}
+          </select>
+        </div>
+        <label className="flex cursor-pointer items-center gap-2 text-sm text-zinc-300 sm:col-span-2">
+          <input
+            type="checkbox"
+            checked={provision}
+            onChange={(e) => setProvision(e.target.checked)}
+            className="h-4 w-4 accent-indigo-500"
+          />
+          Create account in Jellyfin
+        </label>
+      </div>
+
+      {error && (
+        <div className="mt-4 rounded-lg border border-rose-500/30 bg-rose-500/10 px-3 py-2 text-sm text-rose-300">
+          {error}
+        </div>
+      )}
+
+      <div className="mt-5 flex gap-3">
+        <button
+          onClick={save}
+          disabled={saving || !email || !username || !password}
+          className="rounded-lg bg-gradient-to-r from-indigo-500 to-fuchsia-500 px-4 py-2 text-sm font-semibold text-white transition-all hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          {saving ? "Creating…" : "Create user"}
+        </button>
+        <button
+          onClick={onDone}
+          className="rounded-lg border border-white/15 px-4 py-2 text-sm transition-colors hover:border-white/30"
+        >
+          Cancel
+        </button>
+      </div>
+    </div>
+  );
+}
+
 /* ---------- settings editor ---------- */
 
 const SETTING_FIELDS: {
@@ -428,6 +564,7 @@ export default function AdminDashboard() {
   const [users, setUsers] = useState<AppUser[]>([]);
   const [settings, setSettings] = useState<AdminSettings | null>(null);
   const [editing, setEditing] = useState<Plan | "new" | null>(null);
+  const [addingUser, setAddingUser] = useState(false);
   const [editingSettings, setEditingSettings] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
   const [revealed, setRevealed] = useState<{ id: number; username: string; password: string } | null>(null);
@@ -472,8 +609,12 @@ export default function AdminDashboard() {
     setNotice(null);
     try {
       if (action === "delete") {
+        const stripeMsg =
+          extra?.cancelStripe && user.stripe_subscription_id
+            ? " and cancel their Stripe subscription"
+            : "";
         const ok = window.confirm(
-          `Delete ${user.username} from Jellyfin${extra?.cancelStripe ? " and cancel their Stripe subscription" : ""}? This cannot be undone.`,
+          `Delete ${user.username} from Jellyfin${stripeMsg}? This cannot be undone.`,
         );
         if (!ok) return;
       }
@@ -750,98 +891,123 @@ export default function AdminDashboard() {
 
       {/* users tab */}
       {tab === "users" && (
-        <div className="mt-6 overflow-hidden rounded-2xl border border-white/[0.08]">
-          {users.length === 0 ? (
+        <div className="mt-6 space-y-4">
+          {addingUser && (
+            <UserEditor
+              plans={plans}
+              onDone={() => setAddingUser(false)}
+              onSaved={(msg) => {
+                setNotice(msg);
+                refresh();
+              }}
+            />
+          )}
+
+          {!addingUser && (
+            <button
+              onClick={() => setAddingUser(true)}
+              className="flex w-full items-center justify-center gap-2 rounded-2xl border border-dashed border-white/20 py-4 text-sm font-medium text-zinc-400 transition-colors hover:border-brand-400/50 hover:text-white"
+            >
+              <PlusIcon className="h-4 w-4" />
+              Add user
+            </button>
+          )}
+
+          {users.length > 0 && (
+            <div className="overflow-hidden rounded-2xl border border-white/[0.08]">
+              <div className="overflow-x-auto">
+                <table className="w-full min-w-[760px] text-left text-sm">
+                  <thead>
+                    <tr className="border-b border-white/[0.08] bg-white/[0.02] text-xs uppercase tracking-wide text-zinc-500">
+                      <th className="px-4 py-3 font-medium">User</th>
+                      <th className="px-4 py-3 font-medium">Plan</th>
+                      <th className="px-4 py-3 font-medium">Status</th>
+                      <th className="px-4 py-3 font-medium">Period end</th>
+                      <th className="px-4 py-3 text-right font-medium">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {users.map((user) => (
+                      <tr
+                        key={user.id}
+                        className="border-b border-white/[0.05] transition-colors hover:bg-white/[0.02]"
+                      >
+                        <td className="px-4 py-3">
+                          <p className="font-medium">{user.username}</p>
+                          <p className="text-xs text-zinc-500">{user.email}</p>
+                          {user.provisioning_error && (
+                            <p className="mt-1 max-w-60 truncate text-xs text-rose-400" title={user.provisioning_error}>
+                              ⚠ {user.provisioning_error}
+                            </p>
+                          )}
+                        </td>
+                        <td className="px-4 py-3 text-zinc-300">
+                          {user.plan_name ?? "—"}
+                        </td>
+                        <td className="px-4 py-3">
+                          <StatusBadge status={user.provisioning_error ? "error" : user.status} />
+                        </td>
+                        <td className="px-4 py-3 text-zinc-400">
+                          {user.current_period_end
+                            ? new Date(user.current_period_end * 1000).toLocaleDateString()
+                            : "—"}
+                        </td>
+                        <td className="px-4 py-3">
+                          <div className="flex items-center justify-end gap-1.5">
+                            <button
+                              title="Reveal credentials"
+                              onClick={() => userAction(user, "reveal")}
+                              disabled={busy === user.id}
+                              className="rounded-lg border border-white/10 px-2 py-1 text-xs transition-colors hover:border-white/30 disabled:opacity-50"
+                            >
+                              <EyeIcon className="h-3.5 w-3.5" />
+                            </button>
+                            <button
+                              title="Re-provision in Jellyfin"
+                              onClick={() => userAction(user, "reprovision")}
+                              disabled={busy === user.id}
+                              className="rounded-lg border border-white/10 px-2 py-1 text-xs transition-colors hover:border-white/30 disabled:opacity-50"
+                            >
+                              <RefreshIcon className="h-3.5 w-3.5" />
+                            </button>
+                            <button
+                              title="Disable access"
+                              onClick={() => userAction(user, "disable")}
+                              disabled={busy === user.id}
+                              className="rounded-lg border border-white/10 px-2 py-1 text-xs text-amber-300 transition-colors hover:border-amber-400/40 disabled:opacity-50"
+                            >
+                              Off
+                            </button>
+                            <button
+                              title="Enable access"
+                              onClick={() => userAction(user, "enable")}
+                              disabled={busy === user.id}
+                              className="rounded-lg border border-white/10 px-2 py-1 text-xs text-emerald-300 transition-colors hover:border-emerald-400/40 disabled:opacity-50"
+                            >
+                              On
+                            </button>
+                            <button
+                              title="Delete from Jellyfin + cancel subscription"
+                              onClick={() => userAction(user, "delete", { cancelStripeSubscription: true })}
+                              disabled={busy === user.id}
+                              className="rounded-lg border border-rose-500/30 px-2 py-1 text-xs text-rose-300 transition-colors hover:bg-rose-500/10 disabled:opacity-50"
+                            >
+                              <TrashIcon className="h-3.5 w-3.5" />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
+          {users.length === 0 && !addingUser && (
             <div className="flex flex-col items-center gap-3 py-16 text-zinc-500">
               <UserIcon className="h-8 w-8" />
-              <p className="text-sm">No users yet. Share the signup link!</p>
-            </div>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full min-w-[760px] text-left text-sm">
-                <thead>
-                  <tr className="border-b border-white/[0.08] bg-white/[0.02] text-xs uppercase tracking-wide text-zinc-500">
-                    <th className="px-4 py-3 font-medium">User</th>
-                    <th className="px-4 py-3 font-medium">Plan</th>
-                    <th className="px-4 py-3 font-medium">Status</th>
-                    <th className="px-4 py-3 font-medium">Period end</th>
-                    <th className="px-4 py-3 text-right font-medium">Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {users.map((user) => (
-                    <tr
-                      key={user.id}
-                      className="border-b border-white/[0.05] transition-colors hover:bg-white/[0.02]"
-                    >
-                      <td className="px-4 py-3">
-                        <p className="font-medium">{user.username}</p>
-                        <p className="text-xs text-zinc-500">{user.email}</p>
-                        {user.provisioning_error && (
-                          <p className="mt-1 max-w-60 truncate text-xs text-rose-400" title={user.provisioning_error}>
-                            ⚠ {user.provisioning_error}
-                          </p>
-                        )}
-                      </td>
-                      <td className="px-4 py-3 text-zinc-300">
-                        {user.plan_name ?? "—"}
-                      </td>
-                      <td className="px-4 py-3">
-                        <StatusBadge status={user.provisioning_error ? "error" : user.status} />
-                      </td>
-                      <td className="px-4 py-3 text-zinc-400">
-                        {user.current_period_end
-                          ? new Date(user.current_period_end * 1000).toLocaleDateString()
-                          : "—"}
-                      </td>
-                      <td className="px-4 py-3">
-                        <div className="flex items-center justify-end gap-1.5">
-                          <button
-                            title="Reveal credentials"
-                            onClick={() => userAction(user, "reveal")}
-                            disabled={busy === user.id}
-                            className="rounded-lg border border-white/10 px-2 py-1 text-xs transition-colors hover:border-white/30 disabled:opacity-50"
-                          >
-                            <EyeIcon className="h-3.5 w-3.5" />
-                          </button>
-                          <button
-                            title="Re-provision in Jellyfin"
-                            onClick={() => userAction(user, "reprovision")}
-                            disabled={busy === user.id}
-                            className="rounded-lg border border-white/10 px-2 py-1 text-xs transition-colors hover:border-white/30 disabled:opacity-50"
-                          >
-                            <RefreshIcon className="h-3.5 w-3.5" />
-                          </button>
-                          <button
-                            title="Disable access"
-                            onClick={() => userAction(user, "disable")}
-                            disabled={busy === user.id}
-                            className="rounded-lg border border-white/10 px-2 py-1 text-xs text-amber-300 transition-colors hover:border-amber-400/40 disabled:opacity-50"
-                          >
-                            Off
-                          </button>
-                          <button
-                            title="Enable access"
-                            onClick={() => userAction(user, "enable")}
-                            disabled={busy === user.id}
-                            className="rounded-lg border border-white/10 px-2 py-1 text-xs text-emerald-300 transition-colors hover:border-emerald-400/40 disabled:opacity-50"
-                          >
-                            On
-                          </button>
-                          <button
-                            title="Delete from Jellyfin + cancel subscription"
-                            onClick={() => userAction(user, "delete", { cancelStripeSubscription: true })}
-                            disabled={busy === user.id}
-                            className="rounded-lg border border-rose-500/30 px-2 py-1 text-xs text-rose-300 transition-colors hover:bg-rose-500/10 disabled:opacity-50"
-                          >
-                            <TrashIcon className="h-3.5 w-3.5" />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+              <p className="text-sm">No users yet. Add one above or share the signup link!</p>
             </div>
           )}
         </div>
