@@ -35,7 +35,8 @@ jobs:
           tags: |
             type=semver,pattern={{version}}
             type=semver,pattern={{major}}.{{minor}}
-            type=raw,value=latest,enable={{is_not_prerelease}}
+          # latest=auto (the default flavor) adds the `latest` tag for stable
+          # semver tags and omits it for prereleases.
 
       - name: Build and push
         uses: docker/build-push-action@v6
