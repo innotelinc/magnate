@@ -227,7 +227,22 @@ runc run failed: unable to start container process: error during container init:
 unable to apply apparmor profile: apparmor failed to apply profile
 ```
 
-Copy the included daemon config to disable AppArmor in the Docker daemon:
+**Recommended fix — remove AppArmor from the host:**
+
+```bash
+# Check if AppArmor is installed
+sudo dpkg -l | grep apparmor
+
+# Purge AppArmor packages (Debian/Ubuntu)
+sudo apt purge -y apparmor apparmor-utils apparmor-profiles apparmor-profiles-extra
+
+# Reboot to fully unload the AppArmor kernel module
+sudo reboot
+```
+
+After reboot, rebuild with `docker compose up --build -d`.
+
+**Alternative — disable via Docker daemon config** (if you'd rather keep AppArmor installed):
 
 ```bash
 sudo cp docker-daemon.json /etc/docker/daemon.json
