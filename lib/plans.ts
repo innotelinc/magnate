@@ -35,6 +35,7 @@ export function planPublic(plan: Plan) {
     priceYearlyCents: plan.price_yearly_cents,
     features: parseFeatures(plan),
     highlighted: Boolean(plan.highlighted),
+    active: Boolean(plan.active),
   };
 }
 

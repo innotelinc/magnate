@@ -131,7 +131,7 @@ function PlanEditor({
   );
   const [features, setFeatures] = useState(initial?.features.join("\n") ?? "");
   const [highlighted, setHighlighted] = useState(initial?.highlighted ?? false);
-  const [active, setActive] = useState(initial ? true : true);
+  const [active, setActive] = useState(initial?.active ?? true);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
