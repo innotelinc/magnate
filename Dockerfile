@@ -1,5 +1,3 @@
-# syntax=docker/dockerfile:1
-
 FROM node:22-slim AS deps
 WORKDIR /app
 # better-sqlite3 is a native module: node-gyp needs Python + a C++ toolchain to
