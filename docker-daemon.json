@@ -1,0 +1,11 @@
+{
+  "default-runtime": "runc",
+  "runtimes": {
+    "runc": {
+      "path": "runc"
+    }
+  },
+  "features": {
+    "apparmor": false
+  }
+}
