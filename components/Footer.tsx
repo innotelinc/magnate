@@ -1,6 +1,7 @@
 import Link from "next/link";
-import { PlayIcon } from "./icons";
+import { AndroidIcon, AppleIcon, PlayIcon } from "./icons";
 import { jellyfinUrl } from "@/lib/settings";
+import { APP_STORE_URLS } from "@/lib/apps";
 
 const APP_URL = process.env.APP_URL || "http://localhost:3000";
 const JELLYFIN_URL = jellyfinUrl();
@@ -37,6 +38,42 @@ export default function Footer() {
                 className="text-zinc-600 transition-colors hover:text-zinc-950 dark:text-zinc-500 dark:hover:text-white"
               >
                 Jellyfin server
+              </a>
+              <a
+                href={APP_STORE_URLS.ios}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-2 text-zinc-600 transition-colors hover:text-zinc-950 dark:text-zinc-500 dark:hover:text-white"
+              >
+                <AppleIcon className="h-4 w-4" />
+                iOS app
+              </a>
+              <a
+                href={APP_STORE_URLS.android}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-2 text-zinc-600 transition-colors hover:text-zinc-950 dark:text-zinc-500 dark:hover:text-white"
+              >
+                <AndroidIcon className="h-4 w-4" />
+                Android app
+              </a>
+              <a
+                href={APP_STORE_URLS.appleTv}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-2 text-zinc-600 transition-colors hover:text-zinc-950 dark:text-zinc-500 dark:hover:text-white"
+              >
+                <AppleIcon className="h-4 w-4" />
+                Apple TV app
+              </a>
+              <a
+                href={APP_STORE_URLS.androidTv}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-2 text-zinc-600 transition-colors hover:text-zinc-950 dark:text-zinc-500 dark:hover:text-white"
+              >
+                <AndroidIcon className="h-4 w-4" />
+                Android TV app
               </a>
               <Link
                 href={`${APP_URL}/manage`}
