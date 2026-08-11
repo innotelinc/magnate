@@ -1,5 +1,6 @@
 import crypto from "node:crypto";
 import { db } from "./db";
+import { adminPassword } from "./settings";
 
 const COOKIE_NAME = "admin_session";
 const SESSION_TTL_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
@@ -7,7 +8,7 @@ const SESSION_TTL_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
 export { COOKIE_NAME };
 
 export function verifyAdminPassword(password: string): boolean {
-  const expected = process.env.ADMIN_PASSWORD;
+  const expected = adminPassword();
   if (!expected) return false;
   const a = Buffer.from(String(password));
   const b = Buffer.from(expected);

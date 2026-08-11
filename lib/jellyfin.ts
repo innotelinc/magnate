@@ -3,22 +3,23 @@
  * Docs: https://api.jellyfin.org/
  */
 
-const BASE_URL = (process.env.JELLYFIN_URL || "https://media.innotel.us").replace(
-  /\/+$/,
-  "",
-);
-const API_KEY = process.env.JELLYFIN_API_KEY;
+import { jellyfinUrl, jellyfinApiKey } from "./settings";
+
+function getBaseUrl(): string {
+  return jellyfinUrl().replace(/\/+$/, "");
+}
 
 export function jellyfinConfigured(): boolean {
-  return Boolean(API_KEY);
+  return Boolean(jellyfinApiKey());
 }
 
 function authHeaders(): Record<string, string> {
-  if (!API_KEY) {
+  const key = jellyfinApiKey();
+  if (!key) {
     throw new Error("JELLYFIN_API_KEY is not configured");
   }
   return {
-    Authorization: `MediaBrowser Token="${API_KEY}"`,
+    Authorization: `MediaBrowser Token="${key}"`,
     "Content-Type": "application/json",
   };
 }
@@ -44,14 +45,15 @@ async function request<T>(
 ): Promise<T> {
   let res: Response;
   try {
-    res = await fetch(`${BASE_URL}${path}`, {
+    const baseUrl = getBaseUrl();
+    res = await fetch(`${baseUrl}${path}`, {
       method,
       headers: authHeaders(),
       body: body !== undefined ? JSON.stringify(body) : undefined,
     });
   } catch {
     throw new JellyfinError(
-      `Could not reach Jellyfin at ${BASE_URL}. Is the server up?`,
+      `Could not reach Jellyfin at ${getBaseUrl()}. Is the server up?`,
       0,
     );
   }

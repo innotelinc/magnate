@@ -1,8 +1,9 @@
 import Link from "next/link";
 import { PlayIcon } from "./icons";
+import { jellyfinUrl } from "@/lib/settings";
 
 const APP_URL = process.env.APP_URL || "http://localhost:3000";
-const JELLYFIN_URL = process.env.JELLYFIN_URL || "https://media.innotel.us";
+const JELLYFIN_URL = jellyfinUrl();
 const JFA_GO_URL = process.env.JFA_GO_URL || "https://accounts.innotel.us";
 
 export default function Footer() {

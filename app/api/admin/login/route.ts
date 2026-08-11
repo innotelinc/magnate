@@ -5,6 +5,7 @@ import {
   createAdminSession,
   verifyAdminPassword,
 } from "@/lib/auth";
+import { adminPassword } from "@/lib/settings";
 
 export const dynamic = "force-dynamic";
 
@@ -27,7 +28,7 @@ function isRateLimited(ip: string): boolean {
 }
 
 export async function POST(req: Request) {
-  if (!process.env.ADMIN_PASSWORD) {
+  if (!adminPassword()) {
     return NextResponse.json(
       { error: "ADMIN_PASSWORD is not set on the server." },
       { status: 500 },
