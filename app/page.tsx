@@ -1,6 +1,7 @@
 import Link from "next/link";
 import Nav from "@/components/Nav";
 import Footer from "@/components/Footer";
+import AppsSection from "@/components/AppsSection";
 import PricingSection, { type PublicPlan } from "@/components/PricingSection";
 import {
   BoltIcon,
@@ -234,6 +235,9 @@ export default async function Home() {
             </div>
           </div>
         </section>
+
+        {/* APPS */}
+        <AppsSection />
 
         {/* ABOUT */}
         <section
