@@ -37,6 +37,7 @@ interface AppUser {
   username: string;
   jellyfin_user_id: string | null;
   stripe_subscription_id: string | null;
+  plan_id: number | null;
   plan_name: string | null;
   status: string;
   current_period_end: number | null;
@@ -383,6 +384,125 @@ function UserEditor({
   );
 }
 
+/* ---------- user edit editor ---------- */
+
+function UserEditEditor({
+  user,
+  plans,
+  onDone,
+  onSaved,
+}: {
+  user: AppUser;
+  plans: Plan[];
+  onDone: () => void;
+  onSaved: (msg: string) => void;
+}) {
+  const [email, setEmail] = useState(user.email);
+  const [username, setUsername] = useState(user.username);
+  const [planId, setPlanId] = useState(user.plan_id ? String(user.plan_id) : "");
+  const [error, setError] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
+
+  const changed =
+    email !== user.email || username !== user.username || planId !== (user.plan_id ? String(user.plan_id) : "");
+
+  async function save() {
+    setError(null);
+    setSaving(true);
+    try {
+      const payload: Record<string, unknown> = { action: "edit" };
+      if (email !== user.email) payload.email = email;
+      if (username !== user.username) payload.username = username;
+      if (planId !== (user.plan_id ? String(user.plan_id) : "")) {
+        payload.planId = planId ? Number(planId) : null;
+      }
+
+      if (Object.keys(payload).length === 1) {
+        onDone();
+        return;
+      }
+
+      await api(`/api/admin/users/${user.id}/action`, {
+        method: "POST",
+        body: JSON.stringify(payload),
+      });
+      onSaved(`User "${username}" updated.`);
+      onDone();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Save failed");
+      setSaving(false);
+    }
+  }
+
+  return (
+    <div className="rounded-2xl border border-brand-400/30 bg-brand-500/[0.06] p-5">
+      <p className="mb-4 text-sm font-semibold text-brand-200">
+        Edit {user.username}
+      </p>
+      <div className="grid gap-4 sm:grid-cols-2">
+        <div>
+          <label className="mb-1 block text-xs text-zinc-400">Email</label>
+          <input
+            className={inputCls}
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            placeholder="user@example.com"
+          />
+        </div>
+        <div>
+          <label className="mb-1 block text-xs text-zinc-400">Username</label>
+          <input
+            className={inputCls}
+            value={username}
+            onChange={(e) => setUsername(e.target.value)}
+            placeholder="johndoe"
+          />
+        </div>
+        <div className="sm:col-span-2">
+          <label className="mb-1 block text-xs text-zinc-400">Plan</label>
+          <select
+            className={inputCls}
+            value={planId}
+            onChange={(e) => setPlanId(e.target.value)}
+          >
+            <option value="">No plan</option>
+            {plans
+              .filter((p) => p.active)
+              .map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.name}
+                </option>
+              ))}
+          </select>
+        </div>
+      </div>
+
+      {error && (
+        <div className="mt-4 rounded-lg border border-rose-500/30 bg-rose-500/10 px-3 py-2 text-sm text-rose-300">
+          {error}
+        </div>
+      )}
+
+      <div className="mt-5 flex gap-3">
+        <button
+          onClick={save}
+          disabled={saving || !changed}
+          className="rounded-lg bg-gradient-to-r from-indigo-500 to-fuchsia-500 px-4 py-2 text-sm font-semibold text-white transition-all hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          {saving ? "Saving…" : "Save changes"}
+        </button>
+        <button
+          onClick={onDone}
+          className="rounded-lg border border-white/15 px-4 py-2 text-sm transition-colors hover:border-white/30"
+        >
+          Cancel
+        </button>
+      </div>
+    </div>
+  );
+}
+
 /* ---------- settings editor ---------- */
 
 const SETTING_FIELDS: {
@@ -565,6 +685,7 @@ export default function AdminDashboard() {
   const [settings, setSettings] = useState<AdminSettings | null>(null);
   const [editing, setEditing] = useState<Plan | "new" | null>(null);
   const [addingUser, setAddingUser] = useState(false);
+  const [editingUserId, setEditingUserId] = useState<number | null>(null);
   const [editingSettings, setEditingSettings] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
   const [revealed, setRevealed] = useState<{ id: number; username: string; password: string } | null>(null);
@@ -913,6 +1034,22 @@ export default function AdminDashboard() {
             </button>
           )}
 
+          {editingUserId && (() => {
+            const editUser = users.find((u) => u.id === editingUserId);
+            if (!editUser) return null;
+            return (
+              <UserEditEditor
+                user={editUser}
+                plans={plans}
+                onDone={() => setEditingUserId(null)}
+                onSaved={(msg) => {
+                  setNotice(msg);
+                  refresh();
+                }}
+              />
+            );
+          })()}
+
           {users.length > 0 && (
             <div className="overflow-hidden rounded-2xl border border-white/[0.08]">
               <div className="overflow-x-auto">
@@ -954,6 +1091,14 @@ export default function AdminDashboard() {
                         </td>
                         <td className="px-4 py-3">
                           <div className="flex items-center justify-end gap-1.5">
+                            <button
+                              title="Edit user"
+                              onClick={() => setEditingUserId(editingUserId === user.id ? null : user.id)}
+                              disabled={busy === user.id}
+                              className="rounded-lg border border-white/10 px-2 py-1 text-xs transition-colors hover:border-white/30 disabled:opacity-50"
+                            >
+                              <PencilIcon className="h-3.5 w-3.5" />
+                            </button>
                             <button
                               title="Reveal credentials"
                               onClick={() => userAction(user, "reveal")}
