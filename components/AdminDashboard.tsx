@@ -1,15 +1,18 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   CheckIcon,
+  DownloadIcon,
   EyeIcon,
   LogoutIcon,
   PencilIcon,
   PlusIcon,
   RefreshIcon,
+  SettingsIcon,
   TrashIcon,
+  UploadIcon,
   UserIcon,
   CreditCardIcon,
 } from "./icons";
@@ -49,6 +52,14 @@ interface StatusInfo {
   stripeCurrency: string;
   adminPasswordSet: boolean;
 }
+
+interface AdminSetting {
+  value: string;
+  masked: string;
+  source: "db" | "env";
+}
+
+type AdminSettings = Record<string, AdminSetting>;
 
 /* ---------- helpers ---------- */
 
@@ -92,6 +103,9 @@ function StatusBadge({ status }: { status: string }) {
     </span>
   );
 }
+
+const inputCls =
+  "w-full rounded-lg border border-white/10 bg-white/[0.04] px-3 py-2 text-sm text-white placeholder-zinc-600 outline-none transition-colors focus:border-brand-400 focus:ring-2 focus:ring-brand-500/25";
 
 /* ---------- plan editor ---------- */
 
@@ -160,9 +174,6 @@ function PlanEditor({
       setSaving(false);
     }
   }
-
-  const inputCls =
-    "w-full rounded-lg border border-white/10 bg-white/[0.04] px-3 py-2 text-sm text-white placeholder-zinc-600 outline-none transition-colors focus:border-brand-400 focus:ring-2 focus:ring-brand-500/25";
 
   return (
     <div className="rounded-2xl border border-brand-400/30 bg-brand-500/[0.06] p-5">
@@ -236,30 +247,207 @@ function PlanEditor({
   );
 }
 
+/* ---------- settings editor ---------- */
+
+const SETTING_FIELDS: {
+  key: string;
+  label: string;
+  placeholder: string;
+  type?: string;
+}[] = [
+  {
+    key: "stripe_secret_key",
+    label: "Stripe Secret Key",
+    placeholder: "sk_live_xxx or sk_test_xxx",
+  },
+  {
+    key: "stripe_webhook_secret",
+    label: "Stripe Webhook Secret",
+    placeholder: "whsec_xxx",
+  },
+  {
+    key: "stripe_currency",
+    label: "Stripe Currency",
+    placeholder: "usd",
+  },
+  {
+    key: "jellyfin_url",
+    label: "Jellyfin URL",
+    placeholder: "https://media.example.com",
+  },
+  {
+    key: "jellyfin_api_key",
+    label: "Jellyfin API Key",
+    placeholder: "your-api-key",
+  },
+  {
+    key: "admin_password",
+    label: "Admin Password",
+    placeholder: "strong-password",
+  },
+];
+
+function SettingsEditor({
+  settings,
+  onSaved,
+  onCancel,
+}: {
+  settings: AdminSettings;
+  onSaved: (msg: string) => void;
+  onCancel: () => void;
+}) {
+  const [values, setValues] = useState<Record<string, string>>(() => {
+    const init: Record<string, string> = {};
+    for (const field of SETTING_FIELDS) {
+      const s = settings[field.key];
+      // For env-sourced secrets, don't pre-fill the actual value.
+      const isSecret =
+        field.key.includes("secret") ||
+        field.key.includes("password") ||
+        field.key.includes("api_key");
+      init[field.key] = isSecret && s?.source === "env" ? "" : (s?.value ?? "");
+    }
+    return init;
+  });
+  const [error, setError] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
+
+  async function save() {
+    setError(null);
+    // Only send fields that changed or are non-empty.
+    const payload: Record<string, string> = {};
+    for (const field of SETTING_FIELDS) {
+      const currentDb = settings[field.key]?.value ?? "";
+      if (values[field.key] !== currentDb) {
+        payload[field.key] = values[field.key];
+      }
+    }
+
+    if (Object.keys(payload).length === 0) {
+      onCancel();
+      return;
+    }
+
+    setSaving(true);
+    try {
+      await api("/api/admin/settings", {
+        method: "PUT",
+        body: JSON.stringify(payload),
+      });
+      onSaved("Settings saved. Restart not required — changes take effect immediately.");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Save failed");
+      setSaving(false);
+    }
+  }
+
+  return (
+    <div className="rounded-2xl border border-brand-400/30 bg-brand-500/[0.06] p-5">
+      <p className="mb-4 text-sm font-semibold text-brand-200">Edit settings</p>
+
+      <div className="grid gap-4 sm:grid-cols-2">
+        {SETTING_FIELDS.map((field) => {
+          const current = settings[field.key];
+          return (
+            <div
+              key={field.key}
+              className={field.key === "stripe_secret_key" || field.key === "jellyfin_url" ? "sm:col-span-2" : ""}
+            >
+              <label className="mb-1 flex items-center gap-2 text-xs text-zinc-400">
+                {field.label}
+                {current && (
+                  <span
+                    className={`rounded-full px-1.5 py-0.5 text-[10px] font-medium ${
+                      current.source === "db"
+                        ? "bg-fuchsia-400/10 text-fuchsia-300"
+                        : "bg-zinc-400/10 text-zinc-500"
+                    }`}
+                  >
+                    {current.source === "db" ? "custom" : "env"}
+                  </span>
+                )}
+              </label>
+              {current && current.masked !== current.value && current.source === "env" && !values[field.key] && (
+                <p className="mb-1 font-mono text-xs text-zinc-500">{current.masked}</p>
+              )}
+              <input
+                className={inputCls}
+                type={
+                  (field.key.includes("secret") || field.key.includes("password") || field.key.includes("api_key"))
+                    ? "password"
+                    : "text"
+                }
+                value={values[field.key]}
+                onChange={(e) =>
+                  setValues((prev) => ({ ...prev, [field.key]: e.target.value }))
+                }
+                placeholder={field.placeholder}
+              />
+              {current && current.source === "db" && (
+                <p className="mt-1 text-[10px] text-fuchsia-400/70">
+                  Overrides env var. Clear to restore env fallback.
+                </p>
+              )}
+            </div>
+          );
+        })}
+      </div>
+
+      {error && (
+        <div className="mt-4 rounded-lg border border-rose-500/30 bg-rose-500/10 px-3 py-2 text-sm text-rose-300">
+          {error}
+        </div>
+      )}
+
+      <div className="mt-5 flex gap-3">
+        <button
+          onClick={save}
+          disabled={saving}
+          className="rounded-lg bg-gradient-to-r from-indigo-500 to-fuchsia-500 px-4 py-2 text-sm font-semibold text-white transition-all hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          {saving ? "Saving…" : "Save settings"}
+        </button>
+        <button
+          onClick={onCancel}
+          className="rounded-lg border border-white/15 px-4 py-2 text-sm transition-colors hover:border-white/30"
+        >
+          Cancel
+        </button>
+      </div>
+    </div>
+  );
+}
+
 /* ---------- dashboard ---------- */
 
 export default function AdminDashboard() {
   const router = useRouter();
-  const [tab, setTab] = useState<"plans" | "users">("plans");
+  const [tab, setTab] = useState<"plans" | "users" | "settings">("plans");
   const [status, setStatus] = useState<StatusInfo | null>(null);
   const [plans, setPlans] = useState<Plan[]>([]);
   const [users, setUsers] = useState<AppUser[]>([]);
+  const [settings, setSettings] = useState<AdminSettings | null>(null);
   const [editing, setEditing] = useState<Plan | "new" | null>(null);
+  const [editingSettings, setEditingSettings] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
   const [revealed, setRevealed] = useState<{ id: number; username: string; password: string } | null>(null);
   const [busy, setBusy] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
+  const [importing, setImporting] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const refresh = useCallback(async () => {
     try {
-      const [statusData, plansData, usersData] = await Promise.all([
+      const [statusData, plansData, usersData, settingsData] = await Promise.all([
         api<StatusInfo>("/api/admin/status"),
         api<{ plans: Plan[] }>("/api/admin/plans"),
         api<{ users: AppUser[] }>("/api/admin/users"),
+        api<AdminSettings>("/api/admin/settings"),
       ]);
       setStatus(statusData);
       setPlans(plansData.plans);
       setUsers(usersData.users);
+      setSettings(settingsData);
     } catch {
       router.push("/admin/login");
       return;
@@ -316,6 +504,50 @@ export default function AdminDashboard() {
     }
   }
 
+  async function handleExport() {
+    try {
+      const res = await fetch("/api/admin/settings/export");
+      if (!res.ok) throw new Error("Export failed");
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `jellyfin-sub-settings-${new Date().toISOString().slice(0, 10)}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+      setNotice("Settings exported successfully.");
+    } catch (err) {
+      setNotice(err instanceof Error ? err.message : "Export failed.");
+    }
+  }
+
+  async function handleImport(file: File) {
+    setImporting(true);
+    setNotice(null);
+    try {
+      const text = await file.text();
+      let json: unknown;
+      try {
+        json = JSON.parse(text);
+      } catch {
+        throw new Error("Invalid JSON file. Please upload a valid settings backup.");
+      }
+      const res = await fetch("/api/admin/settings/import", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(json),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error((data as { error?: string }).error ?? "Import failed");
+      setNotice(`Settings imported successfully (${(data as { imported: number }).imported} keys).`);
+      refresh();
+    } catch (err) {
+      setNotice(err instanceof Error ? err.message : "Import failed.");
+    } finally {
+      setImporting(false);
+    }
+  }
+
   if (loading) {
     return (
       <div className="flex items-center justify-center py-32 text-zinc-500">
@@ -331,7 +563,7 @@ export default function AdminDashboard() {
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Admin panel</h1>
           <p className="mt-1 text-sm text-zinc-500">
-            Manage subscription plans and users.
+            Manage subscription plans, users, and settings.
           </p>
         </div>
         <button
@@ -352,28 +584,28 @@ export default function AdminDashboard() {
               ok: status.stripeConfigured,
               detail: status.stripeConfigured
                 ? `Configured (${status.stripeCurrency.toUpperCase()})`
-                : "Missing STRIPE_SECRET_KEY",
+                : "Missing secret key",
             },
             {
               label: "Stripe webhook",
               ok: status.stripeWebhookConfigured,
               detail: status.stripeWebhookConfigured
                 ? "Webhook secret set"
-                : "Missing STRIPE_WEBHOOK_SECRET",
+                : "Missing webhook secret",
             },
             {
               label: "Jellyfin",
               ok: status.jellyfinConfigured,
               detail: status.jellyfinConfigured
                 ? status.jellyfinUrl
-                : "Missing JELLYFIN_API_KEY",
+                : "Missing API key",
             },
             {
               label: "Admin password",
               ok: status.adminPasswordSet,
               detail: status.adminPasswordSet
                 ? "Set"
-                : "Missing ADMIN_PASSWORD",
+                : "Missing password",
             },
           ].map((item) => (
             <div key={item.label} className="glass flex items-center gap-3 rounded-xl px-4 py-3">
@@ -399,7 +631,7 @@ export default function AdminDashboard() {
 
       {/* tabs */}
       <div className="mt-8 flex gap-2 border-b border-white/[0.08]">
-        {(["plans", "users"] as const).map((t) => (
+        {(["plans", "users", "settings"] as const).map((t) => (
           <button
             key={t}
             onClick={() => setTab(t)}
@@ -409,7 +641,12 @@ export default function AdminDashboard() {
                 : "text-zinc-500 hover:text-zinc-300"
             }`}
           >
-            {t === "plans" ? "Plans" : `Users (${users.length})`}
+            {t === "plans" ? "Plans" : t === "users" ? `Users (${users.length})` : (
+              <span className="flex items-center gap-1.5">
+                <SettingsIcon className="h-4 w-4" />
+                Settings
+              </span>
+            )}
           </button>
         ))}
       </div>
@@ -606,6 +843,105 @@ export default function AdminDashboard() {
                 </tbody>
               </table>
             </div>
+          )}
+        </div>
+      )}
+
+      {/* settings tab */}
+      {tab === "settings" && settings && (
+        <div className="mt-6 space-y-4">
+          {editingSettings ? (
+            <SettingsEditor
+              settings={settings}
+              onSaved={(msg) => {
+                setNotice(msg);
+                setEditingSettings(false);
+                refresh();
+              }}
+              onCancel={() => setEditingSettings(false)}
+            />
+          ) : (
+            <>
+              {/* summary cards */}
+              <div className="grid gap-3 sm:grid-cols-2">
+                {SETTING_FIELDS.map((field) => {
+                  const s = settings[field.key];
+                  const isSecret =
+                    field.key.includes("secret") ||
+                    field.key.includes("password") ||
+                    field.key.includes("api_key");
+                  return (
+                    <div key={field.key} className="glass rounded-xl px-4 py-3">
+                      <div className="flex items-center justify-between">
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center gap-2">
+                            <p className="text-xs font-medium text-zinc-400">{field.label}</p>
+                            {s && (
+                              <span
+                                className={`rounded-full px-1.5 py-0.5 text-[10px] font-medium ${
+                                  s.source === "db"
+                                    ? "bg-fuchsia-400/10 text-fuchsia-300"
+                                    : "bg-zinc-400/10 text-zinc-500"
+                                }`}
+                              >
+                                {s.source === "db" ? "custom" : "env"}
+                              </span>
+                            )}
+                          </div>
+                          <p className="mt-0.5 truncate font-mono text-xs text-zinc-500">
+                            {s ? (isSecret ? s.masked : s.value || "(empty)") : "(not set)"}
+                          </p>
+                        </div>
+                        <span
+                          className={`ml-3 flex h-2 w-2 shrink-0 rounded-full ${
+                            s && s.value ? "bg-emerald-400" : "bg-rose-400"
+                          }`}
+                        />
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* export / import row */}
+              <div className="flex gap-3">
+                <button
+                  onClick={handleExport}
+                  className="flex flex-1 items-center justify-center gap-2 rounded-2xl border border-dashed border-white/20 py-4 text-sm font-medium text-zinc-400 transition-colors hover:border-emerald-400/50 hover:text-white"
+                >
+                  <DownloadIcon className="h-4 w-4" />
+                  Export backup
+                </button>
+                <button
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={importing}
+                  className="flex flex-1 items-center justify-center gap-2 rounded-2xl border border-dashed border-white/20 py-4 text-sm font-medium text-zinc-400 transition-colors hover:border-amber-400/50 hover:text-white disabled:opacity-50"
+                >
+                  <UploadIcon className="h-4 w-4" />
+                  {importing ? "Importing…" : "Import backup"}
+                </button>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept=".json"
+                  className="hidden"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) handleImport(file);
+                    // Reset so the same file can be re-selected.
+                    e.target.value = "";
+                  }}
+                />
+              </div>
+
+              <button
+                onClick={() => setEditingSettings(true)}
+                className="flex w-full items-center justify-center gap-2 rounded-2xl border border-dashed border-white/20 py-4 text-sm font-medium text-zinc-400 transition-colors hover:border-brand-400/50 hover:text-white"
+              >
+                <PencilIcon className="h-4 w-4" />
+                Edit settings
+              </button>
+            </>
           )}
         </div>
       )}

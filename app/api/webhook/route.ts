@@ -5,6 +5,7 @@ import { getStripe, stripeConfigured } from "@/lib/stripe";
 import { createUser, findUserByName, setUserEnabled } from "@/lib/jellyfin";
 import { decrypt } from "@/lib/crypto";
 import { getPlanBySlug } from "@/lib/plans";
+import { stripeWebhookSecret } from "@/lib/settings";
 
 export const dynamic = "force-dynamic";
 
@@ -168,7 +169,7 @@ async function handleSubscriptionDeleted(
 }
 
 export async function POST(req: Request) {
-  if (!stripeConfigured() || !process.env.STRIPE_WEBHOOK_SECRET) {
+  if (!stripeConfigured() || !stripeWebhookSecret()) {
     return NextResponse.json(
       { error: "Stripe webhook is not configured" },
       { status: 500 },
@@ -183,7 +184,7 @@ export async function POST(req: Request) {
     event = getStripe().webhooks.constructEvent(
       payload,
       sig ?? "",
-      process.env.STRIPE_WEBHOOK_SECRET,
+      stripeWebhookSecret() ?? "",
     );
   } catch (err) {
     console.error("webhook signature verification failed", err);
