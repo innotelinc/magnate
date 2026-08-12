@@ -4,8 +4,11 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   CheckIcon,
+  CopyIcon,
   DownloadIcon,
   EyeIcon,
+  KeyIcon,
+  LockIcon,
   LogoutIcon,
   PencilIcon,
   PlusIcon,
@@ -115,6 +118,51 @@ function StatusBadge({ status }: { status: string }) {
 
 const inputCls =
   "w-full rounded-lg border border-zinc-950/10 bg-black/[0.03] px-3 py-2 text-sm text-zinc-950 placeholder-zinc-400 outline-none transition-colors focus:border-brand-400 focus:ring-2 focus:ring-brand-500/25 dark:border-white/10 dark:bg-white/[0.04] dark:text-white dark:placeholder-zinc-600";
+
+/** Strong random password, mirroring lib/crypto.ts generatePassword but client-side. */
+function randomPassword(length = 18): string {
+  const chars =
+    "ABCDEFGHJKMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789!@#$%^&*";
+  const arr = new Uint32Array(length);
+  crypto.getRandomValues(arr);
+  let out = "";
+  for (let i = 0; i < length; i++) out += chars[arr[i] % chars.length];
+  return out;
+}
+
+function PasswordInput({
+  value,
+  onChange,
+  placeholder,
+  show,
+  onToggleShow,
+}: {
+  value: string;
+  onChange: (v: string) => void;
+  placeholder: string;
+  show: boolean;
+  onToggleShow: () => void;
+}) {
+  return (
+    <div className="relative">
+      <input
+        className={inputCls}
+        type={show ? "text" : "password"}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder={placeholder}
+      />
+      <button
+        type="button"
+        onClick={onToggleShow}
+        title={show ? "Hide password" : "Show password"}
+        className="absolute right-2.5 top-1/2 -translate-y-1/2 rounded-md p-1 text-zinc-500 transition-colors hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-white"
+      >
+        <EyeIcon className="h-4 w-4" />
+      </button>
+    </div>
+  );
+}
 
 /* ---------- plan editor ---------- */
 
@@ -681,6 +729,331 @@ function SettingsEditor({
   );
 }
 
+/* ---------- change admin password ---------- */
+
+function ChangePasswordCard({
+  onSaved,
+}: {
+  onSaved: (msg: string) => void;
+}) {
+  const [current, setCurrent] = useState("");
+  const [next, setNext] = useState("");
+  const [confirm, setConfirm] = useState("");
+  const [showCurrent, setShowCurrent] = useState(false);
+  const [showNext, setShowNext] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [changed, setChanged] = useState(false);
+
+  async function save() {
+    setError(null);
+    setChanged(false);
+    if (!current) {
+      setError("Enter your current password.");
+      return;
+    }
+    if (next.length < 8) {
+      setError("New password must be at least 8 characters.");
+      return;
+    }
+    if (next !== confirm) {
+      setError("New passwords do not match.");
+      return;
+    }
+    setSaving(true);
+    try {
+      await api("/api/admin/password", {
+        method: "POST",
+        body: JSON.stringify({ currentPassword: current, newPassword: next }),
+      });
+      setChanged(true);
+      setCurrent("");
+      setNext("");
+      setConfirm("");
+      onSaved(
+        "Admin password changed. Other logged-in sessions were signed out.",
+      );
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Change failed");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <div className="rounded-2xl border border-brand-400/30 bg-brand-500/[0.06] p-5">
+      <div className="flex items-center gap-2">
+        <LockIcon className="h-4 w-4 text-brand-600 dark:text-brand-300" />
+        <p className="text-sm font-semibold text-brand-600 dark:text-brand-200">
+          Change admin password
+        </p>
+        {changed && (
+          <span className="flex items-center gap-1 rounded-full bg-emerald-500/10 px-2 py-0.5 text-xs font-medium text-emerald-600 dark:text-emerald-300">
+            <CheckIcon className="h-3 w-3" />
+            Updated
+          </span>
+        )}
+      </div>
+      <p className="mt-1 text-xs text-zinc-600 dark:text-zinc-500">
+        Requires your current password. You&apos;ll stay signed in on this device.
+      </p>
+
+      <div className="mt-4 grid gap-4 sm:grid-cols-3">
+        <div>
+          <label className="mb-1 block text-xs text-zinc-600 dark:text-zinc-400">
+            Current password
+          </label>
+          <PasswordInput
+            value={current}
+            onChange={(v) => {
+              setCurrent(v);
+              setChanged(false);
+            }}
+            placeholder="Current password"
+            show={showCurrent}
+            onToggleShow={() => setShowCurrent((s) => !s)}
+          />
+        </div>
+        <div>
+          <label className="mb-1 block text-xs text-zinc-600 dark:text-zinc-400">
+            New password
+          </label>
+          <PasswordInput
+            value={next}
+            onChange={(v) => {
+              setNext(v);
+              setChanged(false);
+            }}
+            placeholder="Min 8 characters"
+            show={showNext}
+            onToggleShow={() => setShowNext((s) => !s)}
+          />
+        </div>
+        <div>
+          <label className="mb-1 block text-xs text-zinc-600 dark:text-zinc-400">
+            Confirm new password
+          </label>
+          <PasswordInput
+            value={confirm}
+            onChange={(v) => {
+              setConfirm(v);
+              setChanged(false);
+            }}
+            placeholder="Repeat new password"
+            show={showConfirm}
+            onToggleShow={() => setShowConfirm((s) => !s)}
+          />
+        </div>
+      </div>
+
+      {error && (
+        <div className="mt-4 rounded-lg border border-rose-500/30 bg-rose-500/10 px-3 py-2 text-sm text-rose-600 dark:text-rose-300">
+          {error}
+        </div>
+      )}
+
+      <div className="mt-5 flex items-center gap-3">
+        <button
+          onClick={save}
+          disabled={saving || !current || !next || !confirm}
+          className="rounded-lg bg-gradient-to-r from-indigo-500 to-fuchsia-500 px-4 py-2 text-sm font-semibold text-white transition-all hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          {saving ? "Saving…" : "Update password"}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+/* ---------- user password reset modal ---------- */
+
+function PasswordResetModal({
+  user,
+  onClose,
+  onDone,
+}: {
+  user: AppUser;
+  onClose: () => void;
+  onDone: (msg: string) => void;
+}) {
+  const [password, setPassword] = useState("");
+  const [confirm, setConfirm] = useState("");
+  const [showPw, setShowPw] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [done, setDone] = useState(false);
+  const [copied, setCopied] = useState(false);
+
+  async function save() {
+    setError(null);
+    if (password.length < 4) {
+      setError("Password must be at least 4 characters.");
+      return;
+    }
+    if (password !== confirm) {
+      setError("Passwords do not match.");
+      return;
+    }
+    setSaving(true);
+    try {
+      await api(`/api/admin/users/${user.id}/action`, {
+        method: "POST",
+        body: JSON.stringify({ action: "password", password }),
+      });
+      setDone(true);
+      onDone(`Password for "${user.username}" updated.`);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Reset failed");
+      setSaving(false);
+    }
+  }
+
+  async function copy() {
+    try {
+      await navigator.clipboard.writeText(password);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      // Clipboard unavailable — the password is still shown on screen.
+    }
+  }
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm"
+      onClick={onClose}
+    >
+      <div
+        className="animate-pop-in w-full max-w-md rounded-3xl border border-zinc-950/10 bg-white p-7 dark:border-white/10 dark:bg-[#0b0d15]"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {done ? (
+          <>
+            <h3 className="flex items-center gap-2 text-lg font-semibold">
+              <CheckIcon className="h-5 w-5 text-emerald-600 dark:text-emerald-300" />
+              Password updated
+            </h3>
+            <p className="mt-2 text-xs text-zinc-600 dark:text-zinc-500">
+              {user.username}&apos;s Jellyfin password was changed. Copy it
+              below and share it over a secure channel.
+            </p>
+            <div className="mt-5 rounded-xl border border-zinc-950/10 bg-black/[0.03] p-4 dark:border-white/10 dark:bg-white/[0.04]">
+              <p className="text-xs text-zinc-600 dark:text-zinc-500">
+                New password
+              </p>
+              <p className="mt-1 break-all font-mono text-sm font-semibold text-fuchsia-600 dark:text-fuchsia-300">
+                {password}
+              </p>
+            </div>
+            <div className="mt-6 flex flex-col gap-3 sm:flex-row">
+              <button
+                onClick={copy}
+                className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-indigo-500 to-fuchsia-500 py-2.5 text-sm font-semibold text-white transition-all hover:brightness-110"
+              >
+                {copied ? (
+                  <>
+                    <CheckIcon className="h-4 w-4" />
+                    Copied
+                  </>
+                ) : (
+                  <>
+                    <CopyIcon className="h-4 w-4" />
+                    Copy password
+                  </>
+                )}
+              </button>
+              <button
+                onClick={onClose}
+                className="rounded-xl border border-zinc-950/15 px-4 py-2.5 text-sm transition-colors hover:border-zinc-950/30 dark:border-white/15 dark:hover:border-white/30"
+              >
+                Done
+              </button>
+            </div>
+          </>
+        ) : (
+          <>
+            <h3 className="flex items-center gap-2 text-lg font-semibold">
+              <KeyIcon className="h-5 w-5 text-brand-600 dark:text-brand-300" />
+              Reset {user.username}&apos;s password
+            </h3>
+            <p className="mt-2 text-xs text-zinc-600 dark:text-zinc-500">
+              The new password applies to their Jellyfin account and is stored
+              encrypted. Share it only over a secure channel.
+            </p>
+          </>
+        )}
+
+        {!done && (
+          <>
+        <div className="mt-5 space-y-4">
+          <div>
+            <label className="mb-1 block text-xs text-zinc-600 dark:text-zinc-400">
+              New password
+            </label>
+            <PasswordInput
+              value={password}
+              onChange={setPassword}
+              placeholder="Min 4 characters"
+              show={showPw}
+              onToggleShow={() => setShowPw((s) => !s)}
+            />
+          </div>
+          <div>
+            <label className="mb-1 block text-xs text-zinc-600 dark:text-zinc-400">
+              Confirm new password
+            </label>
+            <PasswordInput
+              value={confirm}
+              onChange={setConfirm}
+              placeholder="Repeat new password"
+              show={showConfirm}
+              onToggleShow={() => setShowConfirm((s) => !s)}
+            />
+          </div>
+        </div>
+
+        {error && (
+          <div className="mt-4 rounded-lg border border-rose-500/30 bg-rose-500/10 px-3 py-2 text-sm text-rose-600 dark:text-rose-300">
+            {error}
+          </div>
+        )}
+
+        <div className="mt-6 flex flex-col gap-3 sm:flex-row">
+          <button
+            onClick={save}
+            disabled={saving || !password || !confirm}
+            className="flex-1 rounded-xl bg-gradient-to-r from-indigo-500 to-fuchsia-500 py-2.5 text-sm font-semibold text-white transition-all hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            {saving ? "Resetting…" : "Reset password"}
+          </button>
+          <button
+            onClick={() => {
+              const pw = randomPassword();
+              setPassword(pw);
+              setConfirm(pw);
+            }}
+            disabled={saving}
+            className="rounded-xl border border-zinc-950/15 px-4 py-2.5 text-sm transition-colors hover:border-zinc-950/30 disabled:opacity-50 dark:border-white/15 dark:hover:border-white/30"
+          >
+            Generate strong password
+          </button>
+          <button
+            onClick={onClose}
+            disabled={saving}
+            className="rounded-xl border border-zinc-950/15 px-4 py-2.5 text-sm transition-colors hover:border-zinc-950/30 disabled:opacity-50 dark:border-white/15 dark:hover:border-white/30"
+          >
+            Cancel
+          </button>
+        </div>
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
 /* ---------- dashboard ---------- */
 
 export default function AdminDashboard() {
@@ -693,6 +1066,7 @@ export default function AdminDashboard() {
   const [editing, setEditing] = useState<Plan | "new" | null>(null);
   const [addingUser, setAddingUser] = useState(false);
   const [editingUserId, setEditingUserId] = useState<number | null>(null);
+  const [resettingUser, setResettingUser] = useState<AppUser | null>(null);
   const [editingSettings, setEditingSettings] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
   const [revealed, setRevealed] = useState<{ id: number; username: string; password: string } | null>(null);
@@ -1107,6 +1481,14 @@ export default function AdminDashboard() {
                               <PencilIcon className="h-3.5 w-3.5" />
                             </button>
                             <button
+                              title="Reset password"
+                              onClick={() => setResettingUser(user)}
+                              disabled={busy === user.id}
+                              className="rounded-lg border border-zinc-950/15 px-2 py-1 text-xs transition-colors hover:border-zinc-950/30 disabled:opacity-50 dark:border-white/10 dark:hover:border-white/30"
+                            >
+                              <KeyIcon className="h-3.5 w-3.5" />
+                            </button>
+                            <button
                               title="Reveal credentials"
                               onClick={() => userAction(user, "reveal")}
                               disabled={busy === user.id}
@@ -1168,6 +1550,12 @@ export default function AdminDashboard() {
       {/* settings tab */}
       {tab === "settings" && settings && (
         <div className="mt-6 space-y-4">
+          <ChangePasswordCard
+            onSaved={(msg) => {
+              setNotice(msg);
+              refresh();
+            }}
+          />
           {editingSettings ? (
             <SettingsEditor
               settings={settings}
@@ -1262,6 +1650,18 @@ export default function AdminDashboard() {
             </>
           )}
         </div>
+      )}
+
+      {/* password reset modal */}
+      {resettingUser && (
+        <PasswordResetModal
+          user={resettingUser}
+          onClose={() => setResettingUser(null)}
+          onDone={(msg) => {
+            setNotice(msg);
+            refresh();
+          }}
+        />
       )}
 
       {/* reveal modal */}

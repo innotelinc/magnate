@@ -102,13 +102,21 @@ export async function createUser(
   // comes back with HasPassword: false). Set it explicitly so the generated
   // credentials actually work.
   if (!user.HasPassword) {
-    await request<void>("POST", `/Users/${user.Id}/Password`, {
-      CurrentPw: "",
-      NewPw: password,
-      ResetPassword: false,
-    });
+    await setUserPassword(user.Id, password);
   }
   return user;
+}
+
+/** Set (reset) a user's password. An empty CurrentPw works for admin resets. */
+export async function setUserPassword(
+  userId: string,
+  password: string,
+): Promise<void> {
+  await request<void>("POST", `/Users/${userId}/Password`, {
+    CurrentPw: "",
+    NewPw: password,
+    ResetPassword: false,
+  });
 }
 
 export async function setUserEnabled(

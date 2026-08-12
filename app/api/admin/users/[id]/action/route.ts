@@ -7,15 +7,25 @@ import {
   findUserByName,
   createUser,
   setUserEnabled,
+  setUserPassword,
 } from "@/lib/jellyfin";
-import { decrypt } from "@/lib/crypto";
+import { decrypt, encrypt } from "@/lib/crypto";
 import { getPlanById } from "@/lib/plans";
 
 export const dynamic = "force-dynamic";
 
 const schema = z.object({
-  action: z.enum(["enable", "disable", "delete", "reveal", "reprovision", "edit"]),
+  action: z.enum([
+    "enable",
+    "disable",
+    "delete",
+    "reveal",
+    "reprovision",
+    "edit",
+    "password",
+  ]),
   cancelStripeSubscription: z.boolean().optional().default(false),
+  password: z.string().min(4).max(128).optional(),
   email: z.string().email().max(255).optional(),
   username: z
     .string()
@@ -52,7 +62,10 @@ export async function POST(
   }
   const parsed = schema.safeParse(body);
   if (!parsed.success) {
-    return NextResponse.json({ error: "Invalid action" }, { status: 400 });
+    const msg = parsed.error.issues.some((i) => i.path[0] === "password")
+      ? "Password must be 4-128 characters."
+      : "Invalid action";
+    return NextResponse.json({ error: msg }, { status: 400 });
   }
   const { action, cancelStripeSubscription } = parsed.data;
 
@@ -101,6 +114,34 @@ export async function POST(
           username: user.username,
           password: decrypt(user.password_enc),
         });
+      }
+      case "password": {
+        const password = parsed.data.password;
+        if (!password) {
+          return NextResponse.json(
+            { error: "Enter a new password." },
+            { status: 400 },
+          );
+        }
+        // Update the Jellyfin account if it exists (by stored ID or by name).
+        let jfId = user.jellyfin_user_id;
+        if (!jfId) {
+          const jfUser = await findUserByName(user.username);
+          jfId = jfUser?.Id ?? null;
+        }
+        if (jfId) {
+          await setUserPassword(jfId, password);
+          if (!user.jellyfin_user_id) {
+            db.prepare(
+              "UPDATE users SET jellyfin_user_id = ? WHERE id = ?",
+            ).run(jfId, user.id);
+          }
+        }
+        db.prepare("UPDATE users SET password_enc = ? WHERE id = ?").run(
+          encrypt(password),
+          user.id,
+        );
+        break;
       }
       case "edit": {
         const { email, username, planId } = parsed.data;
