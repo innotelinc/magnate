@@ -22,8 +22,11 @@ export const metadata: Metadata = {
 
 // Applies the saved theme (or the OS preference when "system") before the
 // browser paints, preventing a flash of the wrong theme. Mirrors the logic in
-// components/ThemeToggle.tsx (storage key "theme").
-const themeInitScript = `(function(){try{var t=localStorage.getItem("theme")||"system";var d=t==="dark"||(t==="system"&&window.matchMedia("(prefers-color-scheme: dark)").matches);document.documentElement.setAttribute("data-theme",d?"dark":"light")}catch(e){}})()`;
+// components/ThemeToggle.tsx (storage key "theme"): invalid values fall back to
+// "system", and if localStorage is unavailable (sandboxed previews, hardened
+// privacy modes) the OS preference is used so the correct theme still applies
+// before first paint.
+const themeInitScript = `(function(){var t="system";try{var v=localStorage.getItem("theme");t=v==="light"||v==="dark"||v==="system"?v:"system"}catch(e){}var d=t==="dark"||(t==="system"&&window.matchMedia("(prefers-color-scheme: dark)").matches);document.documentElement.setAttribute("data-theme",d?"dark":"light")})()`;
 
 export default function RootLayout({
   children,
@@ -36,6 +39,7 @@ export default function RootLayout({
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
       <head>
+        <meta name="color-scheme" content="light dark" />
         <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
       </head>
       <body className="min-h-full flex flex-col">
