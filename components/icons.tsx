@@ -149,6 +149,13 @@ export const RefreshIcon = (props: IconProps) => (
   </svg>
 );
 
+export const GlobeIcon = (props: IconProps) => (
+  <svg {...base(props)}>
+    <circle cx="12" cy="12" r="9" />
+    <path d="M3 12h18M12 3a15.3 15.3 0 0 1 0 18 15.3 15.3 0 0 1 0-18z" />
+  </svg>
+);
+
 export const CalendarIcon = (props: IconProps) => (
   <svg {...base(props)}>
     <rect x="3" y="4" width="18" height="18" rx="2" />

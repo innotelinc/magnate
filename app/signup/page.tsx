@@ -40,9 +40,9 @@ export default async function SignupPage({
 
             <div className="mt-10 space-y-4">
               {[
-                ["Instant access", "Your Jellyfin account is provisioned automatically."],
+                ["Instant access", "Your account is provisioned automatically."],
                 ["Cancel anytime", "No lock-in. Manage everything from one place."],
-                ["Account portal", "Reset passwords and manage devices at accounts.innotel.us."],
+                ["Account portal", "Reset your password or manage devices anytime from the account portal."],
               ].map(([title, text]) => (
                 <div key={title} className="flex gap-4">
                   <span className="mt-1 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-indigo-500/25 to-fuchsia-500/25 text-brand-600 ring-1 ring-zinc-950/10 dark:text-brand-300 dark:ring-white/10">

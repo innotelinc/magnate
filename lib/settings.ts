@@ -15,6 +15,9 @@ const ENV_FALLBACKS: Record<string, string | undefined> = {
   jellyfin_url: process.env.JELLYFIN_URL,
   jellyfin_api_key: process.env.JELLYFIN_API_KEY,
   admin_password: process.env.ADMIN_PASSWORD,
+  authentik_base_url: process.env.AUTHENTIK_BASE_URL,
+  authentik_bootstrap_token: process.env.AUTHENTIK_BOOTSTRAP_TOKEN,
+  account_portal_url: process.env.JFA_GO_URL,
 };
 
 /* ---------- public API ---------- */
@@ -68,6 +71,29 @@ export function adminPassword(): string | undefined {
   return getSetting("admin_password");
 }
 
+export function authentikBaseUrl(): string {
+  return (
+    getSetting("authentik_base_url") || "http://localhost:9000"
+  );
+}
+
+export function authentikBootstrapToken(): string | undefined {
+  return getSetting("authentik_bootstrap_token");
+}
+
+/**
+ * Self-service account portal (password resets, devices). In the
+ * Authentik-first stack this is Authentik's /if/user/ page (the env var is
+ * still called JFA_GO_URL for backward compatibility with the old jfa-go
+ * portal; see the arr repo's docker-compose.yml).
+ */
+export function accountPortalUrl(): string {
+  return (
+    getSetting("account_portal_url") ||
+    `${authentikBaseUrl().replace(/\/+$/, "")}/if/user/`
+  );
+}
+
 /**
  * Returns only DB-stored settings (no env fallback).
  * Used for export/backup so the file contains only overrides.
@@ -80,6 +106,9 @@ export function getExportableSettings(): Record<string, string> {
     "jellyfin_url",
     "jellyfin_api_key",
     "admin_password",
+    "authentik_base_url",
+    "authentik_bootstrap_token",
+    "account_portal_url",
   ];
 
   const result: Record<string, string> = {};
@@ -101,6 +130,9 @@ export function settingsStatus() {
     jellyfinUrl: jellyfinUrl(),
     stripeCurrency: stripeCurrency(),
     adminPasswordSet: Boolean(adminPassword()),
+    authentikConfigured: Boolean(authentikBaseUrl() && authentikBootstrapToken()),
+    authentikBaseUrl: authentikBaseUrl(),
+    accountPortalUrl: accountPortalUrl(),
   };
 }
 
@@ -119,6 +151,9 @@ export function getSettingsForAdmin(): Record<
     "jellyfin_url",
     "jellyfin_api_key",
     "admin_password",
+    "authentik_base_url",
+    "authentik_bootstrap_token",
+    "account_portal_url",
   ];
 
   const result: Record<
@@ -134,7 +169,7 @@ export function getSettingsForAdmin(): Record<
     const source: "db" | "env" = dbRow ? "db" : "env";
 
     let masked = value;
-    if (value && (key.includes("secret") || key.includes("password") || key.includes("api_key"))) {
+    if (value && (key.includes("secret") || key.includes("password") || key.includes("api_key") || key.includes("token"))) {
       if (value.length <= 8) {
         masked = "••••••••";
       } else {

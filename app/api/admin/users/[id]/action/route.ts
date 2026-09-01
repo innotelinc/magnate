@@ -3,12 +3,12 @@ import { z } from "zod";
 import { requireAdmin } from "@/lib/route-auth";
 import { db, type UserRow } from "@/lib/db";
 import {
-  deleteUser as jellyfinDeleteUser,
-  findUserByName,
-  createUser,
-  setUserEnabled,
+  deleteUser as authentikDeleteUser,
+  ensureUser,
+  findUser,
+  setUserActive,
   setUserPassword,
-} from "@/lib/jellyfin";
+} from "@/lib/authentik";
 import { decrypt, encrypt } from "@/lib/crypto";
 import { getPlanById } from "@/lib/plans";
 
@@ -72,35 +72,32 @@ export async function POST(
   try {
     switch (action) {
       case "enable": {
-        if (!user.jellyfin_user_id) throw new Error("User has no Jellyfin ID");
-        await setUserEnabled(user.jellyfin_user_id, true);
+        // Access is enforced in Authentik — re-enabling the account restores
+        // the LDAP login.
+        const akUser = await findUser(user.username);
+        if (akUser) await setUserActive(akUser.pk, true);
         db.prepare(
           "UPDATE users SET status = 'active', provisioning_error = NULL WHERE id = ?",
         ).run(user.id);
         break;
       }
       case "disable": {
-        if (!user.jellyfin_user_id) throw new Error("User has no Jellyfin ID");
-        await setUserEnabled(user.jellyfin_user_id, false);
+        const akUser = await findUser(user.username);
+        if (akUser) await setUserActive(akUser.pk, false);
         db.prepare("UPDATE users SET status = 'disabled' WHERE id = ?").run(
           user.id,
         );
         break;
       }
       case "reprovision": {
-        // Re-run Jellyfin provisioning (useful if the webhook failed earlier).
+        // Re-run Authentik provisioning (useful if the webhook failed earlier).
         if (!user.password_enc) throw new Error("No stored password");
         const password = decrypt(user.password_enc);
-        let jfUser = user.jellyfin_user_id
-          ? { Id: user.jellyfin_user_id }
-          : await findUserByName(user.username);
-        if (!jfUser) {
-          jfUser = await createUser(user.username, password);
-        }
-        await setUserEnabled(jfUser.Id, true);
+        const akUser = await ensureUser(user.username, user.email);
+        await setUserPassword(akUser.pk, password);
         db.prepare(
-          `UPDATE users SET jellyfin_user_id = ?, status = 'active', provisioning_error = NULL WHERE id = ?`,
-        ).run(jfUser.Id, user.id);
+          "UPDATE users SET status = 'active', provisioning_error = NULL WHERE id = ?",
+        ).run(user.id);
         break;
       }
       case "reveal": {
@@ -123,20 +120,9 @@ export async function POST(
             { status: 400 },
           );
         }
-        // Update the Jellyfin account if it exists (by stored ID or by name).
-        let jfId = user.jellyfin_user_id;
-        if (!jfId) {
-          const jfUser = await findUserByName(user.username);
-          jfId = jfUser?.Id ?? null;
-        }
-        if (jfId) {
-          await setUserPassword(jfId, password);
-          if (!user.jellyfin_user_id) {
-            db.prepare(
-              "UPDATE users SET jellyfin_user_id = ? WHERE id = ?",
-            ).run(jfId, user.id);
-          }
-        }
+        // The password lives in Authentik (Jellyfin LDAP logins use it).
+        const akUser = await ensureUser(user.username, user.email);
+        await setUserPassword(akUser.pk, password);
         db.prepare("UPDATE users SET password_enc = ? WHERE id = ?").run(
           encrypt(password),
           user.id,
@@ -193,11 +179,12 @@ export async function POST(
         break;
       }
       case "delete": {
-        if (user.jellyfin_user_id) {
-          await jellyfinDeleteUser(user.jellyfin_user_id).catch((err) => {
-            console.error("jellyfin delete failed", err);
+        const akUser = await findUser(user.username);
+        if (akUser) {
+          await authentikDeleteUser(akUser.pk).catch((err) => {
+            console.error("authentik delete failed", err);
             throw new Error(
-              `Jellyfin delete failed (${err.status || "network"}). The user may not exist anymore — delete again to remove locally.`,
+              `Authentik delete failed (${err.status || "network"}). The user may not exist anymore — delete again to remove locally.`,
             );
           });
         }

@@ -1,11 +1,11 @@
 import Link from "next/link";
 import { AndroidIcon, AppleIcon, PlayIcon } from "./icons";
-import { jellyfinUrl } from "@/lib/settings";
+import { accountPortalUrl, jellyfinUrl } from "@/lib/settings";
 import { APP_STORE_URLS } from "@/lib/apps";
 
 const APP_URL = process.env.APP_URL || "http://localhost:3000";
 const JELLYFIN_URL = jellyfinUrl();
-const JFA_GO_URL = process.env.JFA_GO_URL || "https://accounts.innotel.us";
+const PORTAL_URL = accountPortalUrl();
 
 export default function Footer() {
   return (
@@ -87,7 +87,7 @@ export default function Footer() {
                 Account
               </span>
               <a
-                href={JFA_GO_URL}
+                href={PORTAL_URL}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-zinc-600 transition-colors hover:text-zinc-950 dark:text-zinc-500 dark:hover:text-white"

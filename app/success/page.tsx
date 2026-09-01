@@ -1,7 +1,7 @@
 import Nav from "@/components/Nav";
 import Footer from "@/components/Footer";
 import SuccessClient from "@/components/SuccessClient";
-import { jellyfinUrl } from "@/lib/settings";
+import { accountPortalUrl, jellyfinUrl } from "@/lib/settings";
 
 export const dynamic = "force-dynamic";
 
@@ -20,7 +20,7 @@ export default async function SuccessPage({
           <SuccessClient
             sessionId={session_id ?? null}
             jellyfinUrl={jellyfinUrl()}
-            jfaGoUrl={process.env.JFA_GO_URL || "https://accounts.innotel.us"}
+            jfaGoUrl={accountPortalUrl()}
             requestUrl={process.env.REQUEST_URL || "https://req.innotel.us"}
           />
         </div>

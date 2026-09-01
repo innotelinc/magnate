@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { db } from "@/lib/db";
 import { getStripe } from "@/lib/stripe";
-import { findUserByName, jellyfinConfigured } from "@/lib/jellyfin";
+import { authentikConfigured, findUser as findAuthentikUser } from "@/lib/authentik";
 import { encrypt, generatePassword } from "@/lib/crypto";
 import { getPlanBySlug } from "@/lib/plans";
 
@@ -75,18 +75,20 @@ export async function POST(req: Request) {
     );
   }
 
-  // Username must be free on the Jellyfin server.
-  if (jellyfinConfigured()) {
+  // Username must be free in Authentik, the account store (LDAP-created
+  // Jellyfin accounts are covered transitively — every subscriber has an
+  // Authentik account). Local users are already checked above.
+  if (authentikConfigured()) {
     try {
-      const existing = await findUserByName(username);
+      const existing = await findAuthentikUser(username);
       if (existing) {
         return NextResponse.json(
-          { error: "That username is already taken on the server." },
+          { error: "That username is already taken." },
           { status: 409 },
         );
       }
     } catch {
-      // Jellyfin unreachable — defer uniqueness checks to provisioning.
+      // Authentik unreachable — defer uniqueness checks to provisioning.
     }
   }
 

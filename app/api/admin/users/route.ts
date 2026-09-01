@@ -3,7 +3,7 @@ import { z } from "zod";
 import { requireAdmin } from "@/lib/route-auth";
 import { db } from "@/lib/db";
 import { encrypt } from "@/lib/crypto";
-import { createUser, findUserByName, setUserEnabled } from "@/lib/jellyfin";
+import { ensureUser, setUserPassword } from "@/lib/authentik";
 import { getPlanById } from "@/lib/plans";
 
 export const dynamic = "force-dynamic";
@@ -42,7 +42,7 @@ const createSchema = z.object({
     .regex(/^[a-zA-Z0-9_][a-zA-Z0-9._-]*$/, "Username must start with a letter/number and contain only letters, numbers, dots, dashes, and underscores."),
   password: z.string().min(4).max(128),
   planId: z.number().int().positive().optional().nullable(),
-  provisionJellyfin: z.boolean().optional().default(true),
+  provisionAuthentik: z.boolean().optional().default(true),
 });
 
 export async function POST(req: Request) {
@@ -67,7 +67,7 @@ export async function POST(req: Request) {
     );
   }
 
-  const { email, username, password, planId, provisionJellyfin } = parsed.data;
+  const { email, username, password, planId, provisionAuthentik } = parsed.data;
 
   // Check for duplicate email / username.
   const existing = db
@@ -91,36 +91,33 @@ export async function POST(req: Request) {
   // Encrypt password for storage.
   const passwordEnc = encrypt(password);
 
-  let jellyfinUserId: string | null = null;
+  let provisioned = false;
   let provisioningError: string | null = null;
 
-  if (provisionJellyfin) {
+  if (provisionAuthentik) {
     try {
-      // Check if user already exists in Jellyfin.
-      let jfUser = await findUserByName(username);
-      if (!jfUser) {
-        jfUser = await createUser(username, password);
-      }
-      await setUserEnabled(jfUser.Id, true);
-      jellyfinUserId = jfUser.Id;
+      // Authentik is the account store: create the user (if billing-api
+      // hasn't) and set the password so the LDAP login works.
+      const akUser = await ensureUser(username, email);
+      await setUserPassword(akUser.pk, password);
+      provisioned = true;
     } catch (err) {
       provisioningError =
-        err instanceof Error ? err.message : "Jellyfin provisioning failed";
+        err instanceof Error ? err.message : "Authentik provisioning failed";
       // Continue anyway — user is created in local DB.
     }
   }
 
   const info = db
     .prepare(
-      `INSERT INTO users (email, username, jellyfin_user_id, plan_id, status, password_enc)
-       VALUES (?, ?, ?, ?, ?, ?)`,
+      `INSERT INTO users (email, username, plan_id, status, password_enc)
+       VALUES (?, ?, ?, ?, ?)`,
     )
     .run(
       email,
       username,
-      jellyfinUserId,
       planId ?? null,
-      jellyfinUserId ? "active" : "pending",
+      provisioned ? "active" : "pending",
       passwordEnc,
     );
 
