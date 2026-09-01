@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import type Stripe from "stripe";
 import { db, type UserRow } from "@/lib/db";
 import { getStripe, stripeConfigured } from "@/lib/stripe";
-import { createUser, findUserByName, setUserEnabled } from "@/lib/jellyfin";
+import { ensureUser, setUserPassword } from "@/lib/authentik";
 import { decrypt } from "@/lib/crypto";
 import { getPlanBySlug } from "@/lib/plans";
 import { stripeWebhookSecret } from "@/lib/settings";
@@ -58,16 +58,20 @@ function getPeriodEnd(sub: {
   return sub.items?.data?.[0]?.current_period_end ?? null;
 }
 
-/** Provision a Jellyfin account for a paid checkout. */
+/** Provision the Authentik account for a paid checkout. */
 async function provisionUser(session: Stripe.Checkout.Session): Promise<void> {
   const username = session.metadata?.username;
   const planSlug = session.metadata?.plan_slug;
   if (!username) throw new Error("checkout session missing username metadata");
 
   const user = getUserByUsername(username);
-  if (user && user.jellyfin_user_id) return; // already provisioned
-
+  // Authentik is the account store: the user + password must be provisioned
+  // there so the LDAP login works. (Jellyfin accounts are created automatically
+  // on first login by the LDAP plugin.)
+  const email = session.metadata?.email ?? user?.email ?? `${username}@local`;
   const plan = planSlug ? getPlanBySlug(planSlug) : undefined;
+
+  const akUser = await ensureUser(username, email);
 
   // Fall back to a freshly generated password if the checkout pre-row is missing
   // (e.g. the webhook fired for a session created before this deploy).
@@ -77,17 +81,7 @@ async function provisionUser(session: Stripe.Checkout.Session): Promise<void> {
     passwordEnc = encrypt(generatePassword());
   }
   const password = decrypt(passwordEnc);
-
-  // Create the user in Jellyfin (idempotent-ish: reuse if it already exists).
-  let jellyfinUser;
-  try {
-    jellyfinUser = await createUser(username, password);
-  } catch (err) {
-    jellyfinUser = await findUserByName(username);
-    if (!jellyfinUser) throw err;
-  }
-
-  await setUserEnabled(jellyfinUser.Id, true);
+  await setUserPassword(akUser.pk, password);
 
   const subscriptionId =
     typeof session.subscription === "string" ? session.subscription : undefined;
@@ -108,21 +102,16 @@ async function provisionUser(session: Stripe.Checkout.Session): Promise<void> {
       .prepare(
         "INSERT INTO users (email, username, password_enc, status) VALUES (?, ?, ?, 'pending')",
       )
-      .run(
-        session.metadata?.email ?? `${username}@local`,
-        username,
-        passwordEnc,
-      );
+      .run(email, username, passwordEnc);
     userId = Number(info.lastInsertRowid);
   }
 
   db.prepare(
     `UPDATE users SET
-       jellyfin_user_id = ?, stripe_customer_id = ?, stripe_subscription_id = ?,
+       jellyfin_user_id = NULL, stripe_customer_id = ?, stripe_subscription_id = ?,
        plan_id = ?, status = ?, current_period_end = ?, provisioning_error = NULL
      WHERE id = ?`,
   ).run(
-    jellyfinUser.Id,
     customerId ?? null,
     subscriptionId ?? null,
     plan?.id ?? user?.plan_id ?? null,
@@ -142,14 +131,8 @@ async function handleSubscriptionUpdated(
     "UPDATE users SET status = ?, current_period_end = ? WHERE id = ?",
   ).run(status, getPeriodEnd(subscription), user.id);
 
-  // Re-enable access when the subscription becomes active again.
-  if (status === "active" && user.jellyfin_user_id) {
-    try {
-      await setUserEnabled(user.jellyfin_user_id, true);
-    } catch {
-      // best-effort
-    }
-  }
+  // Access enable/disable is enforced in Authentik by billing-api (the second
+  // Stripe webhook) — this endpoint only tracks billing state for the admin UI.
 }
 
 async function handleSubscriptionDeleted(
@@ -158,14 +141,9 @@ async function handleSubscriptionDeleted(
   const user = getUserBySubscription(subscription.id);
   if (!user) return;
   db.prepare("UPDATE users SET status = 'cancelled' WHERE id = ?").run(user.id);
-  // Revoke access — disable rather than delete so re-subscribing is painless.
-  if (user.jellyfin_user_id) {
-    try {
-      await setUserEnabled(user.jellyfin_user_id, false);
-    } catch {
-      // best-effort
-    }
-  }
+  // Revoking access is handled by billing-api (it disables the user in
+  // Authentik, which blocks the LDAP login) — this endpoint only tracks
+  // billing state for the admin UI.
 }
 
 export async function POST(req: Request) {
@@ -227,13 +205,6 @@ export async function POST(req: Request) {
             db.prepare(
               "UPDATE users SET status = 'active', current_period_end = ? WHERE id = ?",
             ).run(invoice.lines?.data?.[0]?.period?.end ?? null, user.id);
-            if (user.jellyfin_user_id) {
-              try {
-                await setUserEnabled(user.jellyfin_user_id, true);
-              } catch {
-                /* best-effort */
-              }
-            }
           }
         }
         break;

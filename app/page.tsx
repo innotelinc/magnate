@@ -15,6 +15,8 @@ import {
   CheckIcon,
   CreditCardIcon,
   ServerIcon,
+  GlobeIcon,
+  RefreshIcon,
 } from "@/components/icons";
 import { listActivePlans, planPublic } from "@/lib/plans";
 
@@ -85,7 +87,7 @@ export default async function Home() {
     },
     {
       q: "What if I forget my password?",
-      a: "Use the account portal at accounts.innotel.us to reset your password at any time.",
+      a: "Open the account portal from the manage page (or the footer) to reset your password at any time — your login stays the same.",
     },
     {
       q: "Can I cancel my subscription?",
@@ -230,6 +232,69 @@ export default async function Home() {
                       {step.text}
                     </p>
                   </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {/* ONE ACCOUNT */}
+        <section
+          id="account"
+          className="scroll-mt-20 border-t border-zinc-950/10 py-24 dark:border-white/[0.06]"
+        >
+          <div className="mx-auto max-w-6xl px-4 sm:px-6">
+            <div className="mx-auto max-w-2xl text-center">
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-zinc-950/10 bg-black/[0.04] px-3 py-1 text-xs font-medium text-brand-600 dark:border-white/10 dark:bg-white/[0.04] dark:text-brand-300">
+                <KeyIcon className="h-3.5 w-3.5" />
+                One account, everywhere
+              </span>
+              <h2 className="mt-5 text-4xl font-bold tracking-tight sm:text-5xl">
+                Sign in once.{" "}
+                <span className="text-gradient">Watch anywhere.</span>
+              </h2>
+              <p className="mt-4 text-lg text-zinc-600 dark:text-zinc-400">
+                Your username and password are your key to the whole service —
+                one secure account that works on every Jellyfin app and the
+                account portal.
+              </p>
+            </div>
+
+            <div className="mt-14 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+              {[
+                {
+                  icon: UserIcon,
+                  title: "One login",
+                  text: "The credentials from your signup sign you in on every device and app — no separate accounts.",
+                },
+                {
+                  icon: RefreshIcon,
+                  title: "Reset anytime",
+                  text: "Forgot your password? Reset it yourself in the account portal — no waiting on support.",
+                },
+                {
+                  icon: GlobeIcon,
+                  title: "Works everywhere",
+                  text: "Web, TV, phone, tablet and console apps all use the same secure login.",
+                },
+                {
+                  icon: ShieldIcon,
+                  title: "Always in control",
+                  text: "Your subscription controls your access — renew to keep streaming, cancel anytime.",
+                },
+              ].map(({ icon: Icon, title, text }, i) => (
+                <div
+                  key={title}
+                  style={{ animationDelay: `${i * 80}ms` }}
+                  className="animate-fade-up group rounded-2xl border border-zinc-950/10 bg-black/[0.02] p-6 transition-all duration-300 hover:-translate-y-1 hover:border-brand-400/50 hover:bg-black/[0.04] dark:border-white/[0.07] dark:bg-white/[0.02] dark:hover:bg-white/[0.04]"
+                >
+                  <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-500/20 to-fuchsia-500/20 text-brand-600 ring-1 ring-zinc-950/10 transition-transform duration-300 group-hover:scale-110 dark:text-brand-300 dark:ring-white/10">
+                    <Icon className="h-5 w-5" />
+                  </span>
+                  <h3 className="mt-5 text-lg font-semibold">{title}</h3>
+                  <p className="mt-2 text-sm leading-relaxed text-zinc-600 dark:text-zinc-400">
+                    {text}
+                  </p>
                 </div>
               ))}
             </div>

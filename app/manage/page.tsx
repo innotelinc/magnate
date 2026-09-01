@@ -2,10 +2,12 @@ import Nav from "@/components/Nav";
 import Footer from "@/components/Footer";
 import ManageForm from "@/components/ManageForm";
 import { LockIcon, UserIcon } from "@/components/icons";
+import { accountPortalUrl } from "@/lib/settings";
 
 export const dynamic = "force-dynamic";
 
 export default function ManagePage() {
+  const portalUrl = accountPortalUrl();
   return (
     <>
       <Nav />
@@ -30,14 +32,15 @@ export default function ManagePage() {
                 <div>
                   <p className="font-medium">Password & devices</p>
                   <p className="text-sm text-zinc-600 dark:text-zinc-500">
-                    For Jellyfin account settings (password, devices), head to{" "}
+                    Jellyfin logins use your Authentik account — reset your
+                    password or manage devices in the{" "}
                     <a
-                      href={process.env.JFA_GO_URL || "https://accounts.innotel.us"}
+                      href={portalUrl}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="text-brand-600 underline-offset-2 hover:underline dark:text-brand-300"
                     >
-                      accounts.innotel.us
+                      account portal
                     </a>
                     .
                   </p>

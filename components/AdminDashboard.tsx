@@ -56,6 +56,9 @@ interface StatusInfo {
   jellyfinUrl: string;
   stripeCurrency: string;
   adminPasswordSet: boolean;
+  authentikConfigured: boolean;
+  authentikBaseUrl: string;
+  accountPortalUrl: string;
 }
 
 interface AdminSetting {
@@ -338,12 +341,12 @@ function UserEditor({
           username,
           password,
           planId: planId ? Number(planId) : null,
-          provisionJellyfin: provision,
+          provisionAuthentik: provision,
         }),
       });
       let msg = `User "${username}" created.`;
       if (res.provisioningError) {
-        msg += ` ⚠ Jellyfin: ${res.provisioningError}`;
+        msg += ` ⚠ Authentik: ${res.provisioningError}`;
       }
       onSaved(msg);
       onDone();
@@ -410,7 +413,7 @@ function UserEditor({
             onChange={(e) => setProvision(e.target.checked)}
             className="h-4 w-4 accent-indigo-500"
           />
-          Create account in Jellyfin
+          Create account in Authentik (Jellyfin login)
         </label>
       </div>
 
@@ -595,6 +598,21 @@ const SETTING_FIELDS: {
     key: "admin_password",
     label: "Admin Password",
     placeholder: "strong-password",
+  },
+  {
+    key: "authentik_base_url",
+    label: "Authentik URL",
+    placeholder: "http://localhost:9000",
+  },
+  {
+    key: "authentik_bootstrap_token",
+    label: "Authentik Bootstrap Token",
+    placeholder: "ak-bootstrap-…",
+  },
+  {
+    key: "account_portal_url",
+    label: "Account Portal URL",
+    placeholder: "http://localhost:9000/if/user/",
   },
 ];
 
@@ -936,8 +954,9 @@ function PasswordResetModal({
               Password updated
             </h3>
             <p className="mt-2 text-xs text-zinc-600 dark:text-zinc-500">
-              {user.username}&apos;s Jellyfin password was changed. Copy it
-              below and share it over a secure channel.
+              {user.username}&apos;s Authentik password was changed — this is
+              what they log into Jellyfin with. Copy it below and share it
+              over a secure channel.
             </p>
             <div className="mt-5 rounded-xl border border-zinc-950/10 bg-black/[0.03] p-4 dark:border-white/10 dark:bg-white/[0.04]">
               <p className="text-xs text-zinc-600 dark:text-zinc-500">
@@ -979,8 +998,9 @@ function PasswordResetModal({
               Reset {user.username}&apos;s password
             </h3>
             <p className="mt-2 text-xs text-zinc-600 dark:text-zinc-500">
-              The new password applies to their Jellyfin account and is stored
-              encrypted. Share it only over a secure channel.
+              The new password applies to their Authentik account (Jellyfin
+              logins use it) and is stored encrypted. Share it only over a
+              secure channel.
             </p>
           </>
         )}
@@ -1116,7 +1136,7 @@ export default function AdminDashboard() {
             ? " and cancel their Stripe subscription"
             : "";
         const ok = window.confirm(
-          `Delete ${user.username} from Jellyfin${stripeMsg}? This cannot be undone.`,
+          `Delete ${user.username}'s account (Authentik)${stripeMsg}? This cannot be undone.`,
         );
         if (!ok) return;
       }
@@ -1237,11 +1257,18 @@ export default function AdminDashboard() {
                 : "Missing webhook secret",
             },
             {
+              label: "Authentik",
+              ok: status.authentikConfigured,
+              detail: status.authentikConfigured
+                ? status.authentikBaseUrl
+                : "Missing API credentials",
+            },
+            {
               label: "Jellyfin",
               ok: status.jellyfinConfigured,
               detail: status.jellyfinConfigured
                 ? status.jellyfinUrl
-                : "Missing API key",
+                : "Missing API key (optional)",
             },
             {
               label: "Admin password",
@@ -1497,7 +1524,7 @@ export default function AdminDashboard() {
                               <EyeIcon className="h-3.5 w-3.5" />
                             </button>
                             <button
-                              title="Re-provision in Jellyfin"
+                              title="Re-provision in Authentik"
                               onClick={() => userAction(user, "reprovision")}
                               disabled={busy === user.id}
                               className="rounded-lg border border-zinc-950/15 px-2 py-1 text-xs transition-colors hover:border-zinc-950/30 disabled:opacity-50 dark:border-white/10 dark:hover:border-white/30"
@@ -1521,7 +1548,7 @@ export default function AdminDashboard() {
                               On
                             </button>
                             <button
-                              title="Delete from Jellyfin + cancel subscription"
+                              title="Delete account (Authentik) + cancel subscription"
                               onClick={() => userAction(user, "delete", { cancelStripeSubscription: true })}
                               disabled={busy === user.id}
                               className="rounded-lg border border-rose-500/30 px-2 py-1 text-xs text-rose-600 transition-colors hover:bg-rose-500/10 disabled:opacity-50 dark:text-rose-300"

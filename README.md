@@ -1,26 +1,31 @@
 # Innotel Media — Jellyfin Subscription Site
 
 A modern subscription site for a self-hosted **Jellyfin** media server.
-Users pick a monthly or yearly plan, pay through **Stripe**, and a Jellyfin
-account is provisioned automatically. Plans are managed from an **admin
-panel**; users manage their Jellyfin account on your existing **jfa-go**
-portal (`accounts.innotel.us`).
+Users pick a monthly or yearly plan, pay through **Stripe**, and their
+account is provisioned in **Authentik** — the stack's identity provider.
+Jellyfin logins authenticate against Authentik through the **LDAP outpost**,
+so a paid subscriber's credentials are the same everywhere. Plans are managed
+from an **admin panel**; users manage their own account (password resets) in
+Authentik's self-service portal.
 
 ## About
 
 **Innotel Media** is a private, self-hosted streaming service built on
 [Jellyfin](https://jellyfin.org). We run and manage our own media server and
-subscription infrastructure — Stripe handles payments, jfa-go powers the
-account portal, and Jellyseerr handles movie & TV requests for Premium
-subscribers. No ads, no tracking: just a fast, private library for you and
+subscription infrastructure — Stripe handles payments, Authentik is the
+identity provider (users & passwords, with Jellyfin authenticating against it
+through the LDAP outpost), and Jellyseerr handles movie & TV requests for
+Premium subscribers. No ads, no tracking: just a fast, private library for you and
 your family.
 
 ## Features
 
 - 💳 **Stripe billing** — hosted Checkout (cards, Apple Pay, Google Pay), one-time
   credential reveal after payment, Customer Portal for upgrades/downgrades/cancellations
-- 📺 **Jellyfin provisioning** — creates the user via the Jellyfin API the moment
-  payment is confirmed; disables access when a subscription is cancelled
+- 📺 **Authentik-first accounts** — the moment payment is confirmed the
+  subscriber's Authentik account is created with a generated password; Jellyfin
+  authenticates against Authentik via the LDAP outpost, and disabling the
+  Authentik user blocks their Jellyfin login immediately
 - 🗓️ **3 subscription tiers** — Basic, Standard & Premium, each with monthly
   and yearly pricing; editable from the admin panel; prices sync to Stripe
   automatically (new prices are created when you change an amount)
@@ -28,10 +33,10 @@ your family.
   Jellyseerr request portal (`req.innotel.us`) for requesting movies & shows;
   the request link appears only on the success page for Premium purchases
 - 🔐 **Admin panel** — edit/create/delete plans, view users, reveal (encrypted)
-  credentials, enable/disable/delete Jellyfin users, re-provision failed accounts
+  credentials, enable/disable/delete Authentik users, re-provision failed accounts
 - 🗄️ **Local SQLite database** — no external database service needed
-- 🌐 **jfa-go integration** — account portal is linked everywhere; users reset
-  passwords and manage devices there
+- 🌐 **Authentik self-service portal** — linked everywhere; users reset passwords
+  and manage devices in Authentik's `/if/user/` page
 
 ## Plans
 
@@ -65,7 +70,8 @@ Visitor ──▶ Landing page ──▶ /signup ──▶ Stripe Checkout
 - Node.js 20+ (local dev) or Docker (recommended for deployment)
 - A Jellyfin server with an **API key**
 - Stripe account (test mode is fine to start)
-- An existing jfa-go instance (for the account portal link)
+- An Authentik instance with a **bootstrap token** (accounts & passwords live
+  there; Jellyfin authenticates via the LDAP outpost)
 - A Jellyseerr (or similar) request portal for the Premium request perk — its
   access must be restricted to Premium Jellyfin users on the Jellyseerr side
 
@@ -81,7 +87,9 @@ Copy `.env.sample` to `.env` and fill it in:
 | `STRIPE_CURRENCY` | Currency for plan prices, e.g. `usd` (default) |
 | `JELLYFIN_URL` | Your Jellyfin server, e.g. `https://media.innotel.us` |
 | `JELLYFIN_API_KEY` | Jellyfin **Dashboard → Advanced → API Keys** |
-| `JFA_GO_URL` | Your jfa-go portal, e.g. `https://accounts.innotel.us` |
+| `AUTHENTIK_BASE_URL` | Authentik API, e.g. `https://auth.innotel.us` |
+| `AUTHENTIK_BOOTSTRAP_TOKEN` | Authentik bootstrap token (same one the ARR stack's billing-api uses) |
+| `JFA_GO_URL` | Account portal link — Authentik self-service user settings (password resets), e.g. `https://auth.innotel.us/if/user/` |
 | `REQUEST_URL` | Jellyseerr movie/TV request portal (Premium perk), e.g. `https://req.innotel.us` |
 | `ADMIN_PASSWORD` | Password for the admin panel (`/admin`) |
 | `SESSION_SECRET` | Long random string (encrypts stored credentials, signs sessions) |
@@ -149,16 +157,17 @@ npm run dev
 
 1. User picks a plan on the landing page (monthly/yearly toggle).
 2. They enter an email + desired username and are taken to Stripe Checkout.
-3. On payment success, a webhook provisions the Jellyfin account with a
+3. On payment success, a webhook provisions the **Authentik** account with a
    **generated strong password** (encrypted at rest in SQLite) and stores the
    Stripe customer/subscription IDs.
 4. The success page reveals the username + password **once** (polling until the
-   webhook completes). Users are pointed to Jellyfin and to the jfa-go portal
-   (`accounts.innotel.us`) for future password resets. **Premium** purchases also
-   get a link to the request portal (`req.innotel.us`).
-5. `customer.subscription.deleted` → the Jellyfin user is **disabled** (not
-   deleted) so re-subscribing is instant. The admin can fully delete users from
-   the panel.
+   webhook completes). Users are pointed to Jellyfin — where the LDAP plugin
+   auto-creates their account on first login — and to Authentik's self-service
+   portal for future password resets. **Premium** purchases also get a link to
+   the request portal (`req.innotel.us`).
+5. `customer.subscription.deleted` → the Authentik user is set **inactive**,
+   which blocks their LDAP login immediately; re-subscribing is instant. The
+   admin can fully delete users from the panel.
 
 ## 5. Admin panel
 
@@ -212,7 +221,7 @@ docker run -d --name jellyfin-subscription \
 app/                  Pages (landing, signup, success, cancel, manage, admin)
 app/api/              Route handlers (checkout, webhook, claim, manage, admin CRUD)
 components/           React components (pricing, forms, admin dashboard, icons)
-lib/                  db.ts, stripe.ts, jellyfin.ts, crypto.ts, auth.ts, plans.ts
+lib/                  db.ts, stripe.ts, authentik.ts, crypto.ts, auth.ts, plans.ts
 data/                 SQLite database (created at runtime, gitignored)
 ```
 
