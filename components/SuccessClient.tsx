@@ -53,12 +53,12 @@ function CopyButton({ value }: { value: string }) {
 export default function SuccessClient({
   sessionId,
   jellyfinUrl,
-  jfaGoUrl,
+  accountPortalUrl,
   requestUrl,
 }: {
   sessionId: string | null;
   jellyfinUrl: string;
-  jfaGoUrl: string;
+  accountPortalUrl: string;
   requestUrl: string;
 }) {
   const [phase, setPhase] = useState<Phase>({ kind: "polling" });
@@ -223,7 +223,7 @@ export default function SuccessClient({
           </Link>
         )}
         <Link
-          href={jfaGoUrl}
+          href={accountPortalUrl}
           target="_blank"
           rel="noopener noreferrer"
           className="flex items-center justify-center gap-2 rounded-xl border border-zinc-950/15 bg-black/[0.04] py-3.5 text-sm font-medium transition-all hover:border-zinc-950/30 hover:bg-black/[0.06] dark:border-white/15 dark:bg-white/[0.04] dark:hover:border-white/30 dark:hover:bg-white/[0.08]"

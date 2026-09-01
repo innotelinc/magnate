@@ -24,8 +24,8 @@ services:
       AUTHENTIK_BASE_URL: "${AUTHENTIK_BASE_URL:-https://auth.innotel.us}"
       AUTHENTIK_BOOTSTRAP_TOKEN: "${AUTHENTIK_BOOTSTRAP_TOKEN:-your-authentik-bootstrap-token}"
       # Account portal link (footer + success page): Authentik self-service
-      # user settings (password resets) - jfa-go was removed from the stack
-      JFA_GO_URL: "${JFA_GO_URL:-https://auth.innotel.us/if/user/}"
+      # user settings (password resets). Defaults to AUTHENTIK_BASE_URL/if/user/
+      ACCOUNT_PORTAL_URL: "${ACCOUNT_PORTAL_URL:-https://auth.innotel.us/if/user/}"
       # Jellyseerr request portal (movie/TV requests, tied to Jellyfin)
       REQUEST_URL: "${REQUEST_URL:-https://req.innotel.us}"
       # Admin panel

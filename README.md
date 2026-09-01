@@ -89,7 +89,7 @@ Copy `.env.sample` to `.env` and fill it in:
 | `JELLYFIN_API_KEY` | Jellyfin **Dashboard → Advanced → API Keys** |
 | `AUTHENTIK_BASE_URL` | Authentik API, e.g. `https://auth.innotel.us` |
 | `AUTHENTIK_BOOTSTRAP_TOKEN` | Authentik bootstrap token (same one the ARR stack's billing-api uses) |
-| `JFA_GO_URL` | Account portal link — Authentik self-service user settings (password resets), e.g. `https://auth.innotel.us/if/user/` |
+| `ACCOUNT_PORTAL_URL` | Account portal link — Authentik self-service user settings (password resets), e.g. `https://auth.innotel.us/if/user/` (defaults to `AUTHENTIK_BASE_URL/if/user/`) |
 | `REQUEST_URL` | Jellyseerr movie/TV request portal (Premium perk), e.g. `https://req.innotel.us` |
 | `ADMIN_PASSWORD` | Password for the admin panel (`/admin`) |
 | `SESSION_SECRET` | Long random string (encrypts stored credentials, signs sessions) |
