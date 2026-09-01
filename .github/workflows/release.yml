@@ -34,9 +34,11 @@ jobs:
           images: ghcr.io/innotelinc/jellyfin-subscription-platform
           tags: |
             type=semver,pattern={{version}}
+            type=semver,pattern=v{{version}}
             type=semver,pattern={{major}}.{{minor}}
           # latest=auto (the default flavor) adds the `latest` tag for stable
-          # semver tags and omits it for prereleases.
+          # semver tags and omits it for prereleases. The v{{version}} tag keeps
+          # the v-prefixed convention the ARR stack's docker-compose.yml uses.
 
       - name: Build and push
         uses: docker/build-push-action@v6

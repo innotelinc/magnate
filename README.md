@@ -115,7 +115,7 @@ Because the repo is private, authenticate to GHCR first with a token that has
 
 ```bash
 echo YOUR_GH_PAT | docker login ghcr.io -u YOUR_GITHUB_USERNAME --password-stdin
-docker pull ghcr.io/innotelinc/jellyfin-subscription-platform:v1.0.0
+docker pull ghcr.io/innotelinc/jellyfin-subscription-platform:v1.2.0
 ```
 
 The site is served on port 3000 (persisted DB lives in `./data`). Point your
@@ -200,7 +200,7 @@ Each tagged release is published as a container image to GitHub Container
 Registry:
 
 ```
-ghcr.io/innotelinc/jellyfin-subscription-platform:v1.0.0
+ghcr.io/innotelinc/jellyfin-subscription-platform:v1.2.0
 ```
 
 The image runs as a non-root `node` user and expects `/app/data` to be writable for
@@ -212,7 +212,7 @@ docker run -d --name jellyfin-subscription \
   -p 3000:3000 \
   -v "$(pwd)/data:/app/data" \
   --env-file .env \
-  ghcr.io/innotelinc/jellyfin-subscription-platform:v1.0.0
+  ghcr.io/innotelinc/jellyfin-subscription-platform:v1.2.0
 ```
 
 ## Project structure
