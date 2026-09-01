@@ -20,7 +20,7 @@ export default async function SuccessPage({
           <SuccessClient
             sessionId={session_id ?? null}
             jellyfinUrl={jellyfinUrl()}
-            jfaGoUrl={accountPortalUrl()}
+            accountPortalUrl={accountPortalUrl()}
             requestUrl={process.env.REQUEST_URL || "https://req.innotel.us"}
           />
         </div>

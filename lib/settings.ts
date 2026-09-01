@@ -17,7 +17,7 @@ const ENV_FALLBACKS: Record<string, string | undefined> = {
   admin_password: process.env.ADMIN_PASSWORD,
   authentik_base_url: process.env.AUTHENTIK_BASE_URL,
   authentik_bootstrap_token: process.env.AUTHENTIK_BOOTSTRAP_TOKEN,
-  account_portal_url: process.env.JFA_GO_URL,
+  account_portal_url: process.env.ACCOUNT_PORTAL_URL,
 };
 
 /* ---------- public API ---------- */
@@ -83,9 +83,8 @@ export function authentikBootstrapToken(): string | undefined {
 
 /**
  * Self-service account portal (password resets, devices). In the
- * Authentik-first stack this is Authentik's /if/user/ page (the env var is
- * still called JFA_GO_URL for backward compatibility with the old jfa-go
- * portal; see the arr repo's docker-compose.yml).
+ * Authentik-first stack this is Authentik's /if/user/ page; it defaults to
+ * the Authentik base URL so only set ACCOUNT_PORTAL_URL for an override.
  */
 export function accountPortalUrl(): string {
   return (
