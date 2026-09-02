@@ -10,6 +10,7 @@ import {
   FilmIcon,
   LockIcon,
   SparklesIcon,
+  LinkIcon,
 } from "./icons";
 
 interface ClaimResult {
@@ -18,6 +19,8 @@ interface ClaimResult {
   password?: string;
   alreadyClaimed?: boolean;
   planSlug?: string | null;
+  referralCode?: string | null;
+  referralLink?: string | null;
   error?: string;
 }
 
@@ -29,6 +32,8 @@ type Phase =
       password: string;
       alreadyClaimed: boolean;
       planSlug: string | null;
+      referralCode: string | null;
+      referralLink: string | null;
     }
   | { kind: "error"; message: string };
 
@@ -82,6 +87,8 @@ export default function SuccessClient({
           password: data.password!,
           alreadyClaimed: Boolean(data.alreadyClaimed),
           planSlug: data.planSlug ?? null,
+          referralCode: data.referralCode ?? null,
+          referralLink: data.referralLink ?? null,
         });
         return;
       }
@@ -232,6 +239,31 @@ export default function SuccessClient({
           Account portal
         </Link>
       </div>
+
+      {phase.referralLink && phase.referralCode && (
+        <div className="mt-7 rounded-2xl border border-brand-400/25 bg-brand-500/[0.06] p-5">
+          <div className="flex items-center gap-2.5">
+            <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-indigo-500/25 to-fuchsia-500/25 text-brand-600 ring-1 ring-zinc-950/10 dark:text-brand-300 dark:ring-white/10">
+              <LinkIcon className="h-4 w-4" />
+            </span>
+            <div>
+              <p className="text-sm font-semibold">Give a discount, earn referral credit</p>
+              <p className="text-xs text-zinc-600 dark:text-zinc-500">
+                Share your code — when a friend subscribes you earn a referral
+                credit on your next invoice.
+              </p>
+            </div>
+          </div>
+          <div className="mt-3 flex items-center gap-2">
+            <input
+              readOnly
+              value={phase.referralLink}
+              className="min-w-0 flex-1 rounded-lg border border-zinc-950/10 bg-black/[0.04] px-3 py-2 font-mono text-xs text-zinc-700 outline-none focus:border-brand-400 dark:border-white/10 dark:bg-white/[0.05] dark:text-zinc-300"
+            />
+            <CopyButton value={phase.referralLink} />
+          </div>
+        </div>
+      )}
 
       <p className="mt-6 text-center text-xs text-zinc-600 dark:text-zinc-500">
         Prefer a web browser? Open{" "}

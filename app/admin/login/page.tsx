@@ -2,12 +2,14 @@ import { redirect } from "next/navigation";
 import { getAdminToken } from "@/lib/route-auth";
 import AdminLogin from "@/components/AdminLogin";
 import ThemeToggle from "@/components/ThemeToggle";
-import { PlayIcon } from "@/components/icons";
+import { CrownIcon } from "@/components/icons";
+import { getBrand } from "@/lib/tenant";
 
 export const dynamic = "force-dynamic";
 
 export default async function AdminLoginPage() {
   const token = await getAdminToken();
+  const brand = await getBrand();
   if (token) redirect("/admin");
 
   return (
@@ -22,13 +24,13 @@ export default async function AdminLoginPage() {
       <div className="animate-fade-up relative w-full max-w-sm">
         <div className="mb-8 flex flex-col items-center text-center">
           <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-indigo-500 via-violet-500 to-fuchsia-500 shadow-lg shadow-indigo-500/40">
-            <PlayIcon className="h-5 w-5 text-white" />
+            <CrownIcon className="h-5 w-5 text-white" />
           </span>
           <h1 className="mt-4 text-2xl font-bold tracking-tight">
             Admin panel
           </h1>
           <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-500">
-            Innotel Media · sign in to continue
+            {brand.name} · sign in to continue
           </p>
         </div>
 

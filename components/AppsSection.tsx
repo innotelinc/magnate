@@ -1,6 +1,7 @@
 import { AndroidIcon, AppleIcon } from "./icons";
 import { APP_STORE_URLS } from "@/lib/apps";
 import { qrCodeDataUrl } from "@/lib/qr";
+import { getBrand } from "@/lib/tenant";
 
 type StoreBadge = "apple" | "google";
 
@@ -57,6 +58,7 @@ const BADGE_CLASSES: Record<StoreBadge, string> = {
 };
 
 export default async function AppsSection() {
+  const brand = await getBrand();
   const apps = await Promise.all(
     APPS.map(async (app) => ({ ...app, qr: await qrCodeDataUrl(app.url) })),
   );
@@ -73,7 +75,7 @@ export default async function AppsSection() {
           </h2>
           <p className="mt-4 text-lg text-zinc-600 dark:text-zinc-400">
             Scan the code or tap a badge to install the Jellyfin app — then
-            sign in with your Innotel Media credentials and press play.
+            sign in with your {brand.name} credentials and press play.
           </p>
         </div>
 

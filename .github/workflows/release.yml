@@ -6,7 +6,7 @@ on:
       - "v*"
 
 permissions:
-  contents: read
+  contents: write
   packages: write
 
 jobs:
@@ -31,7 +31,7 @@ jobs:
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: ghcr.io/innotelinc/jellyfin-subscription-platform
+          images: ghcr.io/innotelinc/magnate-subscription-platform
           tags: |
             type=semver,pattern={{version}}
             type=semver,pattern=v{{version}}
@@ -49,3 +49,50 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+
+      # Release artifact: a single-platform image tarball for offline deploys.
+      # buildx pushes without keeping a local image, so build once more with
+      # plain docker build and export it.
+      - name: Build artifact image (amd64)
+        run: docker build --platform linux/amd64 -t magnate-release .
+
+      - name: Export and compress image tarball
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          docker save magnate-release | gzip > "magnate-subscription-platform-${VERSION}.tar.gz"
+          sha256sum "magnate-subscription-platform-${VERSION}.tar.gz" > SHA256SUMS
+          ls -lh
+
+      - name: Upload release artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: magnate-release
+          path: |
+            magnate-subscription-platform-*.tar.gz
+            SHA256SUMS
+
+  create-release:
+    name: Create GitHub Release with artifacts
+    needs: publish-docker-image
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: magnate-release
+          path: ./artifacts
+
+      - name: Publish release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          cd ./artifacts
+          VERSION="${GITHUB_REF_NAME#v}"
+          gh release create "$GITHUB_REF_NAME" \
+            --repo "$GITHUB_REPOSITORY" \
+            --title "Magnate v${VERSION}" \
+            --generate-notes \
+            "magnate-subscription-platform-${VERSION}.tar.gz" \
+            SHA256SUMS

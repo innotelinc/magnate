@@ -11,12 +11,13 @@ export const dynamic = "force-dynamic";
 export default async function SignupPage({
   searchParams,
 }: {
-  searchParams: Promise<{ plan?: string; interval?: string }>;
+  searchParams: Promise<{ plan?: string; interval?: string; ref?: string }>;
 }) {
-  const { plan: planSlug, interval } = await searchParams;
+  const { plan: planSlug, interval, ref } = await searchParams;
   const plan = planSlug ? getPlanBySlug(planSlug) : undefined;
   if (!plan || !plan.active) notFound();
   const billing = interval === "year" ? "year" : "month";
+  const refCode = ref?.trim().slice(0, 24) || null;
 
   return (
     <>
@@ -67,6 +68,7 @@ export default async function SignupPage({
                 priceYearlyCents: plan.price_yearly_cents,
               }}
               interval={billing}
+              refCode={refCode}
             />
           </div>
         </div>
