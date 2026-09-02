@@ -15,8 +15,17 @@ export interface PublicPlan {
   highlighted: boolean;
 }
 
-export default function PricingSection({ plans }: { plans: PublicPlan[] }) {
+export default function PricingSection({
+  plans,
+  refCode: refCodeProp,
+}: {
+  plans: PublicPlan[];
+  refCode?: string | null;
+}) {
   const [yearly, setYearly] = useState(true);
+  const refQuery = refCodeProp
+    ? `&ref=${encodeURIComponent(refCodeProp)}`
+    : "";
 
   return (
     <section id="pricing" className="relative scroll-mt-20 py-24">
@@ -133,7 +142,7 @@ export default function PricingSection({ plans }: { plans: PublicPlan[] }) {
                 </ul>
 
                 <Link
-                  href={`/signup?plan=${plan.slug}&interval=${yearly ? "year" : "month"}`}
+                  href={`/signup?plan=${plan.slug}&interval=${yearly ? "year" : "month"}${refQuery}`}
                   className={`mt-8 rounded-xl py-3 text-center text-sm font-semibold transition-all duration-300 ${
                     plan.highlighted
                       ? "bg-gradient-to-r from-indigo-500 via-violet-500 to-fuchsia-500 text-white shadow-lg shadow-indigo-500/30 hover:shadow-indigo-500/50 hover:brightness-110"

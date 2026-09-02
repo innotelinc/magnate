@@ -19,12 +19,20 @@ import {
   RefreshIcon,
 } from "@/components/icons";
 import { listActivePlans, planPublic } from "@/lib/plans";
+import { getBrand } from "@/lib/tenant";
 
 const APP_URL = process.env.APP_URL || "http://localhost:3000";
 
 export const dynamic = "force-dynamic";
 
-export default async function Home() {
+export default async function Home({
+  searchParams,
+}: {
+  searchParams: Promise<{ ref?: string }>;
+}) {
+  const brand = await getBrand();
+  const { ref } = await searchParams;
+  const refCode = ref?.trim().slice(0, 24) || null;
   const plans = listActivePlans().map(planPublic) as PublicPlan[];
   const cheapestPrice =
     Math.min(...plans.map((p) => p.priceMonthlyCents)) / 100;
@@ -175,7 +183,7 @@ export default async function Home() {
         </section>
 
         {/* PRICING */}
-        <PricingSection plans={plans} />
+        <PricingSection plans={plans} refCode={refCode} />
 
         {/* FEATURES */}
         <section id="features" className="scroll-mt-20 border-t border-zinc-950/10 py-24 dark:border-white/[0.06]">
@@ -313,21 +321,17 @@ export default async function Home() {
             <div className="grid items-center gap-12 lg:grid-cols-2 lg:gap-16">
               <div className="animate-fade-up">
                 <h2 className="text-4xl font-bold tracking-tight sm:text-5xl">
-                  About <span className="text-gradient">Innotel Media</span>
+                  About <span className="text-gradient">{brand.name}</span>
                 </h2>
                 <p className="mt-6 text-lg leading-relaxed text-zinc-800 dark:text-zinc-300">
-                  Innotel Media is a private streaming service run on our own
-                  self-hosted Jellyfin server — no ads, no tracking, no
-                  algorithmic noise. Just the movies and shows you want, in
-                  quality up to 4K HDR.
+                  {brand.description}
                 </p>
                 <p className="mt-4 leading-relaxed text-zinc-600 dark:text-zinc-400">
-                  Every account is created and managed on our own
-                  infrastructure: payments are handled securely by Stripe,
-                  subscriptions are managed from one place, and passwords can
-                  be reset anytime through the account portal. Because the
-                  server is ours, your data stays with us — and so does the
-                  speed.
+                  Memberships are managed on our own infrastructure: payments
+                  are handled securely by Stripe, subscriptions are managed
+                  from one place, and passwords can be reset anytime through
+                  the account portal. Because the server is ours, your data
+                  stays with us — and so does the speed.
                 </p>
 
                 <ul className="mt-8 grid gap-3 sm:grid-cols-2">

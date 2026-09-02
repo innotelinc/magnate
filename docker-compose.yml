@@ -1,7 +1,7 @@
 services:
-  jellyfin-subscription-platform:
+  magnate:
     build: .
-    container_name: jellyfin-subscription-platform
+    container_name: magnate
     restart: unless-stopped
     security_opt:
       - apparmor:unconfined
@@ -9,25 +9,37 @@ services:
       - "3000:3000"
     environment:
       # All values come from .env (gitignored — keep secrets out of git!).
-      # Copy .env.example to .env and fill in the real values, or run
+      # Copy .env.sample to .env and fill in the real values, or run
       # `docker compose up -d` and let Compose read them from .env.
-      APP_URL: "${APP_URL:-http://localhost:3000}"
+      APP_URL: "${APP_URL:-https://app.magnate.innotel.us}"
       # Stripe (create keys at https://dashboard.stripe.com/apikeys)
       STRIPE_SECRET_KEY: "${STRIPE_SECRET_KEY:-sk_live_xxx}"
       STRIPE_WEBHOOK_SECRET: "${STRIPE_WEBHOOK_SECRET:-whsec_xxx}"
       STRIPE_CURRENCY: "${STRIPE_CURRENCY:-usd}"
       # Jellyfin server + API key (Dashboard → Advanced → API Keys)
-      JELLYFIN_URL: "${JELLYFIN_URL:-https://media.innotel.us}"
+      JELLYFIN_URL: "${JELLYFIN_URL:-https://media.magnate.innotel.us}"
       JELLYFIN_API_KEY: "${JELLYFIN_API_KEY:-your-jellyfin-api-key}"
       # Authentik - the platform creates/sets the subscriber's password here
       # (Authentik-first: Jellyfin logins authenticate via the LDAP outpost)
-      AUTHENTIK_BASE_URL: "${AUTHENTIK_BASE_URL:-https://auth.innotel.us}"
+      AUTHENTIK_BASE_URL: "${AUTHENTIK_BASE_URL:-https://auth.magnate.innotel.us}"
       AUTHENTIK_BOOTSTRAP_TOKEN: "${AUTHENTIK_BOOTSTRAP_TOKEN:-your-authentik-bootstrap-token}"
       # Account portal link (footer + success page): Authentik self-service
       # user settings (password resets). Defaults to AUTHENTIK_BASE_URL/if/user/
-      ACCOUNT_PORTAL_URL: "${ACCOUNT_PORTAL_URL:-https://auth.innotel.us/if/user/}"
+      ACCOUNT_PORTAL_URL: "${ACCOUNT_PORTAL_URL:-https://auth.magnate.innotel.us/if/user/}"
       # Jellyseerr request portal (movie/TV requests, tied to Jellyfin)
-      REQUEST_URL: "${REQUEST_URL:-https://req.innotel.us}"
+      REQUEST_URL: "${REQUEST_URL:-https://req.magnate.innotel.us}"
+      # The ARR stack's billing-api (served at api.magnate.innotel.us) —
+      # handles Authentik access revocation and a second Stripe webhook.
+      BILLING_API_URL: "${BILLING_API_URL:-https://api.magnate.innotel.us}"
+      # Affiliate & referral program
+      # % of a referral's first payment credited to the referrer (0 disables)
+      REFERRAL_REWARD_PERCENT: "${REFERRAL_REWARD_PERCENT:-10}"
+      # Optional Stripe coupon ID applied to referred signups' first invoice
+      REFERRAL_COUPON_ID: "${REFERRAL_COUPON_ID:-}"
+      # AI recommendations & churn prevention (OpenAI-compatible API)
+      AI_API_URL: "${AI_API_URL:-https://api.openai.com/v1}"
+      AI_API_KEY: "${AI_API_KEY:-}"
+      AI_MODEL: "${AI_MODEL:-gpt-4o-mini}"
       # Admin panel
       ADMIN_PASSWORD: "${ADMIN_PASSWORD:-change-me-to-a-strong-password}"
       # Used to encrypt stored credentials and sign admin sessions

@@ -5,6 +5,8 @@ const ALGORITHM = "aes-256-gcm";
 function getKey(): Buffer {
   const secret = process.env.SESSION_SECRET;
   if (!secret) throw new Error("SESSION_SECRET env var is required");
+  // Salt is intentionally unchanged across the rebrand: changing it would make
+  // existing stored credentials undecryptable.
   return crypto.scryptSync(secret, "jellyfin-subscription-v1", 32);
 }
 

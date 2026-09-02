@@ -6,6 +6,10 @@ import { ensureUser, setUserPassword } from "@/lib/authentik";
 import { decrypt } from "@/lib/crypto";
 import { getPlanBySlug } from "@/lib/plans";
 import { stripeWebhookSecret } from "@/lib/settings";
+import {
+  creditReferrer,
+  firstPaymentCentsFor,
+} from "@/lib/referrals";
 
 export const dynamic = "force-dynamic";
 
@@ -58,8 +62,10 @@ function getPeriodEnd(sub: {
   return sub.items?.data?.[0]?.current_period_end ?? null;
 }
 
-/** Provision the Authentik account for a paid checkout. */
-async function provisionUser(session: Stripe.Checkout.Session): Promise<void> {
+/** Provision the Authentik account for a paid checkout. Returns the user id. */
+async function provisionUser(
+  session: Stripe.Checkout.Session,
+): Promise<number | undefined> {
   const username = session.metadata?.username;
   const planSlug = session.metadata?.plan_slug;
   if (!username) throw new Error("checkout session missing username metadata");
@@ -119,6 +125,7 @@ async function provisionUser(session: Stripe.Checkout.Session): Promise<void> {
     currentPeriodEnd,
     userId,
   );
+  return userId;
 }
 
 async function handleSubscriptionUpdated(
@@ -178,7 +185,23 @@ export async function POST(req: Request) {
       case "checkout.session.completed": {
         const session = event.data.object as Stripe.Checkout.Session;
         if (session.mode === "subscription") {
-          await provisionUser(session);
+          const userId = await provisionUser(session);
+          // Referral program: credit the referrer a % of the first payment.
+          if (userId && session.metadata?.ref_applied === "1") {
+            const user = db
+              .prepare("SELECT * FROM users WHERE id = ?")
+              .get(userId) as UserRow | undefined;
+            if (user?.referred_by) {
+              const planId =
+                typeof user.plan_id === "number" ? user.plan_id : null;
+              const interval =
+                session.metadata?.interval === "year" ? "year" : "month";
+              await creditReferrer(
+                user,
+                firstPaymentCentsFor(user.id, planId, interval),
+              );
+            }
+          }
         }
         break;
       }
@@ -196,15 +219,35 @@ export async function POST(req: Request) {
       }
       case "invoice.payment_succeeded": {
         const invoice = event.data.object as unknown as {
+          id?: string;
           subscription?: string | null;
-          lines?: { data?: Array<{ period?: { end?: number } }> };
+          amount_paid?: number;
+          currency?: string;
+          lines?: {
+            data?: Array<{ period?: { start?: number; end?: number } }>;
+          };
         };
         if (typeof invoice.subscription === "string") {
           const user = getUserBySubscription(invoice.subscription);
           if (user) {
             db.prepare(
-              "UPDATE users SET status = 'active', current_period_end = ? WHERE id = ?",
+              "UPDATE users SET status = 'active', current_period_end = ?, payment_failed_count = 0, last_payment_failed_at = NULL WHERE id = ?",
             ).run(invoice.lines?.data?.[0]?.period?.end ?? null, user.id);
+            // Revenue ledger for the analytics dashboard.
+            if (invoice.id && invoice.amount_paid && invoice.amount_paid > 0) {
+              db.prepare(
+                `INSERT OR IGNORE INTO payments
+                   (invoice_id, user_id, amount_cents, currency, period_start, period_end)
+                 VALUES (?, ?, ?, ?, ?, ?)`,
+              ).run(
+                invoice.id,
+                user.id,
+                invoice.amount_paid,
+                (invoice.currency ?? "usd").toLowerCase(),
+                invoice.lines?.data?.[0]?.period?.start ?? null,
+                invoice.lines?.data?.[0]?.period?.end ?? null,
+              );
+            }
           }
         }
         break;
@@ -216,9 +259,13 @@ export async function POST(req: Request) {
         if (typeof invoice.subscription === "string") {
           const user = getUserBySubscription(invoice.subscription);
           if (user) {
-            db.prepare("UPDATE users SET status = 'past_due' WHERE id = ?").run(
-              user.id,
-            );
+            db.prepare(
+              `UPDATE users SET
+                 status = 'past_due',
+                 payment_failed_count = payment_failed_count + 1,
+                 last_payment_failed_at = datetime('now')
+               WHERE id = ?`,
+            ).run(user.id);
           }
         }
         break;

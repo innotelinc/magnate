@@ -5,6 +5,7 @@ import { getStripe } from "@/lib/stripe";
 import { authentikConfigured, findUser as findAuthentikUser } from "@/lib/authentik";
 import { encrypt, generatePassword } from "@/lib/crypto";
 import { getPlanBySlug } from "@/lib/plans";
+import { applyReferral, referralCouponId } from "@/lib/referrals";
 
 export const dynamic = "force-dynamic";
 
@@ -20,6 +21,7 @@ const schema = z.object({
       /^[a-zA-Z0-9](?:[a-zA-Z0-9._-]{1,30}[a-zA-Z0-9])?$/,
       "Username must be 3–32 characters using letters, numbers, dots, dashes or underscores (no leading/trailing punctuation).",
     ),
+  refCode: z.string().trim().min(5).max(24).optional(),
 });
 
 export async function POST(req: Request) {
@@ -37,7 +39,7 @@ export async function POST(req: Request) {
       { status: 400 },
     );
   }
-  const { planSlug, interval, email, username } = parsed.data;
+  const { planSlug, interval, email, username, refCode } = parsed.data;
 
   const plan = getPlanBySlug(planSlug);
   if (!plan || !plan.active) {
@@ -122,6 +124,15 @@ export async function POST(req: Request) {
     );
   }
 
+  // Affiliate/referral: attribute the signup and optionally apply a first-
+  // invoice discount coupon to the referred customer.
+  let refApplied = false;
+  if (refCode) {
+    const referrer = applyReferral(userId, refCode);
+    if (referrer) refApplied = true;
+  }
+  const couponId = referralCouponId();
+
   try {
     const session = await getStripe().checkout.sessions.create({
       mode: "subscription",
@@ -134,10 +145,14 @@ export async function POST(req: Request) {
         plan_slug: plan.slug,
         interval,
         user_id: String(userId),
+        ref_applied: refApplied ? "1" : "0",
       },
       subscription_data: {
         metadata: { username, user_id: String(userId) },
       },
+      ...(refApplied && couponId
+        ? { discounts: [{ coupon: couponId }] }
+        : {}),
       success_url: `${process.env.APP_URL || "http://localhost:3000"}/success?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${process.env.APP_URL || "http://localhost:3000"}/cancel`,
       allow_promotion_codes: true,

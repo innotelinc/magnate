@@ -1,10 +1,11 @@
 import Database from "better-sqlite3";
+import crypto from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
 
 const dbPath =
   process.env.DATABASE_PATH ||
-  path.join(process.cwd(), "data", "jellyfin.db");
+  path.join(process.cwd(), "data", "magnate.db");
 
 fs.mkdirSync(path.dirname(dbPath), { recursive: true });
 
@@ -37,6 +38,18 @@ db.exec(`
     highlighted INTEGER NOT NULL DEFAULT 0,
     active INTEGER NOT NULL DEFAULT 1,
     sort_order INTEGER NOT NULL DEFAULT 0,
+    created_at TEXT NOT NULL DEFAULT (datetime('now'))
+  );
+
+  CREATE TABLE IF NOT EXISTS tenants (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    slug TEXT NOT NULL UNIQUE,
+    name TEXT NOT NULL,
+    tagline TEXT NOT NULL DEFAULT 'Subscription Platform',
+    description TEXT,
+    domains TEXT NOT NULL DEFAULT '[]',
+    footer_note TEXT,
+    active INTEGER NOT NULL DEFAULT 1,
     created_at TEXT NOT NULL DEFAULT (datetime('now'))
   );
 
@@ -82,6 +95,77 @@ db.exec(`
     key TEXT PRIMARY KEY,
     value TEXT NOT NULL
   );
+
+  CREATE TABLE IF NOT EXISTS referral_events (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    referrer_user_id INTEGER NOT NULL,
+    referred_user_id INTEGER NOT NULL,
+    amount_cents INTEGER NOT NULL DEFAULT 0,
+    created_at TEXT NOT NULL DEFAULT (datetime('now'))
+  );
+
+  CREATE TABLE IF NOT EXISTS payments (
+    invoice_id TEXT PRIMARY KEY,
+    user_id INTEGER NOT NULL,
+    amount_cents INTEGER NOT NULL,
+    currency TEXT NOT NULL DEFAULT 'usd',
+    period_start INTEGER,
+    period_end INTEGER,
+    created_at TEXT NOT NULL DEFAULT (datetime('now'))
+  );
+`);
+
+/* ---------- schema migrations (idempotent, safe on existing DBs) ---------- */
+
+function ensureColumn(
+  table: string,
+  column: string,
+  ddl: string,
+): void {
+  const has = () =>
+    (db.prepare(`PRAGMA table_info(${table})`).all() as Array<{
+      name: string;
+    }>).some((c) => c.name === column);
+
+  if (has()) return;
+  try {
+    db.prepare(`ALTER TABLE ${table} ADD COLUMN ${ddl}`).run();
+  } catch (err) {
+    // Concurrent build workers race the same ALTER. If another worker added
+    // the column between our PRAGMA check and this statement, swallow it.
+    if (has()) return;
+    throw err;
+  }
+}
+
+ensureColumn("users", "tenant_id", "tenant_id INTEGER NOT NULL DEFAULT 1");
+ensureColumn("users", "referral_code", "referral_code TEXT");
+ensureColumn("users", "referred_by", "referred_by TEXT");
+ensureColumn(
+  "users",
+  "referrals_count",
+  "referrals_count INTEGER NOT NULL DEFAULT 0",
+);
+ensureColumn(
+  "users",
+  "referral_earned_cents",
+  "referral_earned_cents INTEGER NOT NULL DEFAULT 0",
+);
+ensureColumn(
+  "users",
+  "payment_failed_count",
+  "payment_failed_count INTEGER NOT NULL DEFAULT 0",
+);
+ensureColumn("users", "last_payment_failed_at", "last_payment_failed_at TEXT");
+ensureColumn("users", "winback_status", "winback_status TEXT");
+
+db.exec(`
+  CREATE UNIQUE INDEX IF NOT EXISTS idx_users_referral_code
+    ON users(referral_code);
+  CREATE UNIQUE INDEX IF NOT EXISTS idx_referral_events_referred
+    ON referral_events(referred_user_id);
+  CREATE INDEX IF NOT EXISTS idx_payments_user ON payments(user_id);
+  CREATE INDEX IF NOT EXISTS idx_payments_created ON payments(created_at);
 `);
 
 export interface Plan {
@@ -114,6 +198,26 @@ export interface UserRow {
   password_enc: string | null;
   credentials_claimed_at: string | null;
   provisioning_error: string | null;
+  tenant_id: number;
+  referral_code: string | null;
+  referred_by: string | null;
+  referrals_count: number;
+  referral_earned_cents: number;
+  payment_failed_count: number;
+  last_payment_failed_at: string | null;
+  winback_status: string | null;
+  created_at: string;
+}
+
+export interface Tenant {
+  id: number;
+  slug: string;
+  name: string;
+  tagline: string;
+  description: string | null;
+  domains: string;
+  footer_note: string | null;
+  active: number;
   created_at: string;
 }
 
@@ -124,6 +228,22 @@ export function parseFeatures(plan: Pick<Plan, "features">): string[] {
   } catch {
     return [];
   }
+}
+
+/** Parse a tenant's comma/JSON-separated domain list into hostnames. */
+export function parseTenantDomains(tenant: Pick<Tenant, "domains">): string[] {
+  const raw = tenant.domains.trim();
+  if (!raw) return [];
+  try {
+    const parsed = JSON.parse(raw);
+    if (Array.isArray(parsed)) return parsed.map(String);
+  } catch {
+    // fall through to comma-separated parsing
+  }
+  return raw
+    .split(",")
+    .map((d) => d.trim().toLowerCase())
+    .filter(Boolean);
 }
 
 const DEFAULT_PLANS = [
@@ -176,6 +296,17 @@ const DEFAULT_PLANS = [
   },
 ];
 
+const DEFAULT_TENANT = {
+  slug: "magnate",
+  name: "Magnate",
+  tagline: "Subscription Platform",
+  description:
+    "Magnate is a premium self-hosted subscription and streaming platform — exclusive content, managed memberships, recurring billing, and a professional streaming experience for creators and organizations.",
+  domains: JSON.stringify(["magnate.innotel.us", "app.magnate.innotel.us"]),
+  footer_note: "Payments processed securely by Stripe.",
+  active: 1,
+};
+
 function seedPlans() {
   const count = db.prepare("SELECT COUNT(*) AS c FROM plans").get() as {
     c: number;
@@ -197,4 +328,67 @@ function seedPlans() {
   }
 }
 
+function seedTenant() {
+  const row = db
+    .prepare("SELECT COUNT(*) AS c FROM tenants WHERE slug = ?")
+    .get(DEFAULT_TENANT.slug) as { c: number };
+  if (row.c > 0) return;
+  db.prepare(
+    `INSERT OR IGNORE INTO tenants (slug, name, tagline, description, domains, footer_note, active)
+     VALUES (?, ?, ?, ?, ?, ?, ?)`,
+  ).run(
+    DEFAULT_TENANT.slug,
+    DEFAULT_TENANT.name,
+    DEFAULT_TENANT.tagline,
+    DEFAULT_TENANT.description,
+    DEFAULT_TENANT.domains,
+    DEFAULT_TENANT.footer_note,
+    DEFAULT_TENANT.active,
+  );
+}
+
+/* ---------- referral code backfill for pre-existing users ---------- */
+
+// Unambiguous alphabet (no 0/O, 1/I/L) — safe to hand out in chat/print.
+const REFERRAL_ALPHABET = "ABCDEFGHJKMNPQRSTUVWXYZ23456789";
+
+export function generateReferralCode(length = 8): string {
+  const bytes = crypto.randomBytes(length);
+  let out = "";
+  for (let i = 0; i < length; i++) {
+    out += REFERRAL_ALPHABET[bytes[i] % REFERRAL_ALPHABET.length];
+  }
+  return out;
+}
+
+function backfillReferralCodes() {
+  const missing = db
+    .prepare("SELECT id FROM users WHERE referral_code IS NULL")
+    .all() as Array<{ id: number }>;
+  const setCode = db.prepare(
+    "UPDATE users SET referral_code = ? WHERE id = ?",
+  );
+  const tx = db.transaction((rows: Array<{ id: number }>) => {
+    for (const row of rows) {
+      for (let attempt = 0; attempt < 10; attempt++) {
+        const code = generateReferralCode();
+        const taken = db
+          .prepare("SELECT id FROM users WHERE referral_code = ?")
+          .get(code);
+        if (!taken) {
+          setCode.run(code, row.id);
+          break;
+        }
+      }
+    }
+  });
+  try {
+    tx(missing);
+  } catch {
+    // Another process is backfilling concurrently — safe to skip.
+  }
+}
+
 seedPlans();
+seedTenant();
+backfillReferralCodes();

@@ -14,9 +14,10 @@ interface Props {
     priceYearlyCents: number;
   };
   interval: "month" | "year";
+  refCode?: string | null;
 }
 
-export default function SignupForm({ plan, interval }: Props) {
+export default function SignupForm({ plan, interval, refCode }: Props) {
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [username, setUsername] = useState("");
@@ -48,6 +49,7 @@ export default function SignupForm({ plan, interval }: Props) {
           interval,
           email,
           username,
+          ...(refCode ? { refCode } : {}),
         }),
       });
       const data = await res.json();

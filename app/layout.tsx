@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import ThemeApplier from "@/components/ThemeApplier";
+import { getBrand } from "@/lib/tenant";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -13,12 +14,16 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
-export const metadata: Metadata = {
-  title: "Innotel Media — Unlimited streaming",
-  description:
-    "Subscribe to Innotel Media and stream movies, shows and more on any device. Monthly and yearly plans.",
-  icons: { icon: "/favicon.svg" },
-};
+// White-label: the <title>/description follow the tenant bound to the Host
+// header (defaults to the Magnate tenant).
+export async function generateMetadata(): Promise<Metadata> {
+  const brand = await getBrand();
+  return {
+    title: `${brand.name} — ${brand.tagline}`,
+    description: `Subscribe to ${brand.name} and stream movies, shows and more on any device. Monthly and yearly plans.`,
+    icons: { icon: "/favicon.svg" },
+  };
+}
 
 // Applies the saved theme (or the OS preference when "system") before the
 // browser paints, preventing a flash of the wrong theme. Mirrors the logic in

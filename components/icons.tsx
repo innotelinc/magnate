@@ -27,6 +27,43 @@ export const CheckIcon = (props: IconProps) => (
   </svg>
 );
 
+export const CrownIcon = (props: IconProps) => (
+  <svg {...base(props)}>
+    <path d="m3 8 4.5 4L12 5l4.5 7L21 8l-1.5 10h-15L3 8z" />
+    <path d="M4.5 18h15" />
+  </svg>
+);
+
+export const ChartIcon = (props: IconProps) => (
+  <svg {...base(props)}>
+    <path d="M3 3v18h18" />
+    <path d="M7 16v-5M12 16V8M17 16v-8" />
+  </svg>
+);
+
+export const LinkIcon = (props: IconProps) => (
+  <svg {...base(props)}>
+    <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
+    <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
+  </svg>
+);
+
+export const BuildingIcon = (props: IconProps) => (
+  <svg {...base(props)}>
+    <rect x="4" y="3" width="16" height="18" rx="2" />
+    <path d="M9 8h2M13 8h2M9 12h2M13 12h2M9 16h2M13 16h2" />
+    <path d="M10 21v-3h4v3" />
+  </svg>
+);
+
+export const WandIcon = (props: IconProps) => (
+  <svg {...base(props)}>
+    <path d="M15 4V2M15 10V8M11 6h2M19 6h2M12.5 9.5 20 2" />
+    <path d="m4 20 8-8" />
+    <path d="M4 20l-2-1 2-2 2 1-2 2z" />
+  </svg>
+);
+
 export const BoltIcon = (props: IconProps) => (
   <svg {...base(props)}>
     <path d="M13 2 3 14h7l-1 8 10-12h-7l1-8z" />

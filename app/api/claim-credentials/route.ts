@@ -38,6 +38,9 @@ export async function GET(req: Request) {
         password_enc: string | null;
         credentials_claimed_at: string | null;
         plan_id: number | null;
+        referral_code: string | null;
+        referrals_count: number;
+        referral_earned_cents: number;
       }
     | undefined;
 
@@ -70,11 +73,20 @@ export async function GET(req: Request) {
         | undefined)
     : undefined;
 
+  const referralBase = process.env.APP_URL || "http://localhost:3000";
+
   return NextResponse.json({
     ready: true,
     username,
     password,
     alreadyClaimed,
     planSlug: plan?.slug ?? null,
+    // Affiliate & referral: the new subscriber's own shareable code.
+    referralCode: user.referral_code ?? null,
+    referralLink: user.referral_code
+      ? `${referralBase}/?ref=${encodeURIComponent(user.referral_code)}`
+      : null,
+    referralsCount: user.referrals_count ?? 0,
+    referralEarnedCents: user.referral_earned_cents ?? 0,
   });
 }
