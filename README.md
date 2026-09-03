@@ -259,3 +259,12 @@ Check that the DNS provider credentials in `NPM_DNS_CREDENTIALS` are valid and
 that the account e-mail (`NPM_DNS_EMAIL`) is the one registered with the
 provider. NPM performs the DNS challenge itself — no manual TXT record
 creation is needed (except for split-horizon setups).
+## 🏛️ Platform stack
+
+Magnate is the ecosystem's **RevenueOps** platform — subscriptions, billing, entitlements, and revenue analytics in the
+[**Innotel Platform Stack**](https://github.com/innotelinc/innotel-platform-stack) — the
+canonical single-responsibility architecture where Authentik owns identity, Infisical owns
+secrets, Cerulean owns trust, ONYX owns storage, Magnate owns revenue, and every other
+platform is a business function that consumes them. See
+[docs/stack.md](docs/stack.md) for this platform's owns/consumes boundaries and its
+Infisical secret setup.
