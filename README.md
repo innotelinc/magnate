@@ -9,8 +9,8 @@ instant account provisioning, recurring billing with prorated upgrades, an admin
 with MRR analytics and churn prevention, affiliate referrals, AI watchlists, and
 multi-tenant white-label storefronts — all fronted by Jellyfin media delivery.
 
-[![CI](https://innotelinc.github.io/magnate/actions/workflows/ci.yml/badge.svg)](https://innotelinc.github.io/magnate/actions/workflows/ci.yml)
-[![Release](https://innotelinc.github.io/magnate/actions/workflows/release.yml/badge.svg)](https://innotelinc.github.io/magnate/actions/workflows/release.yml)
+[![CI](https://github.com/innotelinc/magnate/actions/workflows/ci.yml/badge.svg)](https://github.com/innotelinc/magnate/actions/workflows/ci.yml)
+[![Release](https://github.com/innotelinc/magnate/actions/workflows/release.yml/badge.svg)](https://github.com/innotelinc/magnate/actions/workflows/release.yml)
 
 </div>
 
