@@ -9,8 +9,8 @@ instant account provisioning, recurring billing with prorated upgrades, an admin
 with MRR analytics and churn prevention, affiliate referrals, AI watchlists, and
 multi-tenant white-label storefronts — all fronted by Jellyfin media delivery.
 
-[![CI](https://github.com/innotelinc/jellyfin-subscription-platform/actions/workflows/ci.yml/badge.svg)](https://github.com/innotelinc/jellyfin-subscription-platform/actions/workflows/ci.yml)
-[![Release](https://github.com/innotelinc/jellyfin-subscription-platform/actions/workflows/release.yml/badge.svg)](https://github.com/innotelinc/jellyfin-subscription-platform/actions/workflows/release.yml)
+[![CI](https://innotelinc.github.io/magnate/actions/workflows/ci.yml/badge.svg)](https://innotelinc.github.io/magnate/actions/workflows/ci.yml)
+[![Release](https://innotelinc.github.io/magnate/actions/workflows/release.yml/badge.svg)](https://innotelinc.github.io/magnate/actions/workflows/release.yml)
 
 </div>
 
@@ -18,7 +18,7 @@ multi-tenant white-label storefronts — all fronted by Jellyfin media delivery.
 > and organizations: manage memberships, process recurring Stripe billing, and deliver a
 > professional Jellyfin streaming experience on your own infrastructure — with
 > Authentik-first accounts, affiliate referrals, AI churn prevention, and white-label
-> tenants. **Landing page:** [github.com/innotelinc/jellyfin-subscription-platform](https://github.com/innotelinc/jellyfin-subscription-platform)
+> tenants. **Landing page:** [innotelinc.github.io/magnate](https://innotelinc.github.io/magnate)
 
 ---
 
