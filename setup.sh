@@ -24,6 +24,13 @@ log()  { printf '\033[1;36m[magnate]\033[0m %s\n' "$*"; }
 warn() { printf '\033[1;33m[magnate]\033[0m warning: %s\n' "$*"; }
 die()  { printf '\033[1;31m[magnate]\033[0m %s\n' "$*" >&2; exit 1; }
 
+# Enable the version-controlled commit-guard hooks (.githooks) if this is a
+# git checkout (blocks attribution to anyone but Darnel Hunter).
+if [ -d .githooks ] && git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+  git config core.hooksPath .githooks
+  log "commit guard hook enabled (core.hooksPath -> .githooks)"
+fi
+
 # ------------------------------------------------------------- prereqs
 
 command -v docker >/dev/null 2>&1 || die "docker is required (https://docs.docker.com/engine/install/)"
