@@ -1,8 +1,28 @@
-# Magnate — Subscription Platform
+<div align="center">
 
-**Magnate** is a premium, self-hosted subscription and streaming platform for
-creators and organizations: manage memberships, process recurring billing, and
-deliver a professional streaming experience on your own infrastructure.
+# 💎 Magnate — Subscription & Streaming Platform
+
+**Premium, self-hosted memberships and billing for creators — Stripe checkout, Authentik accounts, and a professional streaming experience on your own infrastructure.**
+
+Magnate turns subscriptions into revenue you own: a storefront with Stripe checkout and
+instant account provisioning, recurring billing with prorated upgrades, an admin panel
+with MRR analytics and churn prevention, affiliate referrals, AI watchlists, and
+multi-tenant white-label storefronts — all fronted by Jellyfin media delivery.
+
+[![CI](https://github.com/innotelinc/jellyfin-subscription-platform/actions/workflows/ci.yml/badge.svg)](https://github.com/innotelinc/jellyfin-subscription-platform/actions/workflows/ci.yml)
+[![Release](https://github.com/innotelinc/jellyfin-subscription-platform/actions/workflows/release.yml/badge.svg)](https://github.com/innotelinc/jellyfin-subscription-platform/actions/workflows/release.yml)
+
+</div>
+
+> **About Magnate** — the self-hosted subscription and streaming platform for creators
+> and organizations: manage memberships, process recurring Stripe billing, and deliver a
+> professional Jellyfin streaming experience on your own infrastructure — with
+> Authentik-first accounts, affiliate referrals, AI churn prevention, and white-label
+> tenants. **Landing page:** [github.com/innotelinc/jellyfin-subscription-platform](https://github.com/innotelinc/jellyfin-subscription-platform)
+
+---
+
+## ✨ Features
 
 - **Storefront** — plan pages, Stripe checkout, instant account provisioning
 - **Authentik-first accounts** — passwords and SSO live in Authentik; Jellyfin
