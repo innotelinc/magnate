@@ -5,14 +5,16 @@
 # 1. Checks the host prerequisites (docker, compose, python3).
 # 2. Creates .env from .env.sample when missing.
 # 3. Builds & starts the Magnate app container.
-# 4. Waits for the app to answer on :3000.
+# 4. Waits for the app to answer on ${MAGNATE_PORT:-3000}.
 # 5. Provisions Nginx Proxy Manager proxy hosts + wildcard SSL (via
 #    scripts/npm-proxy-hosts.py) for app/api/auth/media/billing/admin.<DOMAIN>.
 #
 # Prereqs on the same host (or reachable network):
 #   - Nginx Proxy Manager (NPM) running with an admin login for the API
-#   - Authentik, Jellyfin and the ARR stack's billing-api with published
-#     ports (defaults below are overridable through NPM_HOSTS_JSON)
+#   - Jellyfin and the ARR stack's billing-api with published ports
+#     (defaults below are overridable through NPM_HOSTS_JSON)
+#   - Authentik is included in docker-compose.yml and is published on host
+#     port 9110 by default.
 #   - DNS wildcard records pointing each subdomain at the NPM host
 #
 # Usage:  ./setup.sh
@@ -53,15 +55,16 @@ set +a
 
 [[ -n "${DOMAIN:-}" ]] || warn "DOMAIN is unset in .env — NPM provisioning may fail"
 [[ -n "${APP_URL:-}" ]] || warn "APP_URL is unset in .env"
+MAGNATE_PORT="${MAGNATE_PORT:-3000}"
 
 # ------------------------------------------------------------- app
 
 log "building and starting the Magnate container…"
 docker compose up -d --build
 
-log "waiting for the app on http://localhost:3000 …"
+log "waiting for the app on http://localhost:${MAGNATE_PORT} …"
 for _ in $(seq 1 30); do
-  if curl -fsS -o /dev/null http://localhost:3000 2>/dev/null; then
+  if curl -fsS -o /dev/null "http://localhost:${MAGNATE_PORT}" 2>/dev/null; then
     log "app is up."
     break
   fi
@@ -87,10 +90,11 @@ cat <<'EOF'
    https://billing.magnate.innotel.us  billing / Stripe portal UI
    https://admin.magnate.innotel.us    admin panel
 
- DNS: point each subdomain (and *.DOMAIN) as an A record at the
- Nginx Proxy Manager host's public IP. Certificates are issued
- automatically by Let's Encrypt via the DNS challenge and renew
- themselves.
+ DNS: every subdomain (and *.DOMAIN) is a CNAME to the apex in the shared
+ innotel.us BIND zone, managed through Cerulean (TrustOps). TLS is one
+ Cerulean-issued wildcard Let's Encrypt certificate (*.magnate.innotel.us
+ + apex) exported into Nginx Proxy Manager and auto-renewed — NPM never
+ requests per-host certs for these names.
 ────────────────────────────────────────────────────────────────
 EOF
 # ── Infisical (SecretOps) — opt-in secret provisioning ──────────────

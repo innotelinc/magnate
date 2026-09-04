@@ -103,8 +103,7 @@ export async function findUserByEmail(
 
 /**
  * Ensure an Authentik user exists, creating it when missing (idempotent).
- * billing-api may create the user first via its own Stripe webhook — both
- * paths converge here.
+ * Magnate is the sole provisioner — there is no separate billing-api.
  */
 export async function ensureUser(
   username: string,
