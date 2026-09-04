@@ -96,8 +96,8 @@ export async function POST(req: Request) {
 
   if (provisionAuthentik) {
     try {
-      // Authentik is the account store: create the user (if billing-api
-      // hasn't) and set the password so the LDAP login works.
+      // Authentik is the account store: create the user and set the
+      // password so the LDAP login works.
       const akUser = await ensureUser(username, email);
       await setUserPassword(akUser.pk, password);
       provisioned = true;

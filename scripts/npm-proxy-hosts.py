@@ -4,12 +4,11 @@ npm-proxy-hosts.py — provision Nginx Proxy Manager proxy hosts + wildcard SSL.
 
 Creates the Magnate subdomains on an Nginx Proxy Manager instance via its API:
 
-    app.<DOMAIN>      -> http://127.0.0.1:3000  (this app / storefront)
-    api.<DOMAIN>      -> http://127.0.0.1:8000  (ARR stack billing-api)
-    auth.<DOMAIN>     -> http://127.0.0.1:9000  (Authentik)
+    app.<DOMAIN>      -> http://127.0.0.1:$MAGNATE_PORT  (this app / storefront)
+    auth.<DOMAIN>     -> http://127.0.0.1:9110  (bundled Authentik)
     media.<DOMAIN>    -> http://127.0.0.1:8096  (Jellyfin)
-    billing.<DOMAIN>  -> http://127.0.0.1:3000  (this app — Stripe portal UI)
-    admin.<DOMAIN>    -> http://127.0.0.1:3000  (this app — /admin panel)
+    billing.<DOMAIN>  -> http://127.0.0.1:$MAGNATE_PORT  (this app — Stripe portal UI)
+    admin.<DOMAIN>    -> http://127.0.0.1:$MAGNATE_PORT  (this app — /admin panel)
 
 A wildcard Let's Encrypt certificate ( *.DOMAIN + DOMAIN ) is issued via the
 DNS challenge so every subdomain gets SSL automatically. Requires NPM >= 2.11
@@ -23,10 +22,15 @@ Configuration (env vars, see .env.sample):
     NPM_DNS_PROVIDER      certbot-style provider id, e.g. cloudflare
     NPM_DNS_EMAIL         account e-mail for the DNS provider
     NPM_DNS_CREDENTIALS   JSON object of provider credentials
+    MAGNATE_PORT          host port published for the app (default: 3000)
     NPM_HOSTS_JSON        (optional) JSON override for the host map:
                           [{"subdomain":"app","forward_host":"127.0.0.1","forward_port":3000}, ...]
 
 Only stdlib — run with:  python3 scripts/npm-proxy-hosts.py
+
+The default app port comes from MAGNATE_PORT (default 3000), and the bundled
+Authentik server is exposed on host port 9110. Set NPM_HOSTS_JSON when those
+services are reachable at different host/port combinations.
 """
 
 import json
@@ -49,14 +53,14 @@ DNS_PROVIDER = env("NPM_DNS_PROVIDER", "cloudflare")
 DNS_EMAIL = env("NPM_DNS_EMAIL")
 DNS_CREDENTIALS_RAW = env("NPM_DNS_CREDENTIALS", "{}")
 HOSTS_JSON = env("NPM_HOSTS_JSON", "")
+MAGNATE_PORT = int(env("MAGNATE_PORT", "3000"))
 
 DEFAULT_HOSTS = [
-    {"subdomain": "app", "forward_host": "127.0.0.1", "forward_port": 3000},
-    {"subdomain": "api", "forward_host": "127.0.0.1", "forward_port": 8000},
-    {"subdomain": "auth", "forward_host": "127.0.0.1", "forward_port": 9000},
+    {"subdomain": "app", "forward_host": "127.0.0.1", "forward_port": MAGNATE_PORT},
+    {"subdomain": "auth", "forward_host": "127.0.0.1", "forward_port": 9110},
     {"subdomain": "media", "forward_host": "127.0.0.1", "forward_port": 8096},
-    {"subdomain": "billing", "forward_host": "127.0.0.1", "forward_port": 3000},
-    {"subdomain": "admin", "forward_host": "127.0.0.1", "forward_port": 3000},
+    {"subdomain": "billing", "forward_host": "127.0.0.1", "forward_port": MAGNATE_PORT},
+    {"subdomain": "admin", "forward_host": "127.0.0.1", "forward_port": MAGNATE_PORT},
 ]
 
 def load_hosts() -> list:

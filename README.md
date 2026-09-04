@@ -46,7 +46,6 @@ issues a **wildcard Let's Encrypt certificate** via DNS challenge:
 | Host | Service |
 | --- | --- |
 | `app.magnate.innotel.us` | Storefront (this app) |
-| `api.magnate.innotel.us` | ARR stack billing-api |
 | `auth.magnate.innotel.us` | Authentik (SSO, LDAP outpost) |
 | `media.magnate.innotel.us` | Jellyfin media server |
 | `billing.magnate.innotel.us` | Billing / Stripe portal UI |
@@ -87,8 +86,9 @@ docker compose up -d --build
 ```
 
 Requirements: Docker with the compose plugin, python3 (stdlib-only provisioner),
-a running Nginx Proxy Manager (v2.11+), Authentik, Jellyfin, and the ARR
-stack's billing-api reachable on the same host.
+a running Nginx Proxy Manager (v2.11+) and Jellyfin reachable on the same host.
+Authentik is external by default (`AUTHENTIK_MODE=remote`); the Compose file's
+MariaDB-backed Authentik replacement is optional via `--profile authentik`.
 
 ## Configuration
 
@@ -97,10 +97,12 @@ Key variables (full list in `.env.sample`):
 | Variable | Description |
 | --- | --- |
 | `APP_URL` | Storefront URL (Stripe redirects), e.g. `https://app.magnate.innotel.us` |
-| `BILLING_API_URL` | ARR stack billing-api, e.g. `https://api.magnate.innotel.us` |
+| `MAGNATE_PORT` | Host port published for the app (default `3000`) |
+| `BILLING_API_URL` | Legacy no-op — the ARR billing-api was retired; Magnate enforces access itself |
 | `STRIPE_SECRET_KEY` / `STRIPE_WEBHOOK_SECRET` / `STRIPE_CURRENCY` | Stripe setup |
 | `JELLYFIN_URL` / `JELLYFIN_API_KEY` | Media server access |
 | `AUTHENTIK_BASE_URL` / `AUTHENTIK_BOOTSTRAP_TOKEN` | Authentik API access |
+| `AUTHENTIK_*` | Credentials and bootstrap settings for the bundled Authentik stack |
 | `ACCOUNT_PORTAL_URL` | Authentik self-service user portal (password resets) |
 | `REQUEST_URL` | Jellyseerr request portal (Premium perk) |
 | `ADMIN_PASSWORD` / `SESSION_SECRET` | Admin panel auth + credential encryption |
@@ -114,7 +116,20 @@ Key variables (full list in `.env.sample`):
 > `SESSION_SECRET` encrypts generated passwords at rest. If you change it after
 > users sign up, stored passwords can no longer be decrypted.
 
-## Stripe setup
+### Authentik mode
+
+Magnate consumes the shared external Authentik service by default. Configure
+`AUTHENTIK_BASE_URL` and `AUTHENTIK_BOOTSTRAP_TOKEN` for that instance. The
+bundled Authentik server, PostgreSQL, Redis, and worker are a local replacement,
+not a required dependency:
+
+```bash
+AUTHENTIK_MODE=local docker compose --profile authentik up -d
+```
+
+Do not enable the local profile when another Innotel stack already owns the
+identity service.
+
 
 1. **Plans** — open `/admin` after logging in and **Save** the seeded plans.
    The server creates a Stripe Product + recurring Prices automatically.
@@ -138,7 +153,7 @@ Local testing: `stripe listen --forward-to localhost:3000/api/webhook`.
 3. The success page reveals the credentials once and shows the subscriber's
    own referral link.
 4. `customer.subscription.deleted` → Authentik user set inactive → LDAP login
-   blocked immediately (handled by billing-api); re-subscribing is instant.
+   blocked immediately (enforced by Magnate itself); re-subscribing is instant.
 5. `invoice.payment_failed` flags the user for the churn queue; a later success
    resets the counters and records revenue in the analytics ledger.
 
@@ -259,6 +274,18 @@ Check that the DNS provider credentials in `NPM_DNS_CREDENTIALS` are valid and
 that the account e-mail (`NPM_DNS_EMAIL`) is the one registered with the
 provider. NPM performs the DNS challenge itself — no manual TXT record
 creation is needed (except for split-horizon setups).
+
+### TLS & DNS — Cerulean (TrustOps)
+
+In the Innotel Platform Stack deployment, TLS for every `magnate.innotel.us`
+host is one **Cerulean-issued wildcard Let's Encrypt certificate**
+(`*.magnate.innotel.us` + apex, DNS-01 against the shared BIND), exported into
+Nginx Proxy Manager as `cerulean-magnate.innotel.us-wildcard` and attached to
+every proxy host — renewals refresh the same NPM certificate in place. DNS
+records are CNAMEs to the apex in the shared `innotel.us` BIND zone, managed
+through Cerulean. The per-host `NPM_DNS_CREDENTIALS` flow above is only for
+standalone deployments outside the stack.
+
 ## 🏛️ Platform stack
 
 Magnate is the ecosystem's **RevenueOps** platform — subscriptions, billing, entitlements, and revenue analytics in the

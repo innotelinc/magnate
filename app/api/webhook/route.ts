@@ -2,7 +2,13 @@ import { NextResponse } from "next/server";
 import type Stripe from "stripe";
 import { db, type UserRow } from "@/lib/db";
 import { getStripe, stripeConfigured } from "@/lib/stripe";
-import { ensureUser, setUserPassword } from "@/lib/authentik";
+import {
+  ensureUser,
+  findUser,
+  findUserByEmail,
+  setUserActive,
+  setUserPassword,
+} from "@/lib/authentik";
 import { decrypt } from "@/lib/crypto";
 import { getPlanBySlug } from "@/lib/plans";
 import { stripeWebhookSecret } from "@/lib/settings";
@@ -125,6 +131,13 @@ async function provisionUser(
     currentPeriodEnd,
     userId,
   );
+
+  // Reactivation: a returning subscriber's Authentik account may still be
+  // disabled from a previous cancellation — re-enable it once billing is
+  // active so "re-subscribing is instant".
+  if (status === "active" && !akUser.is_active) {
+    await setUserActive(akUser.pk, true);
+  }
   return userId;
 }
 
@@ -138,8 +151,18 @@ async function handleSubscriptionUpdated(
     "UPDATE users SET status = ?, current_period_end = ? WHERE id = ?",
   ).run(status, getPeriodEnd(subscription), user.id);
 
-  // Access enable/disable is enforced in Authentik by billing-api (the second
-  // Stripe webhook) — this endpoint only tracks billing state for the admin UI.
+  // Magnate owns access enforcement (there is no separate billing-api): sync
+  // the Authentik account with billing state — a disabled user cannot log in
+  // via the LDAP outpost, which is exactly the "access revoked" behavior.
+  const akUser =
+    (await findUser(user.username)) ??
+    (user.email ? await findUserByEmail(user.email) : null);
+  if (!akUser) return;
+  if (status === "cancelled" || status === "unpaid") {
+    await setUserActive(akUser.pk, false);
+  } else if (status === "active" && !akUser.is_active) {
+    await setUserActive(akUser.pk, true);
+  }
 }
 
 async function handleSubscriptionDeleted(
@@ -148,9 +171,13 @@ async function handleSubscriptionDeleted(
   const user = getUserBySubscription(subscription.id);
   if (!user) return;
   db.prepare("UPDATE users SET status = 'cancelled' WHERE id = ?").run(user.id);
-  // Revoking access is handled by billing-api (it disables the user in
-  // Authentik, which blocks the LDAP login) — this endpoint only tracks
-  // billing state for the admin UI.
+  // Magnate owns access enforcement (there is no separate billing-api): revoke
+  // access immediately by disabling the Authentik user, which blocks the
+  // LDAP login. Re-subscribing re-enables it (see provisionUser).
+  const akUser =
+    (await findUser(user.username)) ??
+    (user.email ? await findUserByEmail(user.email) : null);
+  if (akUser) await setUserActive(akUser.pk, false);
 }
 
 export async function POST(req: Request) {
