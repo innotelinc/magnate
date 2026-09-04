@@ -6,7 +6,9 @@ services:
     security_opt:
       - apparmor:unconfined
     ports:
-      - "3000:3000"
+      # Host port configurable via MAGNATE_PORT (default 3000) — lets the app
+      # sit beside other :3000 services on a shared host (e.g. a billing portal).
+      - "${MAGNATE_PORT:-3000}:3000"
     environment:
       # All values come from .env (gitignored — keep secrets out of git!).
       # Copy .env.sample to .env and fill in the real values, or run
