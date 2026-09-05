@@ -22,6 +22,7 @@ const planSchema = z.object({
   priceYearlyCents: z.number().int().min(0).max(100000000),
   features: z.array(z.string().max(200)).max(12),
   highlighted: z.boolean().optional().default(false),
+  addon: z.boolean().optional().default(false),
   active: z.boolean().optional().default(true),
   sortOrder: z.number().int().optional().default(0),
 });
