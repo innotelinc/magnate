@@ -311,14 +311,30 @@ const DEFAULT_PLANS = [
     highlighted: 1,
     sort_order: 2,
   },
+  {
+    name: "AI Agents",
+    slug: "agents",
+    description: "AI voice agent add-on — sold from the Zeus voice & PBX billing page.",
+    price_monthly_cents: 4900,
+    price_yearly_cents: 49000,
+    features: JSON.stringify([
+      "Inbound DID routing for voice agents",
+      "AI voice agent seat",
+      "Workflow Studio access",
+    ]),
+    // highlighted=2 marks an add-on plan: purchasable via /signup?plan=agents
+    // but hidden from the storefront pricing grid (listStorefrontPlans).
+    highlighted: 2,
+    sort_order: 100,
+  },
 ];
 
 const DEFAULT_TENANT = {
   slug: "magnate",
   name: "Magnate",
-  tagline: "Subscription Platform",
+  tagline: "Billing Platform",
   description:
-    "Magnate is a premium self-hosted subscription and streaming platform — exclusive content, managed memberships, recurring billing, and a professional streaming experience for creators and organizations.",
+    "Magnate is the billing platform for the whole stack — media streaming, PBX hosting, AI voice agents and every other service on one account with one invoice. Managed memberships, recurring billing and one-off purchases across the platform.",
   domains: JSON.stringify(["magnate.innotel.us", "app.magnate.innotel.us"]),
   footer_note: "Payments processed securely by Stripe.",
   active: 1,

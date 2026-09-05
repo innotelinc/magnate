@@ -2,6 +2,7 @@ import Link from "next/link";
 import Nav from "@/components/Nav";
 import Footer from "@/components/Footer";
 import AppsSection from "@/components/AppsSection";
+import ServicesSection from "@/components/ServicesSection";
 import PricingSection, { type PublicPlan } from "@/components/PricingSection";
 import {
   BoltIcon,
@@ -18,7 +19,7 @@ import {
   GlobeIcon,
   RefreshIcon,
 } from "@/components/icons";
-import { listActivePlans, planPublic } from "@/lib/plans";
+import { listStorefrontPlans, planPublic } from "@/lib/plans";
 import { getBrand } from "@/lib/tenant";
 
 const APP_URL = process.env.APP_URL || "http://localhost:3000";
@@ -33,15 +34,23 @@ export default async function Home({
   const brand = await getBrand();
   const { ref } = await searchParams;
   const refCode = ref?.trim().slice(0, 24) || null;
-  const plans = listActivePlans().map(planPublic) as PublicPlan[];
+  // Storefront grid = generic subscription plans. Add-on plans
+  // (highlighted=2, e.g. the Zeus AI-agents add-on) are sold from their own
+  // product's billing page and never shown here.
+  const plans = listStorefrontPlans().map(planPublic) as PublicPlan[];
   const cheapestPrice =
     Math.min(...plans.map((p) => p.priceMonthlyCents)) / 100;
 
   const features = [
     {
-      icon: FilmIcon,
-      title: "Endless library",
-      text: "Movies, TV shows, and new releases added every week — all in one place.",
+      icon: ServerIcon,
+      title: "Every service, one bill",
+      text: "Media, voice, mail, social and more — all billed through this one platform.",
+    },
+    {
+      icon: ShieldIcon,
+      title: "One secure login",
+      text: "Cerulean SSO unlocks every Magnate-billed service with a single sign-in.",
     },
     {
       icon: DevicesIcon,
@@ -83,8 +92,8 @@ export default async function Home({
     },
     {
       n: "03",
-      title: "Start streaming",
-      text: "Your account is created instantly. Sign in on any device and press play.",
+      title: "Start using everything",
+      text: "Your account is created instantly. Sign in with Cerulean on any service and go.",
     },
   ];
 
@@ -106,8 +115,8 @@ export default async function Home({
       a: "Absolutely. Open the billing portal from the manage page to switch plans. Price changes are prorated automatically.",
     },
     {
-      q: "Which devices are supported?",
-      a: "Jellyfin has apps for Android, iOS, Apple TV, Android TV, Roku, Fire TV, web browsers, and more. Any modern device can stream.",
+      q: "Which services are included?",
+      a: "Every service listed above is billed here: Monarch media streaming, Capstone voice AI with Zeus PBX hosting, Onyx, Oasis mail, Rizz Aura and ZapIt. One membership covers them all, and your Cerulean login works on each one.",
     },
     {
       q: "Do you offer refunds?",
@@ -131,18 +140,19 @@ export default async function Home({
                 <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-500 opacity-75 dark:bg-emerald-400" />
                 <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500 dark:bg-emerald-400" />
               </span>
-              Server online · Streaming in 4K
+              Server online · All services operational
             </span>
 
             <h1 className="animate-fade-up delay-100 mt-8 text-5xl font-bold leading-[1.05] tracking-tight sm:text-7xl">
-              Your media,
+              One account,
               <br />
-              <span className="text-gradient">everywhere you are.</span>
+              <span className="text-gradient">the whole platform.</span>
             </h1>
 
             <p className="animate-fade-up delay-200 mx-auto mt-6 max-w-xl text-lg text-zinc-600 sm:text-xl dark:text-zinc-400">
-              Stream movies, shows and more on any device with a private,
-              ad-free Jellyfin server. Plans start at just{" "}
+              Magnate is the billing platform for everything we run — media
+              streaming, AI voice agents, PBX hosting, mail and more. One
+              membership, one invoice, every service. Plans start at just{" "}
               <span className="font-semibold text-zinc-950 dark:text-white">
                 ${cheapestPrice % 1 === 0 ? cheapestPrice.toFixed(0) : cheapestPrice.toFixed(2)}
                 /mo
@@ -169,7 +179,7 @@ export default async function Home({
             {/* Stats */}
             <div className="animate-fade-up delay-500 mx-auto mt-16 grid max-w-lg grid-cols-3 gap-6 border-t border-zinc-950/10 pt-8 dark:border-white/[0.06]">
               {[
-                ["4K HDR", "quality"],
+                ["7", "services billed here"],
                 ["0", "ads & tracking"],
                 ["24/7", "uptime"],
               ].map(([a, b]) => (
@@ -184,6 +194,9 @@ export default async function Home({
 
         {/* PRICING */}
         <PricingSection plans={plans} refCode={refCode} />
+
+        {/* SERVICES */}
+        <ServicesSection />
 
         {/* FEATURES */}
         <section id="features" className="scroll-mt-20 border-t border-zinc-950/10 py-24 dark:border-white/[0.06]">
@@ -259,12 +272,12 @@ export default async function Home({
               </span>
               <h2 className="mt-5 text-4xl font-bold tracking-tight sm:text-5xl">
                 Sign in once.{" "}
-                <span className="text-gradient">Watch anywhere.</span>
+                <span className="text-gradient">Use everything.</span>
               </h2>
               <p className="mt-4 text-lg text-zinc-600 dark:text-zinc-400">
-                Your username and password are your key to the whole service —
-                one secure account that works on every Jellyfin app and the
-                account portal.
+                Your Magnate account is your key to the whole platform — one
+                secure login (through Cerulean SSO) that works on every
+                service and the account portal.
               </p>
             </div>
 
@@ -433,11 +446,11 @@ export default async function Home({
             <div className="relative overflow-hidden rounded-3xl border border-zinc-950/10 bg-gradient-to-br from-indigo-600/20 via-violet-600/10 to-fuchsia-600/20 p-10 text-center sm:p-16 dark:border-white/10">
               <div className="pointer-events-none absolute -top-24 left-1/2 h-64 w-[480px] -translate-x-1/2 rounded-full bg-indigo-500/30 blur-[100px]" />
               <h2 className="relative text-3xl font-bold tracking-tight sm:text-4xl">
-                Ready to start watching?
+                Ready to get started?
               </h2>
               <p className="relative mx-auto mt-3 max-w-md text-zinc-800 dark:text-zinc-300">
-                Join today and stream instantly. Cancel whenever you like —
-                no questions asked.
+                Join today and unlock the whole platform. Cancel whenever you
+                like — no questions asked.
               </p>
               <Link
                 href="/#pricing"

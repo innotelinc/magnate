@@ -27,6 +27,12 @@ export default async function Nav() {
             Pricing
           </Link>
           <Link
+            href="/#services"
+            className="transition-colors hover:text-zinc-950 dark:hover:text-white"
+          >
+            Services
+          </Link>
+          <Link
             href="/#features"
             className="transition-colors hover:text-zinc-950 dark:hover:text-white"
           >

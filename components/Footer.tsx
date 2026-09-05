@@ -24,7 +24,7 @@ export default async function Footer() {
               </span>
             </div>
             <p className="mt-3 max-w-xs text-sm text-zinc-600 dark:text-zinc-500">
-              Unlimited streaming for you and your family. Cancel anytime.
+              One account for every service on the platform. Cancel anytime.
             </p>
           </div>
 
