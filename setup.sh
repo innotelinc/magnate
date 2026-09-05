@@ -11,8 +11,8 @@
 #
 # Prereqs on the same host (or reachable network):
 #   - Nginx Proxy Manager (NPM) running with an admin login for the API
-#   - Jellyfin and the ARR stack's billing-api with published ports
-#     (defaults below are overridable through NPM_HOSTS_JSON)
+#   - Jellyfin with published ports (defaults below are overridable through
+#     NPM_HOSTS_JSON)
 #   - Authentik is included in docker-compose.yml and is published on host
 #     port 9110 by default.
 #   - DNS wildcard records pointing each subdomain at the NPM host
@@ -84,7 +84,6 @@ cat <<'EOF'
  Magnate is deployed. Now visit:
 
    https://app.magnate.innotel.us      storefront (this app)
-   https://api.magnate.innotel.us      ARR stack billing-api
    https://auth.magnate.innotel.us     Authentik
    https://media.magnate.innotel.us    Jellyfin
    https://billing.magnate.innotel.us  billing / Stripe portal UI
