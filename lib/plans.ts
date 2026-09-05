@@ -39,6 +39,21 @@ export function getPlanById(id: number): Plan | undefined {
     | undefined;
 }
 
+/**
+ * Highlight storage: 0 = plain storefront plan, 1 = “Most popular” storefront
+ * plan, 2 = add-on plan (sold from its own product funnel, hidden from the
+ * storefront pricing grid by listStorefrontPlans).
+ */
+export type HighlightKind = 0 | 1 | 2;
+
+export function toHighlightInt(opts: {
+  addon?: boolean;
+  highlighted?: boolean;
+}): number {
+  if (opts.addon) return 2;
+  return opts.highlighted ? 1 : 0;
+}
+
 export function planPublic(plan: Plan) {
   return {
     id: plan.id,
@@ -48,7 +63,8 @@ export function planPublic(plan: Plan) {
     priceMonthlyCents: plan.price_monthly_cents,
     priceYearlyCents: plan.price_yearly_cents,
     features: parseFeatures(plan),
-    highlighted: Boolean(plan.highlighted),
+    highlighted: plan.highlighted === 1,
+    addon: plan.highlighted === 2,
     active: Boolean(plan.active),
   };
 }
@@ -61,6 +77,7 @@ interface PlanInput {
   priceYearlyCents: number;
   features: string[];
   highlighted: boolean;
+  addon: boolean;
   active: boolean;
   sortOrder: number;
 }
@@ -78,7 +95,7 @@ export function createPlan(input: PlanInput): Plan {
       input.priceMonthlyCents,
       input.priceYearlyCents,
       JSON.stringify(input.features),
-      input.highlighted ? 1 : 0,
+      toHighlightInt({ addon: input.addon, highlighted: input.highlighted }),
       input.active ? 1 : 0,
       input.sortOrder,
     );
@@ -91,6 +108,15 @@ export function updatePlan(
 ): Plan | undefined {
   const existing = getPlanById(id);
   if (!existing) return undefined;
+  const nextHighlight =
+    input.addon !== undefined || input.highlighted !== undefined
+      ? toHighlightInt({
+          addon:
+            input.addon ?? (existing.highlighted === 2),
+          highlighted:
+            input.highlighted ?? (existing.highlighted === 1),
+        })
+      : existing.highlighted;
   db.prepare(
     `UPDATE plans SET
        name = ?, slug = ?, description = ?, price_monthly_cents = ?, price_yearly_cents = ?,
@@ -103,7 +129,7 @@ export function updatePlan(
     input.priceMonthlyCents ?? existing.price_monthly_cents,
     input.priceYearlyCents ?? existing.price_yearly_cents,
     JSON.stringify(input.features ?? parseFeatures(existing)),
-    input.highlighted !== undefined ? (input.highlighted ? 1 : 0) : existing.highlighted,
+    nextHighlight,
     input.active !== undefined ? (input.active ? 1 : 0) : existing.active,
     input.sortOrder ?? existing.sort_order,
     id,
