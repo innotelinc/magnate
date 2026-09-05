@@ -26,6 +26,15 @@ services:
       # start with `--profile authentik` to run the local replacement.
       AUTHENTIK_BASE_URL: "${AUTHENTIK_BASE_URL:-}"
       AUTHENTIK_BOOTSTRAP_TOKEN: "${AUTHENTIK_BOOTSTRAP_TOKEN:-}"
+      # Admin SSO through Cerulean (the auth & trust stack). When
+      # AUTHENTIK_ISSUER_URL/_CLIENT_ID/_CLIENT_SECRET are set, the admin login
+      # page offers "Sign in with Cerulean"; AUTHENTIK_ADMIN_EMAILS is the
+      # comma-separated allowlist that may hold the admin session.
+      AUTHENTIK_ISSUER_URL: "${AUTHENTIK_ISSUER_URL:-}"
+      AUTHENTIK_CLIENT_ID: "${AUTHENTIK_CLIENT_ID:-}"
+      AUTHENTIK_CLIENT_SECRET: "${AUTHENTIK_CLIENT_SECRET:-}"
+      AUTHENTIK_ADMIN_EMAILS: "${AUTHENTIK_ADMIN_EMAILS:-}"
+      AUTHENTIK_REDIRECT_URI: "${AUTHENTIK_REDIRECT_URI:-}"
       # Account portal link (footer + success page): Authentik self-service
       # user settings (password resets). Defaults to AUTHENTIK_BASE_URL/if/user/
       ACCOUNT_PORTAL_URL: "${ACCOUNT_PORTAL_URL:-https://auth.magnate.innotel.us/if/user/}"
