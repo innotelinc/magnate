@@ -4,11 +4,16 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { LockIcon } from "./icons";
 
-export default function AdminLogin() {
+export default function AdminLogin({ ssoEnabled = false }: { ssoEnabled?: boolean }) {
   const router = useRouter();
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+
+  function handleSso(e: React.MouseEvent) {
+    e.preventDefault();
+    window.location.href = "/api/auth/authentik/login";
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -67,6 +72,24 @@ export default function AdminLogin() {
       >
         {loading ? "Signing in…" : "Sign in"}
       </button>
+
+      {ssoEnabled && (
+        <>
+          <div className="flex items-center gap-3 py-1">
+            <div className="h-px flex-1 bg-zinc-950/10 dark:bg-white/10" />
+            <span className="text-xs uppercase tracking-wide text-zinc-500">or</span>
+            <div className="h-px flex-1 bg-zinc-950/10 dark:bg-white/10" />
+          </div>
+
+          <button
+            type="button"
+            onClick={handleSso}
+            className="w-full rounded-xl border border-zinc-950/10 bg-white py-3 text-sm font-semibold text-zinc-800 shadow-sm transition-all hover:bg-zinc-50 dark:border-white/15 dark:bg-white/[0.04] dark:text-white dark:hover:bg-white/[0.08]"
+          >
+            Sign in with Cerulean
+          </button>
+        </>
+      )}
     </form>
   );
 }

@@ -47,7 +47,7 @@ services:
       - infisical-redis-data:/data
 
   infisical:
-    image: ghcr.io/infisical/infisical:latest
+    image: infisical/infisical:latest
     profiles: ["infisical"]
     restart: unless-stopped
     depends_on:

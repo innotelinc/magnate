@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import { getAdminToken } from "@/lib/route-auth";
+import { oidcEnabled } from "@/lib/oidc";
 import AdminLogin from "@/components/AdminLogin";
 import ThemeToggle from "@/components/ThemeToggle";
 import { CrownIcon } from "@/components/icons";
@@ -11,6 +12,7 @@ export default async function AdminLoginPage() {
   const token = await getAdminToken();
   const brand = await getBrand();
   if (token) redirect("/admin");
+  const ssoEnabled = oidcEnabled();
 
   return (
     <main className="relative flex min-h-screen items-center justify-center overflow-hidden bg-[#f6f7fb] px-4 dark:bg-[#06070c]">
@@ -35,7 +37,7 @@ export default async function AdminLoginPage() {
         </div>
 
         <div className="glass rounded-3xl p-7">
-          <AdminLogin />
+          <AdminLogin ssoEnabled={ssoEnabled} />
         </div>
       </div>
     </main>
