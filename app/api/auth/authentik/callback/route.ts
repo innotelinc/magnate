@@ -6,6 +6,7 @@ import {
   getUserInfo,
   isAdminUser,
   oidcEnabled,
+  publicOrigin,
 } from "@/lib/oidc";
 import {
   OIDC_STATE_COOKIE,
@@ -16,7 +17,7 @@ export const dynamic = "force-dynamic";
 
 export async function GET(req: NextRequest) {
   if (!oidcEnabled()) {
-    return NextResponse.redirect(new URL("/admin/login", req.nextUrl.origin), 302);
+    return NextResponse.redirect(new URL("/admin/login", publicOrigin(req)), 302);
   }
 
   const store = await cookies();
@@ -24,7 +25,7 @@ export async function GET(req: NextRequest) {
   if (errParam) {
     // User denied consent or something failed upstream — back to login.
     return NextResponse.redirect(
-      new URL(`/admin/login?error=${encodeURIComponent(errParam)}`, req.nextUrl.origin),
+      new URL(`/admin/login?error=${encodeURIComponent(errParam)}`, publicOrigin(req)),
       302,
     );
   }
@@ -34,7 +35,7 @@ export async function GET(req: NextRequest) {
   const storedState = store.get(OIDC_STATE_COOKIE)?.value;
   const verifier = store.get(OIDC_VERIFIER_COOKIE)?.value;
   const next = store.get("oidc_next")?.value ?? "/admin";
-  const origin = req.nextUrl.origin;
+  const origin = publicOrigin(req);
 
   if (!code || !state || !storedState || !verifier || state !== storedState) {
     return NextResponse.redirect(

@@ -25,7 +25,7 @@ export default async function AdminLoginPage() {
 
       <div className="animate-fade-up relative w-full max-w-sm">
         <div className="mb-8 flex flex-col items-center text-center">
-          <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-indigo-500 via-violet-500 to-fuchsia-500 shadow-lg shadow-indigo-500/40">
+          <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-brand-600 shadow-lg shadow-brand-600/40">
             <CrownIcon className="h-5 w-5 text-white" />
           </span>
           <h1 className="mt-4 text-2xl font-bold tracking-tight">

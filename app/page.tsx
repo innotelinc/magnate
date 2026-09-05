@@ -163,7 +163,7 @@ export default async function Home({
             <div className="animate-fade-up delay-300 mt-10 flex flex-col items-center justify-center gap-4 sm:flex-row">
               <Link
                 href="/#pricing"
-                className="group flex items-center gap-2 rounded-full bg-gradient-to-r from-indigo-500 via-violet-500 to-fuchsia-500 px-8 py-3.5 text-base font-semibold text-white shadow-xl shadow-indigo-500/30 transition-all hover:shadow-indigo-500/50 hover:brightness-110"
+                className="group flex items-center gap-2 rounded-full bg-brand-600 px-8 py-3.5 text-base font-semibold text-white shadow-xl shadow-brand-600/30 transition-all hover:shadow-brand-600/50 hover:brightness-110"
               >
                 View plans
                 <ArrowRightIcon className="h-4 w-4 transition-transform group-hover:translate-x-1" />
@@ -214,7 +214,7 @@ export default async function Home({
                   style={{ animationDelay: `${i * 70}ms` }}
                   className="animate-fade-up group rounded-2xl border border-zinc-950/10 bg-black/[0.02] p-6 transition-all duration-300 hover:-translate-y-1 hover:border-brand-400/50 hover:bg-black/[0.04] dark:border-white/[0.07] dark:bg-white/[0.02] dark:hover:bg-white/[0.04]"
                 >
-                  <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-500/20 to-fuchsia-500/20 text-brand-600 ring-1 ring-zinc-950/10 transition-transform duration-300 group-hover:scale-110 dark:text-brand-300 dark:ring-white/10">
+                  <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-brand-600/10 text-brand-600 ring-1 ring-zinc-950/10 transition-transform duration-300 group-hover:scale-110 dark:text-brand-300 dark:ring-white/10">
                     <Icon className="h-5 w-5" />
                   </span>
                   <h3 className="mt-5 text-lg font-semibold">{title}</h3>
@@ -239,7 +239,7 @@ export default async function Home({
               {steps.map((step, i) => (
                 <div key={step.n} className="relative">
                   {i < steps.length - 1 && (
-                    <div className="absolute left-full top-10 hidden h-px w-full -translate-x-1/2 bg-gradient-to-r from-zinc-950/15 to-transparent md:block dark:from-white/20" />
+                    <div className="absolute left-full top-10 hidden h-px w-full -translate-x-1/2 bg-zinc-950/15 md:block dark:from-white/20" />
                   )}
                   <div className="rounded-2xl border border-zinc-950/10 bg-black/[0.02] p-7 transition-all duration-300 hover:border-zinc-950/25 dark:border-white/[0.07] dark:bg-white/[0.02] dark:hover:border-white/20">
                     <span className="text-gradient text-4xl font-bold">
@@ -309,7 +309,7 @@ export default async function Home({
                   style={{ animationDelay: `${i * 80}ms` }}
                   className="animate-fade-up group rounded-2xl border border-zinc-950/10 bg-black/[0.02] p-6 transition-all duration-300 hover:-translate-y-1 hover:border-brand-400/50 hover:bg-black/[0.04] dark:border-white/[0.07] dark:bg-white/[0.02] dark:hover:bg-white/[0.04]"
                 >
-                  <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-500/20 to-fuchsia-500/20 text-brand-600 ring-1 ring-zinc-950/10 transition-transform duration-300 group-hover:scale-110 dark:text-brand-300 dark:ring-white/10">
+                  <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-brand-600/10 text-brand-600 ring-1 ring-zinc-950/10 transition-transform duration-300 group-hover:scale-110 dark:text-brand-300 dark:ring-white/10">
                     <Icon className="h-5 w-5" />
                   </span>
                   <h3 className="mt-5 text-lg font-semibold">{title}</h3>
@@ -395,7 +395,7 @@ export default async function Home({
                     style={{ animationDelay: `${i * 80}ms` }}
                     className="animate-fade-up group rounded-2xl border border-zinc-950/10 bg-black/[0.02] p-6 transition-all duration-300 hover:-translate-y-1 hover:border-brand-400/50 hover:bg-black/[0.04] dark:border-white/[0.07] dark:bg-white/[0.02] dark:hover:bg-white/[0.04]"
                   >
-                    <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-500/20 to-fuchsia-500/20 text-brand-600 ring-1 ring-zinc-950/10 transition-transform duration-300 group-hover:scale-110 dark:text-brand-300 dark:ring-white/10">
+                    <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-brand-600/10 text-brand-600 ring-1 ring-zinc-950/10 transition-transform duration-300 group-hover:scale-110 dark:text-brand-300 dark:ring-white/10">
                       <Icon className="h-5 w-5" />
                     </span>
                     <h3 className="mt-4 font-semibold">{title}</h3>
@@ -443,7 +443,7 @@ export default async function Home({
         {/* CTA */}
         <section className="pb-24">
           <div className="mx-auto max-w-4xl px-4 sm:px-6">
-            <div className="relative overflow-hidden rounded-3xl border border-zinc-950/10 bg-gradient-to-br from-indigo-600/20 via-violet-600/10 to-fuchsia-600/20 p-10 text-center sm:p-16 dark:border-white/10">
+            <div className="relative overflow-hidden rounded-3xl border border-zinc-950/10 bg-brand-600/10 p-10 text-center sm:p-16 dark:border-white/10">
               <div className="pointer-events-none absolute -top-24 left-1/2 h-64 w-[480px] -translate-x-1/2 rounded-full bg-indigo-500/30 blur-[100px]" />
               <h2 className="relative text-3xl font-bold tracking-tight sm:text-4xl">
                 Ready to get started?

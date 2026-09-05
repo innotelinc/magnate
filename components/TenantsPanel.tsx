@@ -189,7 +189,7 @@ export default function TenantsPanel() {
           </Link>
           <button
             onClick={startNew}
-            className="flex items-center gap-1.5 rounded-lg bg-gradient-to-r from-indigo-500 to-fuchsia-500 px-3.5 py-2 text-sm font-semibold text-white shadow-lg shadow-indigo-500/30 transition-all hover:brightness-110"
+            className="flex items-center gap-1.5 rounded-lg bg-brand-600 px-3.5 py-2 text-sm font-semibold text-white shadow-lg shadow-brand-600/30 transition-all hover:brightness-110"
           >
             <PlusIcon className="h-4 w-4" />
             New tenant
@@ -307,7 +307,7 @@ export default function TenantsPanel() {
               </button>
               <button
                 type="submit"
-                className="flex items-center gap-1.5 rounded-lg bg-gradient-to-r from-indigo-500 to-fuchsia-500 px-4 py-2 text-sm font-semibold text-white shadow-lg shadow-indigo-500/30 transition-all hover:brightness-110"
+                className="flex items-center gap-1.5 rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white shadow-lg shadow-brand-600/30 transition-all hover:brightness-110"
               >
                 <CheckIcon className="h-4 w-4" />
                 Save tenant

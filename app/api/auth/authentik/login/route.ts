@@ -4,6 +4,7 @@ import {
   makePkcePair,
   makeState,
   oidcEnabled,
+  publicOrigin,
   redirectUri,
 } from "@/lib/oidc";
 
@@ -21,10 +22,11 @@ function safeNext(value: string | null): string {
 
 export async function GET(req: NextRequest) {
   if (!oidcEnabled()) {
-    return NextResponse.redirect(new URL("/admin/login", req.nextUrl.origin), 302);
+    return NextResponse.redirect(new URL("/admin/login", publicOrigin(req)), 302);
   }
 
   const next = safeNext(req.nextUrl.searchParams.get("next"));
+  const origin = publicOrigin(req);
 
   let disc;
   try {
@@ -42,7 +44,7 @@ export async function GET(req: NextRequest) {
   const params = new URLSearchParams({
     response_type: "code",
     client_id: process.env.AUTHENTIK_CLIENT_ID ?? "",
-    redirect_uri: redirectUri(req.nextUrl.origin),
+    redirect_uri: redirectUri(origin),
     scope: "openid profile email",
     state,
     code_challenge: challenge,

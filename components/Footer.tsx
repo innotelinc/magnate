@@ -16,7 +16,7 @@ export default async function Footer() {
         <div className="flex flex-col items-start justify-between gap-8 md:flex-row md:items-center">
           <div>
             <div className="flex items-center gap-2.5">
-              <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-indigo-500 via-violet-500 to-fuchsia-500">
+              <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-brand-600">
                 <CrownIcon className="h-3.5 w-3.5 text-white" />
               </span>
               <span className="font-semibold">

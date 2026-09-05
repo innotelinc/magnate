@@ -65,7 +65,7 @@ export default function PricingSection({
             className="relative h-8 w-14 rounded-full border border-zinc-950/15 bg-black/[0.06] transition-colors hover:border-zinc-950/30 dark:border-white/10 dark:bg-white/[0.06] dark:hover:border-white/20"
           >
             <span
-              className={`absolute top-1 h-6 w-6 rounded-full bg-gradient-to-br from-indigo-400 to-fuchsia-500 shadow transition-all duration-300 ${
+              className={`absolute top-1 h-6 w-6 rounded-full bg-brand-500 shadow transition-all duration-300 ${
                 yearly ? "left-7" : "left-1"
               }`}
             />
@@ -99,12 +99,12 @@ export default function PricingSection({
                 style={{ animationDelay: `${i * 90}ms` }}
                 className={`animate-fade-up relative flex flex-col rounded-3xl p-7 transition-all duration-300 ${
                   plan.highlighted
-                    ? "glow-ring bg-gradient-to-b from-indigo-500/[0.12] via-black/[0.02] to-black/[0.02] md:-translate-y-2 md:hover:-translate-y-4 dark:via-white/[0.05] dark:to-white/[0.03]"
+                    ? "bg-brand-600/[0.08] md:-translate-y-2 md:hover:-translate-y-4"
                     : "glass hover:-translate-y-2 hover:border-zinc-950/25 dark:hover:border-white/20"
                 }`}
               >
                 {plan.highlighted && (
-                  <span className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-gradient-to-r from-indigo-500 to-fuchsia-500 px-3 py-1 text-xs font-bold uppercase tracking-wide text-white shadow-lg shadow-indigo-500/40">
+                  <span className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-brand-600 px-3 py-1 text-xs font-bold uppercase tracking-wide text-white shadow-lg shadow-brand-600/40">
                     Most popular
                   </span>
                 )}
@@ -145,7 +145,7 @@ export default function PricingSection({
                   href={`/signup?plan=${plan.slug}&interval=${yearly ? "year" : "month"}${refQuery}`}
                   className={`mt-8 rounded-xl py-3 text-center text-sm font-semibold transition-all duration-300 ${
                     plan.highlighted
-                      ? "bg-gradient-to-r from-indigo-500 via-violet-500 to-fuchsia-500 text-white shadow-lg shadow-indigo-500/30 hover:shadow-indigo-500/50 hover:brightness-110"
+                      ? "bg-brand-600 text-white shadow-lg shadow-brand-600/30 hover:shadow-brand-600/50 hover:brightness-110"
                       : "border border-zinc-950/15 bg-black/[0.04] text-zinc-950 hover:border-zinc-950/30 hover:bg-black/[0.06] dark:border-white/15 dark:bg-white/[0.04] dark:text-white dark:hover:border-white/30 dark:hover:bg-white/[0.08]"
                   }`}
                 >

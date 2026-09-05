@@ -11,7 +11,7 @@ export default async function Nav() {
     <header className="sticky top-0 z-50 border-b border-zinc-950/10 bg-[#f6f7fb]/70 backdrop-blur-xl dark:border-white/[0.06] dark:bg-[#06070c]/70">
       <nav className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4 sm:px-6">
         <Link href="/" className="group flex items-center gap-2.5">
-          <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-500 via-violet-500 to-fuchsia-500 shadow-lg shadow-indigo-500/30 transition-transform duration-300 group-hover:scale-105">
+          <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-brand-600 shadow-lg shadow-brand-600/30 transition-transform duration-300 group-hover:scale-105">
             <CrownIcon className="h-4 w-4 text-white" />
           </span>
           <span className="text-lg font-semibold tracking-tight">

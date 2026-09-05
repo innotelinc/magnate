@@ -317,7 +317,7 @@ export default function AnalyticsDashboard() {
                 <span className="flex items-center gap-2">
                   <span className="w-24 h-2 rounded-full bg-zinc-950/10 dark:bg-white/10">
                     <span
-                      className="block h-full rounded-full bg-gradient-to-r from-indigo-500 to-fuchsia-500"
+                      className="block h-full rounded-full bg-brand-600"
                       style={{
                         width: `${Math.round((p.count / Math.max(data.totals.active, 1)) * 100)}%`,
                       }}
@@ -428,7 +428,7 @@ export default function AnalyticsDashboard() {
                     <button
                       onClick={() => runWinback(u)}
                       disabled={busy !== null}
-                      className="flex items-center gap-1.5 rounded-lg bg-gradient-to-r from-indigo-500 to-fuchsia-500 px-3 py-2 text-xs font-semibold text-white shadow-lg shadow-indigo-500/30 transition-all hover:brightness-110 disabled:opacity-50"
+                      className="flex items-center gap-1.5 rounded-lg bg-brand-600 px-3 py-2 text-xs font-semibold text-white shadow-lg shadow-brand-600/30 transition-all hover:brightness-110 disabled:opacity-50"
                     >
                       <LinkIcon className="h-3.5 w-3.5" />
                       {busy === `w:${u.user_id}` ? "Creating…" : "Winback offer"}

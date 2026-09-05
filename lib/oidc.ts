@@ -1,4 +1,5 @@
 import crypto from "node:crypto";
+import type { NextRequest } from "next/server";
 
 /**
  * Authentik OIDC (authorization-code + PKCE) client for the admin portal.
@@ -26,6 +27,24 @@ export function oidcEnabled(): boolean {
 
 export function oidcIssuerBase(): string {
   return (process.env.AUTHENTIK_ISSUER_URL ?? "").replace(/\/+$/, "");
+}
+
+/**
+ * Public origin for the request that reached this app.
+ *
+ * The image pins HOSTNAME=0.0.0.0 (so the standalone server binds all
+ * interfaces), which makes Next derive a bogus request origin of
+ * https://0.0.0.0:3000 — every auth redirect would point at that instead of
+ * the public host. The edge (NPM) sets x-forwarded-proto/host, so trust those
+ * first; fall back to APP_URL and finally to Next's own origin.
+ */
+export function publicOrigin(req: NextRequest): string {
+  const proto = req.headers.get("x-forwarded-proto")?.split(",")[0]?.trim();
+  const host = req.headers.get("x-forwarded-host")?.split(",")[0]?.trim();
+  if (proto && host) return `${proto}://${host}`;
+  const appUrl = (process.env.APP_URL ?? "").trim().replace(/\/+$/, "");
+  if (appUrl) return appUrl;
+  return req.nextUrl.origin;
 }
 
 /**
