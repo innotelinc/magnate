@@ -31,6 +31,7 @@ interface Plan {
   priceYearlyCents: number;
   features: string[];
   highlighted: boolean;
+  addon: boolean;
   active: boolean;
 }
 
@@ -188,6 +189,10 @@ function PlanEditor({
     initial ? String(initial.priceYearlyCents / 100) : "",
   );
   const [features, setFeatures] = useState(initial?.features.join("\n") ?? "");
+  // Add-on plans (highlighted=2) are sold from their own product funnel and
+  // hidden from the storefront grid; only storefront plans can be “Most
+  // popular” (highlighted=1).
+  const [isAddon, setIsAddon] = useState(initial?.addon ?? false);
   const [highlighted, setHighlighted] = useState(initial?.highlighted ?? false);
   const [active, setActive] = useState(initial?.active ?? true);
   const [error, setError] = useState<string | null>(null);
@@ -205,7 +210,8 @@ function PlanEditor({
         .split("\n")
         .map((f) => f.trim())
         .filter(Boolean),
-      highlighted,
+      highlighted: !isAddon && highlighted,
+      addon: isAddon,
       active,
       sortOrder: 0,
     };
@@ -272,13 +278,48 @@ function PlanEditor({
             placeholder={"4K streaming\n2 devices at once"}
           />
         </div>
-        <label className="flex cursor-pointer items-center gap-2 text-sm text-zinc-800 dark:text-zinc-300">
-          <input type="checkbox" checked={highlighted} onChange={(e) => setHighlighted(e.target.checked)} className="h-4 w-4 accent-indigo-500" />
-          Highlight (most popular)
-        </label>
+        <div className="sm:col-span-2">
+          <label className="mb-1 block text-xs text-zinc-600 dark:text-zinc-400">Plan type</label>
+          <div className="grid gap-2 sm:grid-cols-2">
+            <label className="flex cursor-pointer items-center gap-2 rounded-lg border border-zinc-950/15 px-3 py-2 text-sm transition-colors has-[:checked]:border-brand-400/60 has-[:checked]:bg-brand-500/[0.06] dark:border-white/15">
+              <input
+                type="radio"
+                name="plan-kind"
+                checked={!isAddon}
+                onChange={() => setIsAddon(false)}
+                className="accent-indigo-500"
+              />
+              <span className="text-zinc-800 dark:text-zinc-300">Storefront plan</span>
+              <span className="ml-auto text-xs text-zinc-500">shown on the public pricing grid</span>
+            </label>
+            <label className="flex cursor-pointer items-center gap-2 rounded-lg border border-zinc-950/15 px-3 py-2 text-sm transition-colors has-[:checked]:border-brand-400/60 has-[:checked]:bg-brand-500/[0.06] dark:border-white/15">
+              <input
+                type="radio"
+                name="plan-kind"
+                checked={isAddon}
+                onChange={() => setIsAddon(true)}
+                className="accent-violet-500"
+              />
+              <span className="text-zinc-800 dark:text-zinc-300">Add-on plan</span>
+              <span className="ml-auto text-xs text-zinc-500">sold from its own product funnel</span>
+            </label>
+          </div>
+        </div>
+        {!isAddon && (
+          <label className="flex cursor-pointer items-center gap-2 text-sm text-zinc-800 dark:text-zinc-300">
+            <input type="checkbox" checked={highlighted} onChange={(e) => setHighlighted(e.target.checked)} className="h-4 w-4 accent-indigo-500" />
+            Highlight (most popular)
+          </label>
+        )}
+        {isAddon && (
+          <p className="text-xs text-zinc-500 dark:text-zinc-400">
+            Add-ons never appear in the storefront pricing grid — they are purchased
+            from their product&apos;s own funnel (e.g. the Zeus AI-agents checkout).
+          </p>
+        )}
         <label className="flex cursor-pointer items-center gap-2 text-sm text-zinc-800 dark:text-zinc-300">
           <input type="checkbox" checked={active} onChange={(e) => setActive(e.target.checked)} className="h-4 w-4 accent-emerald-500" />
-          Active (visible on site)
+          Active
         </label>
       </div>
 
@@ -1343,80 +1384,118 @@ export default function AdminDashboard() {
               }}
             />
           )}
-          {plans.map((plan) => (
-            <div key={plan.id} className="glass rounded-2xl p-5">
-              <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                <div className="flex items-center gap-3">
-                  {plan.highlighted && (
-                    <span className="rounded-full bg-gradient-to-r from-indigo-500 to-fuchsia-500 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white">
-                      Popular
-                    </span>
-                  )}
-                  <div>
-                    <p className="font-semibold">
-                      {plan.name}
-                      <span className="ml-2 text-xs font-normal text-zinc-600 dark:text-zinc-500">
-                        {plan.active ? "active" : "inactive"}
-                      </span>
-                    </p>
-                    <p className="text-xs text-zinc-600 dark:text-zinc-500">
-                      {money(plan.priceMonthlyCents, status?.stripeCurrency ?? "usd")}/mo ·{" "}
-                      {money(plan.priceYearlyCents, status?.stripeCurrency ?? "usd")}/yr
-                    </p>
-                  </div>
-                </div>
-                <div className="flex gap-2">
-                  <button
-                    onClick={() =>
-                      setEditing(
-                        editing !== null && editing !== "new" && editing.id === plan.id
-                          ? null
-                          : plan,
-                      )
-                    }
-                    className="flex items-center gap-1.5 rounded-lg border border-zinc-950/15 px-3 py-1.5 text-xs font-medium transition-colors hover:border-zinc-950/30 dark:border-white/15 dark:hover:border-white/30"
-                  >
-                    <PencilIcon className="h-3.5 w-3.5" />
-                    Edit
-                  </button>
-                  <button
-                    onClick={() => deletePlan(plan)}
-                    className="flex items-center gap-1.5 rounded-lg border border-rose-500/30 px-3 py-1.5 text-xs font-medium text-rose-600 transition-colors hover:bg-rose-500/10 dark:text-rose-300"
-                  >
-                    <TrashIcon className="h-3.5 w-3.5" />
-                    Delete
-                  </button>
-                </div>
-              </div>
 
-              {plan.features.length > 0 && (
-                <div className="mt-3 flex flex-wrap gap-1.5">
-                  {plan.features.map((f) => (
-                    <span
-                      key={f}
-                      className="flex items-center gap-1 rounded-full border border-zinc-950/10 bg-black/[0.03] px-2.5 py-0.5 text-xs text-zinc-600 dark:border-white/10 dark:bg-white/[0.03] dark:text-zinc-400"
-                    >
-                      <CheckIcon className="h-3 w-3 text-emerald-600 dark:text-emerald-400" />
-                      {f}
-                    </span>
+          {(() => {
+            const renderGroup = (title: string, hint: string, items: Plan[], showPopular: boolean) =>
+              items.length === 0 ? null : (
+                <div className="space-y-3">
+                  <div className="flex items-baseline justify-between px-1 pt-2">
+                    <h3 className="text-sm font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
+                      {title}
+                    </h3>
+                    <span className="text-xs text-zinc-500 dark:text-zinc-500">{hint}</span>
+                  </div>
+                  {items.map((plan) => (
+                    <div key={plan.id} className="glass rounded-2xl p-5">
+                      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                        <div className="flex items-center gap-3">
+                          {showPopular && plan.highlighted && (
+                            <span className="rounded-full bg-gradient-to-r from-indigo-500 to-fuchsia-500 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white">
+                              Popular
+                            </span>
+                          )}
+                          {plan.addon && (
+                            <span className="rounded-full border border-violet-500/40 bg-violet-500/10 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-violet-600 dark:text-violet-300">
+                              Add-on
+                            </span>
+                          )}
+                          <div>
+                            <p className="font-semibold">
+                              {plan.name}
+                              <span className="ml-2 text-xs font-normal text-zinc-600 dark:text-zinc-500">
+                                {plan.active ? "active" : "inactive"}
+                              </span>
+                            </p>
+                            <p className="text-xs text-zinc-600 dark:text-zinc-500">
+                              {money(plan.priceMonthlyCents, status?.stripeCurrency ?? "usd")}/mo ·{" "}
+                              {money(plan.priceYearlyCents, status?.stripeCurrency ?? "usd")}/yr
+                            </p>
+                          </div>
+                        </div>
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() =>
+                              setEditing(
+                                editing !== null && editing !== "new" && editing.id === plan.id
+                                  ? null
+                                  : plan,
+                              )
+                            }
+                            className="flex items-center gap-1.5 rounded-lg border border-zinc-950/15 px-3 py-1.5 text-xs font-medium transition-colors hover:border-zinc-950/30 dark:border-white/15 dark:hover:border-white/30"
+                          >
+                            <PencilIcon className="h-3.5 w-3.5" />
+                            Edit
+                          </button>
+                          <button
+                            onClick={() => deletePlan(plan)}
+                            className="flex items-center gap-1.5 rounded-lg border border-rose-500/30 px-3 py-1.5 text-xs font-medium text-rose-600 transition-colors hover:bg-rose-500/10 dark:text-rose-300"
+                          >
+                            <TrashIcon className="h-3.5 w-3.5" />
+                            Delete
+                          </button>
+                        </div>
+                      </div>
+
+                      {plan.features.length > 0 && (
+                        <div className="mt-3 flex flex-wrap gap-1.5">
+                          {plan.features.map((f) => (
+                            <span
+                              key={f}
+                              className="flex items-center gap-1 rounded-full border border-zinc-950/10 bg-black/[0.03] px-2.5 py-0.5 text-xs text-zinc-600 dark:border-white/10 dark:bg-white/[0.03] dark:text-zinc-400"
+                            >
+                              <CheckIcon className="h-3 w-3 text-emerald-600 dark:text-emerald-400" />
+                              {f}
+                            </span>
+                          ))}
+                        </div>
+                      )}
+
+                      {editing !== null && editing !== "new" && editing.id === plan.id && (
+                        <div className="mt-4">
+                          <PlanEditor
+                            initial={plan}
+                            onDone={() => setEditing(null)}
+                            onSaved={(msg) => {
+                              setNotice(msg);
+                              refresh();
+                            }}
+                          />
+                        </div>
+                      )}
+                    </div>
                   ))}
                 </div>
-              )}
+              );
 
-              {editing !== null && editing !== "new" && editing.id === plan.id && (
-                <div className="mt-4">
-                  <PlanEditor
-                    initial={plan}
-                    onDone={() => setEditing(null)}
-                    onSaved={(msg) => {
-                      setNotice(msg);
-                      refresh();
-                    }}
-                  />
-                </div>
-              )}
-            </div>
-          ))}
+            const storefront = plans.filter((p) => !p.addon);
+            const addons = plans.filter((p) => p.addon);
+            return (
+              <>
+                {renderGroup(
+                  "Storefront plans",
+                  "shown on the public pricing grid",
+                  storefront,
+                  true,
+                )}
+                {renderGroup(
+                  "Add-on plans",
+                  "sold from their product funnel — never on the grid",
+                  addons,
+                  false,
+                )}
+              </>
+            );
+          })()}
 
           <button
             onClick={() => setEditing("new")}
