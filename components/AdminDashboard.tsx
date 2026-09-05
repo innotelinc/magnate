@@ -614,6 +614,16 @@ const SETTING_FIELDS: {
     label: "Account Portal URL",
     placeholder: "http://localhost:9000/if/user/",
   },
+  {
+    key: "purchase_fulfillment_url",
+    label: "Purchase Fulfillment URL",
+    placeholder: "https://api.rizz.innotel.us/api/magnate/fulfill",
+  },
+  {
+    key: "purchase_fulfillment_secret",
+    label: "Purchase Fulfillment Secret",
+    placeholder: "shared-hmac-secret",
+  },
 ];
 
 function SettingsEditor({

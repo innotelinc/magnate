@@ -18,6 +18,8 @@ const ENV_FALLBACKS: Record<string, string | undefined> = {
   authentik_base_url: process.env.AUTHENTIK_BASE_URL,
   authentik_bootstrap_token: process.env.AUTHENTIK_BOOTSTRAP_TOKEN,
   account_portal_url: process.env.ACCOUNT_PORTAL_URL,
+  purchase_fulfillment_url: process.env.MAGNATE_PURCHASE_FULFILLMENT_URL,
+  purchase_fulfillment_secret: process.env.MAGNATE_PURCHASE_FULFILLMENT_SECRET,
 };
 
 /* ---------- public API ---------- */
@@ -93,6 +95,20 @@ export function accountPortalUrl(): string {
   );
 }
 
+/** Outbound fulfillment hook for one-off purchases (consuming platform). */
+export function purchaseFulfillmentUrl(): string {
+  return getSetting("purchase_fulfillment_url") ?? "";
+}
+
+/**
+ * Shared HMAC secret used to sign purchase fulfillment callbacks
+ * (header `X-Magnate-Signature`). The consuming platform must hold the same
+ * value. Empty = callbacks are unsigned (trusted-net deployments).
+ */
+export function purchaseFulfillmentSecret(): string {
+  return getSetting("purchase_fulfillment_secret") ?? "";
+}
+
 /**
  * Returns only DB-stored settings (no env fallback).
  * Used for export/backup so the file contains only overrides.
@@ -108,6 +124,8 @@ export function getExportableSettings(): Record<string, string> {
     "authentik_base_url",
     "authentik_bootstrap_token",
     "account_portal_url",
+    "purchase_fulfillment_url",
+    "purchase_fulfillment_secret",
   ];
 
   const result: Record<string, string> = {};
@@ -153,6 +171,8 @@ export function getSettingsForAdmin(): Record<
     "authentik_base_url",
     "authentik_bootstrap_token",
     "account_portal_url",
+    "purchase_fulfillment_url",
+    "purchase_fulfillment_secret",
   ];
 
   const result: Record<
