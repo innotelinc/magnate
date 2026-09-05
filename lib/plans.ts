@@ -13,6 +13,20 @@ export function listActivePlans(): Plan[] {
     .all() as Plan[];
 }
 
+/**
+ * Plans shown in the public storefront pricing grid: active AND not hidden.
+ * `highlighted = 2` marks an add-on plan — purchasable through its own
+ * funnel (e.g. the Zeus AI-agents checkout) but never part of the generic
+ * media-subscription grid.
+ */
+export function listStorefrontPlans(): Plan[] {
+  return db
+    .prepare(
+      "SELECT * FROM plans WHERE active = 1 AND highlighted != 2 ORDER BY sort_order, id",
+    )
+    .all() as Plan[];
+}
+
 export function getPlanBySlug(slug: string): Plan | undefined {
   return db.prepare("SELECT * FROM plans WHERE slug = ?").get(slug) as
     | Plan

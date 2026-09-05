@@ -1,10 +1,10 @@
 <div align="center">
 
-# 💎 Magnate — Subscription & Streaming Platform
+# 💎 Magnate — Billing Platform
 
-**Premium, self-hosted memberships and billing for creators — Stripe checkout, Authentik accounts, and a professional streaming experience on your own infrastructure.**
+**The billing platform for the whole Innotel stack — media streaming (Monarch), AI voice agents (Capstone/Zeus), OSS, mail and more. One account, one invoice, every service.**
 
-Magnate turns subscriptions into revenue you own: a storefront with Stripe checkout and
+Magnate is where every service on the platform gets billed: a storefront with Stripe checkout and
 instant account provisioning, recurring billing with prorated upgrades, an admin panel
 with MRR analytics and churn prevention, affiliate referrals, AI watchlists, and
 multi-tenant white-label storefronts — all fronted by Jellyfin media delivery.
