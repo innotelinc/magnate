@@ -32,6 +32,7 @@ provides, and explicitly does not own.
 
 - Authentik — accounts, SSO, access groups
 - Infisical — Stripe keys, webhook secrets, OAuth secrets
+- NPM Edge — public routing, TLS termination at the edge
 
 ## Explicitly does NOT own
 
