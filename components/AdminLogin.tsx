@@ -68,7 +68,7 @@ export default function AdminLogin({ ssoEnabled = false }: { ssoEnabled?: boolea
       <button
         type="submit"
         disabled={loading}
-        className="w-full rounded-xl bg-gradient-to-r from-indigo-500 via-violet-500 to-fuchsia-500 py-3 text-sm font-semibold text-white shadow-lg shadow-indigo-500/30 transition-all hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-60"
+        className="w-full rounded-xl bg-brand-600 py-3 text-sm font-semibold text-white shadow-lg shadow-brand-600/30 transition-all hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-60"
       >
         {loading ? "Signing in…" : "Sign in"}
       </button>

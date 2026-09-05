@@ -46,7 +46,7 @@ export default async function SignupPage({
                 ["Account portal", "Reset your password or manage devices anytime from the account portal."],
               ].map(([title, text]) => (
                 <div key={title} className="flex gap-4">
-                  <span className="mt-1 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-indigo-500/25 to-fuchsia-500/25 text-brand-600 ring-1 ring-zinc-950/10 dark:text-brand-300 dark:ring-white/10">
+                  <span className="mt-1 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-brand-600/10 text-brand-600 ring-1 ring-zinc-950/10 dark:text-brand-300 dark:ring-white/10">
                     <PlayIcon className="h-3.5 w-3.5" />
                   </span>
                   <div>

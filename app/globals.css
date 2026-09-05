@@ -82,14 +82,11 @@ select option:checked {
 /* ---------- custom utilities ---------- */
 
 .text-gradient {
-  background: linear-gradient(100deg, #6366f1 0%, #a855f7 45%, #ec4899 100%);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
+  color: var(--color-brand-600);
 }
 
 [data-theme="dark"] .text-gradient {
-  background: linear-gradient(100deg, #818cf8 0%, #c084fc 45%, #f472b6 100%);
+  color: var(--color-brand-400);
 }
 
 .glass {
@@ -101,12 +98,6 @@ select option:checked {
 [data-theme="dark"] .glass {
   background: rgba(255, 255, 255, 0.03);
   border: 1px solid rgba(255, 255, 255, 0.08);
-}
-
-.glow-ring {
-  box-shadow:
-    0 0 0 1px rgba(129, 140, 248, 0.35),
-    0 8px 40px -8px rgba(99, 102, 241, 0.5);
 }
 
 .grid-bg {
