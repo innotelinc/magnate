@@ -153,7 +153,7 @@ export default function SuccessClient({
   return (
     <div className="animate-fade-up w-full">
       <div className="text-center">
-        <div className="animate-pop-in mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-emerald-400 to-teal-500 shadow-xl shadow-emerald-500/40">
+        <div className="animate-pop-in mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-emerald-500 shadow-xl shadow-emerald-500/40">
           <CheckIcon className="h-8 w-8 text-white" />
         </div>
         <h1 className="mt-6 text-3xl font-bold tracking-tight sm:text-4xl">
@@ -213,7 +213,7 @@ export default function SuccessClient({
           href={jellyfinUrl}
           target="_blank"
           rel="noopener noreferrer"
-          className="group flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-indigo-500 via-violet-500 to-fuchsia-500 py-3.5 text-sm font-semibold text-white shadow-lg shadow-indigo-500/30 transition-all hover:shadow-indigo-500/50 hover:brightness-110"
+          className="group flex items-center justify-center gap-2 rounded-xl bg-brand-600 py-3.5 text-sm font-semibold text-white shadow-lg shadow-brand-600/30 transition-all hover:shadow-brand-600/50 hover:brightness-110"
         >
           <FilmIcon className="h-4 w-4" />
           Start watching now
@@ -243,7 +243,7 @@ export default function SuccessClient({
       {phase.referralLink && phase.referralCode && (
         <div className="mt-7 rounded-2xl border border-brand-400/25 bg-brand-500/[0.06] p-5">
           <div className="flex items-center gap-2.5">
-            <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-indigo-500/25 to-fuchsia-500/25 text-brand-600 ring-1 ring-zinc-950/10 dark:text-brand-300 dark:ring-white/10">
+            <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-brand-600/10 text-brand-600 ring-1 ring-zinc-950/10 dark:text-brand-300 dark:ring-white/10">
               <LinkIcon className="h-4 w-4" />
             </span>
             <div>

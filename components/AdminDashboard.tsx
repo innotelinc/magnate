@@ -333,7 +333,7 @@ function PlanEditor({
         <button
           onClick={save}
           disabled={saving || !name}
-          className="rounded-lg bg-gradient-to-r from-indigo-500 to-fuchsia-500 px-4 py-2 text-sm font-semibold text-white transition-all hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50"
+          className="rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white transition-all hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50"
         >
           {saving ? "Saving…" : initial ? "Save changes" : "Create plan"}
         </button>
@@ -468,7 +468,7 @@ function UserEditor({
         <button
           onClick={save}
           disabled={saving || !email || !username || !password}
-          className="rounded-lg bg-gradient-to-r from-indigo-500 to-fuchsia-500 px-4 py-2 text-sm font-semibold text-white transition-all hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50"
+          className="rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white transition-all hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50"
         >
           {saving ? "Creating…" : "Create user"}
         </button>
@@ -587,7 +587,7 @@ function UserEditEditor({
         <button
           onClick={save}
           disabled={saving || !changed}
-          className="rounded-lg bg-gradient-to-r from-indigo-500 to-fuchsia-500 px-4 py-2 text-sm font-semibold text-white transition-all hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50"
+          className="rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white transition-all hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50"
         >
           {saving ? "Saving…" : "Save changes"}
         </button>
@@ -783,7 +783,7 @@ function SettingsEditor({
         <button
           onClick={save}
           disabled={saving}
-          className="rounded-lg bg-gradient-to-r from-indigo-500 to-fuchsia-500 px-4 py-2 text-sm font-semibold text-white transition-all hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50"
+          className="rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white transition-all hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50"
         >
           {saving ? "Saving…" : "Save settings"}
         </button>
@@ -926,7 +926,7 @@ function ChangePasswordCard({
         <button
           onClick={save}
           disabled={saving || !current || !next || !confirm}
-          className="rounded-lg bg-gradient-to-r from-indigo-500 to-fuchsia-500 px-4 py-2 text-sm font-semibold text-white transition-all hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50"
+          className="rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white transition-all hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50"
         >
           {saving ? "Saving…" : "Update password"}
         </button>
@@ -1020,7 +1020,7 @@ function PasswordResetModal({
             <div className="mt-6 flex flex-col gap-3 sm:flex-row">
               <button
                 onClick={copy}
-                className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-indigo-500 to-fuchsia-500 py-2.5 text-sm font-semibold text-white transition-all hover:brightness-110"
+                className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-brand-600 py-2.5 text-sm font-semibold text-white transition-all hover:brightness-110"
               >
                 {copied ? (
                   <>
@@ -1095,7 +1095,7 @@ function PasswordResetModal({
           <button
             onClick={save}
             disabled={saving || !password || !confirm}
-            className="flex-1 rounded-xl bg-gradient-to-r from-indigo-500 to-fuchsia-500 py-2.5 text-sm font-semibold text-white transition-all hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50"
+            className="flex-1 rounded-xl bg-brand-600 py-2.5 text-sm font-semibold text-white transition-all hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50"
           >
             {saving ? "Resetting…" : "Reset password"}
           </button>
@@ -1400,7 +1400,7 @@ export default function AdminDashboard() {
                       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                         <div className="flex items-center gap-3">
                           {showPopular && plan.highlighted && (
-                            <span className="rounded-full bg-gradient-to-r from-indigo-500 to-fuchsia-500 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white">
+                            <span className="rounded-full bg-brand-600 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white">
                               Popular
                             </span>
                           )}
