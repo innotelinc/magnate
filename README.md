@@ -35,6 +35,10 @@ multi-tenant white-label storefronts — all fronted by Jellyfin media delivery.
 - **AI recommendations & churn prevention** — personalized watchlists from
   Jellyfin viewing history; winback offers for at-risk subscribers
 - **Multi-tenant & white-label** — each tenant owns its brand and domains
+- **One-off purchases API** — consuming platforms (e.g. Rizz Aura's Cash
+  Shop) create one-time Checkout sessions under Magnate's Stripe account;
+  completion pushes a signed fulfillment webhook. Consumers never hold Stripe
+  keys
 - **Automated releases** — tagged releases publish a Docker image to GHCR and
   attach offline deploy artifacts to a GitHub Release
 
@@ -109,6 +113,8 @@ Key variables (full list in `.env.sample`):
 | `REFERRAL_REWARD_PERCENT` | % of a referral's first payment credited (default 10) |
 | `REFERRAL_COUPON_ID` | Optional Stripe coupon applied to referred signups |
 | `AI_API_URL` / `AI_API_KEY` / `AI_MODEL` | OpenAI-compatible endpoint for AI features (optional) |
+| `ENTITLEMENTS_API_TOKEN` | Optional bearer token gating `/api/entitlements` + `/api/purchases` (server-to-server) |
+| `MAGNATE_PURCHASE_FULFILLMENT_URL` / `MAGNATE_PURCHASE_FULFILLMENT_SECRET` | One-off purchase completion hook (platform endpoint + HMAC secret) |
 | `NPM_API_URL` / `NPM_API_IDENTITY` / `NPM_API_SECRET` | Nginx Proxy Manager credentials |
 | `DOMAIN` / `NPM_DNS_PROVIDER` / `NPM_DNS_EMAIL` / `NPM_DNS_CREDENTIALS` | Wildcard cert (DNS challenge) |
 | `NPM_HOSTS_JSON` | Optional override for the subdomain → backend map |
