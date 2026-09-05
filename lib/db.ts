@@ -113,6 +113,23 @@ db.exec(`
     period_end INTEGER,
     created_at TEXT NOT NULL DEFAULT (datetime('now'))
   );
+
+  -- One-off purchases (server-to-server, consuming platforms like Rizz Aura).
+  -- Keyed by the Stripe Checkout session id; consumers are told via the
+  -- fulfillment webhook (settings.purchase_fulfillment_url), never by holding
+  -- Stripe keys. Distinct from payments (subscription invoices) so recurring
+  -- MRR analytics are not polluted by cash-shop revenue.
+  CREATE TABLE IF NOT EXISTS one_time_purchases (
+    session_id TEXT PRIMARY KEY,
+    item_slug TEXT NOT NULL,
+    item_name TEXT NOT NULL,
+    amount_cents INTEGER NOT NULL,
+    currency TEXT NOT NULL DEFAULT 'usd',
+    customer_email TEXT,
+    metadata TEXT NOT NULL DEFAULT '{}',
+    fulfilled_at TEXT,
+    created_at TEXT NOT NULL DEFAULT (datetime('now'))
+  );
 `);
 
 /* ---------- schema migrations (idempotent, safe on existing DBs) ---------- */

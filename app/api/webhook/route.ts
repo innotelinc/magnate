@@ -11,6 +11,7 @@ import {
 } from "@/lib/authentik";
 import { decrypt } from "@/lib/crypto";
 import { getPlanBySlug } from "@/lib/plans";
+import { cleanMetadata, recordPurchaseAndFulfill } from "@/lib/purchases";
 import { stripeWebhookSecret } from "@/lib/settings";
 import {
   creditReferrer,
@@ -229,6 +230,29 @@ export async function POST(req: Request) {
               );
             }
           }
+        } else if (session.mode === "payment") {
+          // One-off purchase from a consuming platform (cash shop): ledger it
+          // under Magnate and notify the platform via its fulfillment hook.
+          // Throwing here keeps the event unprocessed so Stripe retries until
+          // the platform has acknowledged the callback.
+          const slug = session.metadata?.mag_item_slug;
+          if (!slug) {
+            throw new Error(
+              "payment-mode session missing mag_item_slug metadata",
+            );
+          }
+          await recordPurchaseAndFulfill({
+            sessionId: session.id,
+            itemSlug: slug,
+            itemName: session.metadata?.mag_item_name ?? slug,
+            amountCents: session.amount_total ?? 0,
+            currency: (session.currency ?? "usd").toLowerCase(),
+            customerEmail:
+              typeof session.customer_email === "string"
+                ? session.customer_email
+                : null,
+            metadata: cleanMetadata(session.metadata),
+          });
         }
         break;
       }

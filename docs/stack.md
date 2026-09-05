@@ -23,6 +23,8 @@ provides, and explicitly does not own.
 - Entitlements
 - Customer accounts
 - Usage metering
+- One-off purchases (cash-shop Checkout for consuming platforms, signed
+  fulfillment webhook)
 
 ## Provides
 
