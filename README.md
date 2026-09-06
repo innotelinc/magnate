@@ -17,7 +17,7 @@ multi-tenant white-label storefronts — all fronted by Jellyfin media delivery.
 > **About Magnate** — the self-hosted subscription and streaming platform for creators
 > and organizations: manage memberships, process recurring Stripe billing, and deliver a
 > professional Jellyfin streaming experience on your own infrastructure — with
-> Authentik-first accounts, affiliate referrals, AI churn prevention, and white-label
+> Cerulean Authentik-first accounts, affiliate referrals, AI churn prevention, and white-label
 > tenants. **Landing page:** [innotelinc.github.io/magnate](https://innotelinc.github.io/magnate)
 
 ---
@@ -25,7 +25,7 @@ multi-tenant white-label storefronts — all fronted by Jellyfin media delivery.
 ## ✨ Features
 
 - **Storefront** — plan pages, Stripe checkout, instant account provisioning
-- **Authentik-first accounts** — passwords and SSO live in Authentik; Jellyfin
+- **Cerulean Authentik-first accounts** — passwords and SSO live in Cerulean Authentik; Jellyfin
   authenticates against it via the LDAP outpost
 - **Billing** — monthly/yearly plans, Stripe Customer Portal, cancellation &
   prorated upgrades
@@ -50,7 +50,7 @@ issues a **wildcard Let's Encrypt certificate** via DNS challenge:
 | Host | Service |
 | --- | --- |
 | `app.magnate.innotel.us` | Storefront (this app) |
-| `auth.magnate.innotel.us` | Authentik (SSO, LDAP outpost) |
+| `auth.cerulean.innotel.us` | Cerulean Authentik (SSO, LDAP outpost) |
 | `media.magnate.innotel.us` | Jellyfin media server |
 | `billing.magnate.innotel.us` | Billing / Stripe portal UI |
 | `admin.magnate.innotel.us` | Admin panel |
