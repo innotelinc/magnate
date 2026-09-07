@@ -12,6 +12,7 @@ with MRR analytics and churn prevention, affiliate referrals, AI watchlists, and
 multi-tenant white-label storefronts — all fronted by Jellyfin media delivery.
 
 [![CI](https://github.com/innotelinc/magnate/actions/workflows/ci.yml/badge.svg)](https://github.com/innotelinc/magnate/actions/workflows/ci.yml)
+[![Conformity](https://github.com/innotelinc/magnate/actions/workflows/conform.yml/badge.svg)](https://github.com/innotelinc/magnate/actions/workflows/conform.yml)
 [![Release](https://github.com/innotelinc/magnate/actions/workflows/release.yml/badge.svg)](https://github.com/innotelinc/magnate/actions/workflows/release.yml)
 
 </div>
