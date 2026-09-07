@@ -1,5 +1,7 @@
 <div align="center">
 
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+
 # 💎 Magnate — Billing Platform
 
 **The billing platform for the whole Innotel stack — media streaming (Monarch), AI voice agents (Capstone/Zeus), OSS, mail and more. One account, one invoice, every service.**
@@ -13,6 +15,18 @@ multi-tenant white-label storefronts — all fronted by Jellyfin media delivery.
 [![Release](https://github.com/innotelinc/magnate/actions/workflows/release.yml/badge.svg)](https://github.com/innotelinc/magnate/actions/workflows/release.yml)
 
 </div>
+
+---
+
+## Why Magnate
+
+| Problem | Magnate answer |
+| --- | --- |
+| Billing fragmentation across services | One subscription plane: plans, Stripe checkout, prorated upgrades, MRR analytics, churn prevention |
+| Identity per-service password stores | Cerulean Authentik-first accounts; Jellyfin authenticates via the LDAP outpost |
+| Revenue doesn't flow to access control | Magnate Checkout → webhook → Authentik `paid_users` group; cancel and access dies everywhere |
+| White-label tenants are hard | Multi-tenant white-label storefronts, each with its own brand, domains, and plans |
+| AI churn is uncoordinated | Personalized watchlists from Jellyfin history; winback offers for at-risk subscribers |
 
 > **About Magnate** — the self-hosted subscription and streaming platform for creators
 > and organizations: manage memberships, process recurring Stripe billing, and deliver a
@@ -291,6 +305,13 @@ every proxy host — renewals refresh the same NPM certificate in place. DNS
 records are CNAMEs to the apex in the shared `innotel.us` BIND zone, managed
 through Cerulean. The per-host `NPM_DNS_CREDENTIALS` flow above is only for
 standalone deployments outside the stack.
+
+
+---
+
+## License
+
+Magnate is licensed under the MIT License. See [LICENSE](LICENSE) for the full text.
 
 ## 🏛️ Platform stack
 
