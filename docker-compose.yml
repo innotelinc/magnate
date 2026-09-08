@@ -3,6 +3,10 @@ services:
     build: .
     container_name: magnate
     restart: unless-stopped
+    # Memory posture (docs/service-audit.md): billing API is light; cap for
+    # node heap safety.
+    mem_limit: 1g
+    memswap_limit: 1g
     security_opt:
       - apparmor:unconfined
     ports:
