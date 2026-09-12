@@ -335,7 +335,13 @@ const DEFAULT_TENANT = {
   tagline: "Billing Platform",
   description:
     "Magnate is the billing platform for the whole stack — media streaming, PBX hosting, AI voice agents and every other service on one account with one invoice. Managed memberships, recurring billing and one-off purchases across the platform.",
-  domains: JSON.stringify(["magnate.innotel.us", "app.magnate.innotel.us"]),
+  domains: JSON.stringify([
+    "magnate.innotel.us",
+    "app.magnate.innotel.us",
+    // The canonical public billing/storefront domain for the whole Innotel
+    // stack (Stripe webhook + checkout redirects are registered here).
+    "subscribe.innotel.us",
+  ]),
   footer_note: "Payments processed securely by Stripe.",
   active: 1,
 };
