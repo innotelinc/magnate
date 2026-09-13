@@ -176,6 +176,12 @@ ensureColumn(
 ensureColumn("users", "last_payment_failed_at", "last_payment_failed_at TEXT");
 ensureColumn("users", "winback_status", "winback_status TEXT");
 
+// The service a plan belongs to. Empty ("generic") = the platform-wide
+// membership the storefront sells; any other value is a product funnel: the
+// master dashboard prices each service here, and that service's subscribe page
+// reads its own price back through /api/plans?service=<slug>.
+ensureColumn("plans", "service", "service TEXT NOT NULL DEFAULT 'generic'");
+
 db.exec(`
   CREATE UNIQUE INDEX IF NOT EXISTS idx_users_referral_code
     ON users(referral_code);
@@ -199,6 +205,7 @@ export interface Plan {
   highlighted: number;
   active: number;
   sort_order: number;
+  service: string;
   created_at: string;
 }
 
@@ -265,6 +272,8 @@ export function parseTenantDomains(tenant: Pick<Tenant, "domains">): string[] {
 
 const DEFAULT_PLANS = [
   {
+    // Basic/Standard/Premium ARE the Monarch streaming membership today — the
+    // storefront grid is Monarch's funnel. The dashboard re-prices any of them.
     name: "Basic",
     slug: "basic",
     description: "Great for getting started on a single device.",
@@ -276,6 +285,7 @@ const DEFAULT_PLANS = [
       "480p Standard Definition",
       "Watch on TV, phone & tablet",
     ]),
+    service: "monarch",
     highlighted: 0,
     sort_order: 0,
   },
@@ -291,6 +301,7 @@ const DEFAULT_PLANS = [
       "1080p Full HD quality",
       "Watch on TV, phone & tablet",
     ]),
+    service: "monarch",
     highlighted: 0,
     sort_order: 1,
   },
@@ -308,12 +319,16 @@ const DEFAULT_PLANS = [
       "Early access to new content",
       "Exclusive movie & TV request access",
     ]),
+    service: "monarch",
     highlighted: 1,
     sort_order: 2,
   },
   {
     name: "AI Agents",
     slug: "agents",
+    // service="zeus": the Capstone voice-agents add-on is priced for (and sold
+    // from) the Zeus funnel, not the generic storefront.
+    service: "zeus",
     description: "AI voice agent add-on — sold from the Zeus voice & PBX billing page.",
     price_monthly_cents: 4900,
     price_yearly_cents: 49000,
@@ -327,6 +342,30 @@ const DEFAULT_PLANS = [
     highlighted: 2,
     sort_order: 100,
   },
+];
+
+/**
+ * The services the master dashboard prices. Every service in the Innotel stack
+ * that sells anything gets a row — the dashboard lists ALL of them (even ones
+ * with no plan yet), and each service's subscribe page reads its price back via
+ * /api/plans?service=<slug>. A service with no plan simply renders "not sold
+ * here yet" on its page instead of a price.
+ */
+export const SERVICES: { slug: string; name: string; subscribe_url: string }[] = [
+  { slug: "magnate", name: "Magnate (platform membership)", subscribe_url: "https://subscribe.innotel.us" },
+  { slug: "monarch", name: "Monarch — streaming", subscribe_url: "https://subscribe.monarch.innotel.us" },
+  { slug: "zeus", name: "Zeus — voice & PBX", subscribe_url: "https://subscribe.zeus.innotel.us" },
+  { slug: "capstone", name: "Capstone — voice AI", subscribe_url: "https://subscribe.capstone.innotel.us" },
+  { slug: "oasis", name: "Oasis — mail & collaboration", subscribe_url: "https://subscribe.oasis.innotel.us" },
+  { slug: "onyx", name: "Onyx — object storage", subscribe_url: "https://subscribe.onyx.innotel.us" },
+  { slug: "signara", name: "Signara — trust & signing", subscribe_url: "https://subscribe.signara.innotel.us" },
+  { slug: "atlas", name: "Atlas — DevOps platform", subscribe_url: "https://subscribe.atlas.innotel.us" },
+  { slug: "atheniq", name: "AthenIQ — learning", subscribe_url: "https://subscribe.atheniq.innotel.us" },
+  { slug: "olympus", name: "Olympus — AI studio", subscribe_url: "https://subscribe.olympus.innotel.us" },
+  { slug: "plutus", name: "PLUTUS — AI shopping channel", subscribe_url: "https://subscribe.plutus.innotel.us" },
+  { slug: "distro", name: "Distro — builder platform", subscribe_url: "https://subscribe.distro.innotel.us" },
+  { slug: "rizzaura", name: "Rizz Aura — community", subscribe_url: "https://subscribe.rizzaura.innotel.us" },
+  { slug: "zapit", name: "ZapIt — short links", subscribe_url: "https://subscribe.zapit.innotel.us" },
 ];
 
 const DEFAULT_TENANT = {
@@ -354,8 +393,8 @@ function seedPlans() {
   // INSERT OR IGNORE keeps seeding idempotent even when multiple processes
   // (e.g. build workers) initialize the database at the same time.
   const insert = db.prepare(`
-    INSERT OR IGNORE INTO plans (name, slug, description, price_monthly_cents, price_yearly_cents, features, highlighted, sort_order)
-    VALUES (@name, @slug, @description, @price_monthly_cents, @price_yearly_cents, @features, @highlighted, @sort_order)
+    INSERT OR IGNORE INTO plans (name, slug, description, price_monthly_cents, price_yearly_cents, features, highlighted, sort_order, service)
+    VALUES (@name, @slug, @description, @price_monthly_cents, @price_yearly_cents, @features, @highlighted, @sort_order, @service)
   `);
   const tx = db.transaction(() => {
     for (const plan of DEFAULT_PLANS) insert.run(plan);
@@ -364,6 +403,30 @@ function seedPlans() {
     tx();
   } catch {
     // Another process seeded the plans first — nothing to do.
+  }
+}
+
+/**
+ * Align existing plan rows with the DEFAULT_PLANS spec's service ownership
+ * (e.g. `agents` → "zeus"). Only touches rows whose service is still the
+ * column default — a service the admin set in the dashboard is never
+ * overridden. Idempotent, so it runs on every boot.
+ */
+function backfillPlanServices() {
+  const update = db.prepare(
+    "UPDATE plans SET service = @service WHERE slug = @slug AND service = 'generic'",
+  );
+  const tx = db.transaction(() => {
+    for (const plan of DEFAULT_PLANS) {
+      if (plan.service && plan.service !== "generic") {
+        update.run({ slug: plan.slug, service: plan.service });
+      }
+    }
+  });
+  try {
+    tx();
+  } catch {
+    // Another worker migrated first — nothing to do.
   }
 }
 
@@ -430,4 +493,5 @@ function backfillReferralCodes() {
 
 seedPlans();
 seedTenant();
+backfillPlanServices();
 backfillReferralCodes();

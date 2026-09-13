@@ -1,4 +1,3 @@
-import Link from "next/link";
 import {
   ArrowRightIcon,
   BoltIcon,
@@ -32,11 +31,11 @@ const SERVICES: {
     Icon: FilmIcon,
   },
   {
-    name: "Capstone + Zeus",
+    name: "Zeus",
     tag: "Voice & PBX",
-    text: "AI voice agents on the Capstone platform, hosted calling through the Zeus PBX with WebRTC softphones, and per-agent entitlements billed here.",
-    url: "https://dashboard.capstone.innotel.us",
-    cta: "Open control center",
+    text: "Phone numbers, SMS, fax and voicemail on the Zeus PBX, with WebRTC softphones — and AI voice agents by Capstone as an add-on sold from the Zeus page.",
+    url: "https://subscribe.zeus.innotel.us",
+    cta: "See Zeus plans",
     Icon: HeadphonesIcon,
   },
   {
@@ -136,17 +135,6 @@ export default function ServicesSection() {
             </div>
           ))}
         </div>
-
-        <p className="mt-10 text-center text-sm text-zinc-600 dark:text-zinc-500">
-          Looking for AI voice agents? The AI-agents add-on is billed from the{" "}
-          <Link
-            href="/signup?plan=agents"
-            className="font-medium text-brand-600 underline-offset-2 hover:underline dark:text-brand-300"
-          >
-            Zeus voice &amp; PBX page
-          </Link>
-          .
-        </p>
       </div>
     </section>
   );

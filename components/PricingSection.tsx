@@ -40,12 +40,13 @@ export default function PricingSection({
             <span className="text-gradient">Everything on demand.</span>
           </h2>
           <p className="mt-4 text-lg text-zinc-600 dark:text-zinc-400">
-            Pick a plan, pay securely with Stripe, and start streaming in
-            minutes. No contracts — cancel anytime.
+            Every service prices itself. Pick the one you want, pay securely
+            with Stripe, and cancel anytime.
           </p>
         </div>
 
-        {/* Toggle */}
+        {/* Toggle — only meaningful when the platform itself has plans. */}
+        {plans.length > 0 && (
         <div className="mt-10 flex items-center justify-center gap-4">
           <span
             className={`text-sm font-medium transition-colors ${
@@ -85,9 +86,29 @@ export default function PricingSection({
             </span>
           )}
         </div>
+        )}
 
         {/* Cards */}
         <div className="mt-12 grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+          {plans.length === 0 && (
+            <div className="glass rounded-3xl p-8 text-center md:col-span-2 lg:col-span-3">
+              <h3 className="text-xl font-semibold">
+                No shared catalog — every service prices itself
+              </h3>
+              <p className="mx-auto mt-2 max-w-xl text-sm text-zinc-600 dark:text-zinc-400">
+                Magnate bills each Innotel service on that service&apos;s own
+                subscribe page, so you never pay for a bundle you don&apos;t
+                use. Pick a service, see exactly what it costs, and check out
+                with the one account you already have.
+              </p>
+              <Link
+                href="https://subscribe.innotel.us"
+                className="mt-6 inline-flex rounded-full bg-brand-600 px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-brand-600/30 transition-all hover:brightness-110"
+              >
+                Browse every service
+              </Link>
+            </div>
+          )}
           {plans.map((plan, i) => {
             const priceCents = yearly
               ? plan.priceYearlyCents
