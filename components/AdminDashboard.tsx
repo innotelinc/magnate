@@ -33,6 +33,34 @@ interface Plan {
   highlighted: boolean;
   addon: boolean;
   active: boolean;
+  service: string;
+}
+
+/**
+ * Every service the stack prices — the master dashboard's services list.
+ * A service with no plan row is still listed ("not priced yet") so the
+ * dashboard is always the complete answer to "what do we sell, at what price,
+ * for whom?".
+ */
+const SERVICES: { slug: string; name: string }[] = [
+  { slug: "generic", name: "Platform membership (storefront)" },
+  { slug: "monarch", name: "Monarch — streaming" },
+  { slug: "zeus", name: "Zeus — voice & PBX" },
+  { slug: "capstone", name: "Capstone — voice AI" },
+  { slug: "oasis", name: "Oasis — mail & collaboration" },
+  { slug: "onyx", name: "Onyx — object storage" },
+  { slug: "signara", name: "Signara — trust & signing" },
+  { slug: "atlas", name: "Atlas — DevOps platform" },
+  { slug: "atheniq", name: "AthenIQ — learning" },
+  { slug: "olympus", name: "Olympus — AI studio" },
+  { slug: "plutus", name: "PLUTUS — AI shopping channel" },
+  { slug: "distro", name: "Distro — builder platform" },
+  { slug: "rizzaura", name: "Rizz Aura — community" },
+  { slug: "zapit", name: "ZapIt — short links" },
+];
+
+function serviceName(slug: string): string {
+  return SERVICES.find((s) => s.slug === slug)?.name ?? slug;
 }
 
 interface AppUser {
@@ -189,6 +217,9 @@ function PlanEditor({
     initial ? String(initial.priceYearlyCents / 100) : "",
   );
   const [features, setFeatures] = useState(initial?.features.join("\n") ?? "");
+  // Which service this plan is sold for. "generic" = the platform membership
+  // the storefront sells; anything else is that service's own price.
+  const [service, setService] = useState(initial?.service ?? "generic");
   // Add-on plans (highlighted=2) are sold from their own product funnel and
   // hidden from the storefront grid; only storefront plans can be “Most
   // popular” (highlighted=1).
@@ -214,6 +245,7 @@ function PlanEditor({
       addon: isAddon,
       active,
       sortOrder: 0,
+      service,
     };
     setSaving(true);
     try {
@@ -278,7 +310,29 @@ function PlanEditor({
             placeholder={"4K streaming\n2 devices at once"}
           />
         </div>
-        <div className="sm:col-span-2">
+        <div>
+          <label className="mb-1 block text-xs text-zinc-600 dark:text-zinc-400">Sold for</label>
+          <select
+            className={inputCls}
+            value={service}
+            onChange={(e) => setService(e.target.value)}
+          >
+            {SERVICES.map((s) => (
+              <option key={s.slug} value={s.slug}>
+                {s.name}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div>
+          <label className="mb-1 block text-xs text-zinc-600 dark:text-zinc-400">Plan type</label>
+          <select disabled className={`${inputCls} opacity-50`} value={isAddon ? "addon" : "storefront"}>
+            <option value="storefront">Storefront plan</option>
+            <option value="addon">Add-on plan</option>
+          </select>
+          <p className="mt-1 text-xs text-zinc-500">Switch type below</p>
+        </div>
+        <div className="hidden">
           <label className="mb-1 block text-xs text-zinc-600 dark:text-zinc-400">Plan type</label>
           <div className="grid gap-2 sm:grid-cols-2">
             <label className="flex cursor-pointer items-center gap-2 rounded-lg border border-zinc-950/15 px-3 py-2 text-sm transition-colors has-[:checked]:border-brand-400/60 has-[:checked]:bg-brand-500/[0.06] dark:border-white/15">
@@ -1420,6 +1474,11 @@ export default function AdminDashboard() {
                               {money(plan.priceMonthlyCents, status?.stripeCurrency ?? "usd")}/mo ·{" "}
                               {money(plan.priceYearlyCents, status?.stripeCurrency ?? "usd")}/yr
                             </p>
+                            {plan.service && plan.service !== "generic" && (
+                              <p className="mt-0.5 text-xs font-medium text-brand-600 dark:text-brand-300">
+                                for {serviceName(plan.service)}
+                              </p>
+                            )}
                           </div>
                         </div>
                         <div className="flex gap-2">
@@ -1483,7 +1542,7 @@ export default function AdminDashboard() {
               <>
                 {renderGroup(
                   "Storefront plans",
-                  "shown on the public pricing grid",
+                  "the platform membership, shown on the public pricing grid",
                   storefront,
                   true,
                 )}
@@ -1493,6 +1552,42 @@ export default function AdminDashboard() {
                   addons,
                   false,
                 )}
+
+                {/* Pricing by service — the master list. Every service, and
+                    what (if anything) is priced for it right now. */}
+                <div className="glass mt-6 rounded-2xl p-5">
+                  <h3 className="text-sm font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
+                    Pricing by service
+                  </h3>
+                  <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
+                    Every service in the stack. Set a price by creating a plan for it —
+                    its subscribe page reads the price live from here.
+                  </p>
+                  <div className="mt-3 divide-y divide-zinc-950/[0.06] dark:divide-white/[0.06]">
+                    {SERVICES.filter((s) => s.slug !== "generic").map((s) => {
+                      const svc = plans.filter(
+                        (p) => p.service === s.slug && p.active,
+                      );
+                      return (
+                        <div key={s.slug} className="flex items-center justify-between gap-3 py-2.5">
+                          <span className="text-sm text-zinc-800 dark:text-zinc-200">{s.name}</span>
+                          {svc.length === 0 ? (
+                            <span className="text-xs text-zinc-500 dark:text-zinc-400">not priced yet</span>
+                          ) : (
+                            <span className="text-xs font-medium text-zinc-700 dark:text-zinc-300">
+                              {svc
+                                .map(
+                                  (p) =>
+                                    `${p.name} ${money(p.priceMonthlyCents, status?.stripeCurrency ?? "usd")}/mo`,
+                                )
+                                .join(" · ")}
+                            </span>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
               </>
             );
           })()}

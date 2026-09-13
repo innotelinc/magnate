@@ -7,22 +7,55 @@ export function listAllPlans(): Plan[] {
     .all() as Plan[];
 }
 
+/**
+ * The plans of ONE service, for that service's subscribe page.
+ * `service` is the column set by the master dashboard; "generic" is the
+ * platform-wide membership the storefront sells.
+ */
+export function listPlansForService(service: string): Plan[] {
+  return db
+    .prepare(
+      "SELECT * FROM plans WHERE service = ? AND active = 1 ORDER BY sort_order, id",
+    )
+    .all(service) as Plan[];
+}
+
 export function listActivePlans(): Plan[] {
   return db
     .prepare("SELECT * FROM plans WHERE active = 1 ORDER BY sort_order, id")
     .all() as Plan[];
 }
 
+/** Every plan grouped by owning service — the master dashboard's overview. */
+export function listPlansByService(): Record<string, Plan[]> {
+  const grouped: Record<string, Plan[]> = {};
+  for (const plan of listActivePlans()) {
+    const key = plan.service || "generic";
+    (grouped[key] ??= []).push(plan);
+  }
+  return grouped;
+}
+
 /**
- * Plans shown in the public storefront pricing grid: active AND not hidden.
- * `highlighted = 2` marks an add-on plan — purchasable through its own
- * funnel (e.g. the Zeus AI-agents checkout) but never part of the generic
- * media-subscription grid.
+ * Plans shown in the platform's own storefront grid.
+ *
+ * There is deliberately NO shared catalog: a plan belongs to exactly one
+ * service (`plans.service`), and every service prices itself on its own
+ * subscribe page via `listPlansForService()`. This function therefore returns
+ * only platform-level plans (service unset/empty/'generic') — never another
+ * service's prices, which would present e.g. Monarch's $3/mo as the price of
+ * the platform. Add-on plans (`highlighted = 2`) are excluded too: they are
+ * purchased through their own service's funnel.
+ *
+ * Today the table holds no platform-level plans, so this returns an empty
+ * list and the storefront renders its "every service prices itself" panel.
  */
 export function listStorefrontPlans(): Plan[] {
   return db
     .prepare(
-      "SELECT * FROM plans WHERE active = 1 AND highlighted != 2 ORDER BY sort_order, id",
+      "SELECT * FROM plans WHERE active = 1 AND highlighted != 2 " +
+        "AND (service IS NULL OR TRIM(service) = '' OR service = 'generic') " +
+        "ORDER BY sort_order, id",
     )
     .all() as Plan[];
 }
@@ -66,6 +99,7 @@ export function planPublic(plan: Plan) {
     highlighted: plan.highlighted === 1,
     addon: plan.highlighted === 2,
     active: Boolean(plan.active),
+    service: plan.service || "generic",
   };
 }
 
@@ -80,13 +114,15 @@ interface PlanInput {
   addon: boolean;
   active: boolean;
   sortOrder: number;
+  /** Which service this plan is sold for ("generic" = platform membership). */
+  service?: string;
 }
 
 export function createPlan(input: PlanInput): Plan {
   const info = db
     .prepare(
-      `INSERT INTO plans (name, slug, description, price_monthly_cents, price_yearly_cents, features, highlighted, active, sort_order)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      `INSERT INTO plans (name, slug, description, price_monthly_cents, price_yearly_cents, features, highlighted, active, sort_order, service)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     )
     .run(
       input.name,
@@ -98,6 +134,7 @@ export function createPlan(input: PlanInput): Plan {
       toHighlightInt({ addon: input.addon, highlighted: input.highlighted }),
       input.active ? 1 : 0,
       input.sortOrder,
+      input.service ?? "generic",
     );
   return getPlanById(Number(info.lastInsertRowid))!;
 }
@@ -120,7 +157,7 @@ export function updatePlan(
   db.prepare(
     `UPDATE plans SET
        name = ?, slug = ?, description = ?, price_monthly_cents = ?, price_yearly_cents = ?,
-       features = ?, highlighted = ?, active = ?, sort_order = ?
+       features = ?, highlighted = ?, active = ?, sort_order = ?, service = ?
      WHERE id = ?`,
   ).run(
     input.name ?? existing.name,
@@ -132,6 +169,7 @@ export function updatePlan(
     nextHighlight,
     input.active !== undefined ? (input.active ? 1 : 0) : existing.active,
     input.sortOrder ?? existing.sort_order,
+    input.service ?? existing.service ?? "generic",
     id,
   );
   return getPlanById(id);

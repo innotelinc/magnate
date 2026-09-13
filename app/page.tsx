@@ -34,12 +34,17 @@ export default async function Home({
   const brand = await getBrand();
   const { ref } = await searchParams;
   const refCode = ref?.trim().slice(0, 24) || null;
-  // Storefront grid = generic subscription plans. Add-on plans
-  // (highlighted=2, e.g. the Zeus AI-agents add-on) are sold from their own
-  // product's billing page and never shown here.
+  // Storefront grid = plans priced for the platform itself. Per-service plans
+  // (service = 'monarch', 'zeus', …) are sold on that service's own subscribe
+  // page, never here — no shared catalog, so one service's price is never
+  // presented as the price of the platform. Add-on plans (highlighted = 2,
+  // e.g. the Zeus AI-agents add-on) are sold from their own product's page.
   const plans = listStorefrontPlans().map(planPublic) as PublicPlan[];
-  const cheapestPrice =
-    Math.min(...plans.map((p) => p.priceMonthlyCents)) / 100;
+  // Null (not Infinity) when the platform itself has no plan yet — the hero
+  // copy and the pricing section both handle that case.
+  const cheapestPrice = plans.length
+    ? Math.min(...plans.map((p) => p.priceMonthlyCents)) / 100
+    : null;
 
   const features = [
     {
@@ -151,13 +156,22 @@ export default async function Home({
 
             <p className="animate-fade-up delay-200 mx-auto mt-6 max-w-xl text-lg text-zinc-600 sm:text-xl dark:text-zinc-400">
               Magnate is the billing platform for everything we run — media
-              streaming, AI voice agents, PBX hosting, mail and more. One
-              membership, one invoice, every service. Plans start at just{" "}
-              <span className="font-semibold text-zinc-950 dark:text-white">
-                ${cheapestPrice % 1 === 0 ? cheapestPrice.toFixed(0) : cheapestPrice.toFixed(2)}
-                /mo
-              </span>
-              .
+              streaming, voice and PBX, mail and more. One account, one
+              invoice, and every service priced on its own subscribe page.
+              {cheapestPrice !== null && (
+                <>
+                  {" "}
+                  Platform plans start at just{" "}
+                  <span className="font-semibold text-zinc-950 dark:text-white">
+                    $
+                    {cheapestPrice % 1 === 0
+                      ? cheapestPrice.toFixed(0)
+                      : cheapestPrice.toFixed(2)}
+                    /mo
+                  </span>
+                  .
+                </>
+              )}
             </p>
 
             <div className="animate-fade-up delay-300 mt-10 flex flex-col items-center justify-center gap-4 sm:flex-row">

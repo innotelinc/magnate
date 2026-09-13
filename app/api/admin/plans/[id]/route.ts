@@ -26,6 +26,12 @@ const planSchema = z.object({
   addon: z.boolean().optional().default(false),
   active: z.boolean().optional().default(true),
   sortOrder: z.number().int().optional().default(0),
+  // Which service this plan is sold for ("generic" = platform membership).
+  service: z
+    .string()
+    .max(32)
+    .regex(/^[a-z0-9-]*$/, "Service must be a lowercase slug (or empty for generic).")
+    .optional(),
 });
 
 async function unauthorized() {

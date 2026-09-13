@@ -20,7 +20,7 @@ export async function generateMetadata(): Promise<Metadata> {
   const brand = await getBrand();
   return {
     title: `${brand.name} — ${brand.tagline}`,
-    description: `${brand.name} is the billing platform for the whole stack — media streaming, AI voice agents, PBX hosting, mail and more. One account, every service.`,
+    description: `${brand.name} is the billing platform for the whole stack — media streaming, voice and PBX, mail and more. One account, every service.`,
     icons: { icon: "/favicon.svg" },
   };
 }
