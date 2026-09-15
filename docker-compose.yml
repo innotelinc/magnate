@@ -1,3 +1,7 @@
+# Project name is pinned so container/volume names never depend on where this
+# repo is checked out (the mesh puts it in 1-primary/magnate).
+name: magnate
+
 services:
   magnate:
     build: .
@@ -50,7 +54,22 @@ services:
       AI_API_URL: "${AI_API_URL:-https://api.openai.com/v1}"
       AI_API_KEY: "${AI_API_KEY:-}"
       AI_MODEL: "${AI_MODEL:-gpt-4o-mini}"
-      # Admin panel
+      # Authentik (Cerulean SSO) — the admin panel's identity provider.
+      # These MUST be passed through: lib/oidc.ts reads them from process.env,
+      # so a value that only lives in .env (compose substitution) never reaches
+      # the container and SSO silently stays off.
+      AUTHENTIK_ISSUER_URL: "${AUTHENTIK_ISSUER_URL:-}"
+      AUTHENTIK_CLIENT_ID: "${AUTHENTIK_CLIENT_ID:-}"
+      AUTHENTIK_CLIENT_SECRET: "${AUTHENTIK_CLIENT_SECRET:-}"
+      AUTHENTIK_REDIRECT_URI: "${AUTHENTIK_REDIRECT_URI:-}"
+      AUTHENTIK_ADMIN_EMAILS: "${AUTHENTIK_ADMIN_EMAILS:-}"
+      # Admin API (user provisioning / password resets) — same caution.
+      AUTHENTIK_BASE_URL: "${AUTHENTIK_BASE_URL:-}"
+      AUTHENTIK_BOOTSTRAP_TOKEN: "${AUTHENTIK_BOOTSTRAP_TOKEN:-}"
+      # Admin panel — identity is Cerulean Authentik. The password env is the
+      # BREAK-GLASS fallback: it only works while BREAKGLASS_LOGIN is set, and
+      # the login page hides the password form otherwise (lib/auth.ts).
+      BREAKGLASS_LOGIN: "${BREAKGLASS_LOGIN:-}"
       ADMIN_PASSWORD: "${ADMIN_PASSWORD:-change-me-to-a-strong-password}"
       # Used to encrypt stored credentials and sign admin sessions
       SESSION_SECRET: "${SESSION_SECRET:-change-me-to-a-long-random-string}"

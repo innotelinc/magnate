@@ -7,6 +7,21 @@ const SESSION_TTL_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
 
 export { COOKIE_NAME };
 
+/**
+ * Admin sign-in is Authentik-only by default: the panel is the storefront's
+ * back office, and identity is Cerulean's Authentik (the stack's IdentityOps
+ * platform), so keeping a second local password was a second identity store.
+ *
+ * BREAKGLASS_LOGIN=1 re-enables the password path. It exists for recovery —
+ * when Authentik is unreachable — and is meant to be set, used, then unset.
+ * Both halves honour it: the login page hides the password form, and
+ * /api/admin/login refuses to mint a session while it is off.
+ */
+export function breakglassLoginEnabled(): boolean {
+  const v = (process.env.BREAKGLASS_LOGIN ?? "").trim().toLowerCase();
+  return v === "1" || v === "true" || v === "yes" || v === "on";
+}
+
 export function verifyAdminPassword(password: string): boolean {
   const expected = adminPassword();
   if (!expected) return false;
