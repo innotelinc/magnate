@@ -3,6 +3,7 @@ import { z } from "zod";
 import {
   COOKIE_NAME,
   createAdminSession,
+  breakglassLoginEnabled,
   verifyAdminPassword,
 } from "@/lib/auth";
 import { adminPassword } from "@/lib/settings";
@@ -28,6 +29,19 @@ function isRateLimited(ip: string): boolean {
 }
 
 export async function POST(req: Request) {
+  // Password sign-in is the break-glass path (see lib/auth.ts). Refuse before
+  // touching the password so no session can be minted while it is off, even if
+  // the endpoint is called directly.
+  if (!breakglassLoginEnabled()) {
+    return NextResponse.json(
+      {
+        error:
+          "Password sign-in is disabled — sign in with Cerulean. Set BREAKGLASS_LOGIN=1 and restart the app to re-enable the local fallback.",
+      },
+      { status: 403 },
+    );
+  }
+
   if (!adminPassword()) {
     return NextResponse.json(
       { error: "ADMIN_PASSWORD is not set on the server." },

@@ -190,6 +190,27 @@ Local testing: `stripe listen --forward-to localhost:3000/api/webhook`.
   description and footer note (white-label). Requests are matched by Host
   header and fall back to the Magnate tenant.
 
+### Admin sign-in
+
+`/admin` signs in through Cerulean Authentik only: the login page renders a
+single **Sign in with Cerulean** button and `POST /api/admin/login` answers
+403. The local `ADMIN_PASSWORD` form is break-glass — it appears only while
+`BREAKGLASS_LOGIN` is set (see `.env.example`), so an operator can still get in
+while Authentik is unreachable.
+
+Verify the whole dance against a live deployment — redirect, PKCE, Authentik's
+own flow, the code exchange, the admin session, and that the password routes
+stay closed:
+
+```bash
+npm run verify:sso        # python3 scripts/verify-sso.py
+```
+
+It creates a temporary Authentik user on the admin allowlist and in the app's
+group, drives the real flow over the public hostnames, then deletes the user
+even when a check fails. Exit codes: `0` pass, `1` check failed, `2`
+unconfigured or the deployment is unreachable.
+
 ## AI recommendations & churn prevention
 
 Point the app at any OpenAI-compatible chat-completions API:
@@ -318,8 +339,8 @@ Magnate is licensed under the MIT License. See [LICENSE](LICENSE) for the full t
 
 Magnate is the ecosystem's **RevenueOps** platform — subscriptions, billing, entitlements, and revenue analytics in the
 [**Innotel Platform Stack**](https://github.com/innotelinc/innotel-platform-stack) — the
-canonical single-responsibility architecture where Authentik owns identity, Infisical owns
+canonical single-responsibility architecture where Authentik owns identity, Cerulean Vault owns
 secrets, Cerulean owns trust, ONYX owns storage, Magnate owns revenue, NPM Edge owns the edge, and every other
 platform is a business function that consumes them. See
 [docs/stack.md](docs/stack.md) for this platform's owns/consumes boundaries and its
-Infisical secret setup.
+Cerulean Vault secret setup.
