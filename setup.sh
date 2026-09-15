@@ -8,6 +8,9 @@
 # 4. Waits for the app to answer on ${MAGNATE_PORT:-3000}.
 # 5. Provisions Nginx Proxy Manager proxy hosts + wildcard SSL (via
 #    scripts/npm-proxy-hosts.py) for app/api/auth/media/billing/admin.<DOMAIN>.
+# 6. Verifies admin sign-in is Authentik-only (scripts/verify-sso.py) — a
+#    deployment invariant, not a smoke test: it signs in through a temporary
+#    Authentik identity and fails the run if the password path reopened.
 #
 # Prereqs on the same host (or reachable network):
 #   - Nginx Proxy Manager (NPM) running with an admin login for the API
@@ -75,6 +78,24 @@ done
 
 log "provisioning Nginx Proxy Manager hosts + wildcard SSL…"
 python3 scripts/npm-proxy-hosts.py
+
+# ------------------------------------------------------------- verify
+
+# The admin panel must accept a Cerulean Authentik identity and refuse a
+# password. Run the real PKCE flow against this deployment so a regression in
+# the sign-in posture (see docs/sign-in-posture.md) cannot ship unnoticed.
+# Exit 2 means "cannot run" — no Authentik token in .env, or the app is not
+# reachable from here — which is a skip, not a failure.
+log "verifying admin sign-in is Authentik-only…"
+set +e
+python3 scripts/verify-sso.py
+__sso=$?
+set -e
+case "$__sso" in
+  0) log "admin sign-in verified: Authentik only, password path closed." ;;
+  2) warn "skipped the SSO verification (unconfigured or unreachable) — see above." ;;
+  *) die "admin sign-in verification FAILED — the password path may have reopened. See above." ;;
+esac
 
 # ------------------------------------------------------------- done
 
