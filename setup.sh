@@ -96,8 +96,9 @@ cat <<'EOF'
  requests per-host certs for these names.
 ────────────────────────────────────────────────────────────────
 EOF
-# ── Infisical (SecretOps) — opt-in secret provisioning ──────────────
-# Secrets for the Innotel Platform Stack live in Infisical. Enable by
+# ── Infisical (SecretOps — legacy) — opt-in secret provisioning ──────
+# Platform SecretOps is Cerulean Vault; this stack still imports into
+# Infisical. Enable by
 # setting INFISICAL_ADMIN_EMAIL / INFISICAL_ADMIN_PASSWORD and the
 # INFISICAL_* keys in .env, then re-run setup (idempotent).
 if grep -qE '^INFISICAL_ADMIN_EMAIL=.+' .env 2>/dev/null && \

@@ -1,8 +1,8 @@
 # ═══════════════════════════════════════════════════════════════════════════
 # Infisical (SecretOps) — opt-in compose profile.
 #
-# The Innotel Platform Stack treats Infisical as the single source of truth
-# for secrets. This profile adds a self-hosted Infisical instance
+# The Innotel Platform Stack's SecretOps is Cerulean Vault; Infisical is the
+# legacy store. This profile adds a self-hosted Infisical instance
 # (backend + PostgreSQL + Redis) to a stack WITHOUT touching the main
 # compose file. Enable it with:
 #

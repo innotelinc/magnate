@@ -2,7 +2,7 @@
 # stack-lib.sh — the central shared library for Innotel Platform Stack tasks.
 #
 # Every platform repo's setup/npm scripts can source this from the canonical
-# stack repo (innotel-platform-stack) so common tasks live in ONE place:
+# stack repo (`ips`) so common tasks live in ONE place:
 #
 #   STACK_LIB="${STACK_LIB:-/usr/local/lib/innotel/stack-lib.sh}"
 #   [ -f "$STACK_LIB" ] && . "$STACK_LIB"
