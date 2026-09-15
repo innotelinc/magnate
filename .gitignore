@@ -44,3 +44,10 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Cerulean Vault token copies (data/vault/token/<product>.token) — live
+# credentials. `/data` above already covers them; spelled out so the reason
+# survives a future narrowing of that rule.
+data/vault/token/
+data/vault/init/
+data/vault/file/

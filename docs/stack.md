@@ -48,24 +48,26 @@ provides, and explicitly does not own.
 The platform's SecretOps is **Cerulean Vault** — HashiCorp Vault, KV v2, hosted by
 Cerulean — with `vault://<mount>/<path>#<key>` references in `.env`.
 
-### Legacy: the Infisical profile
-
-This stack currently still imports its credentials into an **Infisical** workspace and
-derives `.env` from it. Enable it with:
+Cerulean mints this stack's **path-scoped** token (its policy covers only
+`cerulean/data/magnate`, never a sibling's secrets) and renews it in place. Copy
+it to `./data/vault/token/magnate.token`, then move any plaintext values across:
 
 ```bash
-# generate the required keys and add them to .env
-openssl rand -base64 32   # INFISICAL_ENCRYPTION_KEY
-openssl rand -hex 16      # INFISICAL_AUTH_SECRET
-openssl rand -hex 16      # INFISICAL_DB_PASSWORD
-
-# start the profile and provision the workspace + import .env secrets
-docker compose -f docker-compose.yml -f compose.infisical.yml --profile infisical up -d
-bash scripts/infisical-setup.sh
+VAULT_ADDR=http://<cerulean-host>:8200 \
+  VAULT_TOKEN_FILE=./data/vault/token/magnate.token \
+  VAULT_PREFIX=cerulean VAULT_PATH=magnate \
+  python3 scripts/vault-migrate.py --from-env-file .env \
+    --keys STRIPE_SECRET_KEY,SESSION_SECRET
 ```
 
-See [compose.infisical.yml](../compose.infisical.yml) and
-[scripts/infisical-setup.py](../scripts/infisical-setup.py) for details.
+`vault-migrate.py` never prints a value, unions with whatever is already at the
+path (so a re-run is a no-op, not an overwrite), and accepts either `.env` or a
+legacy Infisical workspace as its source.
+
+A `vault://` value is the platform's reference *form*; it is resolved by whichever
+layer consumes it (ONYX's Go services, Distro's Node control plane, Zeus at boot,
+Atlas at setup). This repo has no resolver, so `.env` must hold the resolved
+value — a reference left in place reaches the container as a literal string.
 
 ## Golden rules
 
