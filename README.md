@@ -211,6 +211,11 @@ group, drives the real flow over the public hostnames, then deletes the user
 even when a check fails. Exit codes: `0` pass, `1` check failed, `2`
 unconfigured or the deployment is unreachable.
 
+`setup.sh` runs it as its last step, so every deploy is verified on the host:
+`0` continues, `2` warns and continues (no Authentik configured, or the app is
+not reachable from the deploy host), and `1` fails the run. GitHub-hosted CI
+cannot reach the LAN, so the deploy path — not CI — is where this is enforced.
+
 ## AI recommendations & churn prevention
 
 Point the app at any OpenAI-compatible chat-completions API:
