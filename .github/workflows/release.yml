@@ -64,7 +64,7 @@ jobs:
           ls -lh
 
       - name: Upload release artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: magnate-release
           path: |
@@ -79,7 +79,7 @@ jobs:
       contents: write
     steps:
       - name: Download artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: magnate-release
           path: ./artifacts
