@@ -42,6 +42,38 @@ provides, and explicitly does not own.
 - Media (Monarch)
 - Storage (ONYX)
 
+## Roadmap — where Magnate stands (17 September 2026)
+
+**Live and verified on the deployment:**
+
+- [x] **The ecosystem's subscribing page** — `subscribe.innotel.us` is the landing
+      and subscribing surface; Monarch's own subscribe hosts are retired in its
+      favour and its links are CI-checked to point here.
+- [x] **Entitlement decisions consumed estate-wide** — Distro (`/api/entitlements`
+      proxy + gated quotas), Monarch (plan → Jellyfin playback policy via
+      `magnate-entitlements.py`), Capstone and Zeus (agents as a SKU).
+- [x] **Authentik-first accounts** — passwords live in Cerulean Authentik, never
+      in Magnate's app database; the shared `ENTITLEMENTS_API_TOKEN` gates the
+      server-to-server entitlement and purchase APIs.
+- [x] **Checkout, plans and admin panel** — Stripe Checkout sessions, plan
+      auto-seed on boot, coupon/trial support, referral credit, and the `/admin`
+      console for per-user entitlements and analytics.
+
+**Open, in priority order:**
+
+1. **Entitlement depth for Monarch** — profile limits stay advisory because
+      Jellyfin has no per-user profile cap; enforce profile counts here (or at
+      the Authentik group level) rather than leaving them advisory.
+2. **Distro per-user entitlements polish** — the console shows entitlements per
+      user today; a purchase link that deep-links the plan being upgraded (not
+      just the checkout page) is the missing UX step.
+3. **Usage metering as a first-class surface** — metering is owned but consumed
+      platforms still self-report; pulling usage from Distro's gateway ledger
+      would make revenue analytics authoritative rather than reported.
+4. **Webhook delivery evidence** — the signed fulfillment webhook has retry
+      semantics; a delivery log visible in `/admin` would make failed
+      fulfillments an operational queue instead of a surprise.
+
 
 ## Secrets (Cerulean Vault)
 
