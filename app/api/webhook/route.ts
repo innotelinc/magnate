@@ -6,6 +6,9 @@ import {
   ensureUser,
   findUser,
   findUserByEmail,
+  grantPaidGroup,
+  paidGroupForPlan,
+  revokePaidGroup,
   setUserActive,
   setUserPassword,
 } from "@/lib/authentik";
@@ -139,6 +142,20 @@ async function provisionUser(
   if (status === "active" && !akUser.is_active) {
     await setUserActive(akUser.pk, true);
   }
+
+  // Revenue → access: put the subscriber in the plan's paid group so every
+  // consumer that reads the `groups` claim follows billing automatically.
+  // Group sync is best-effort: a group API hiccup must not fail a checkout
+  // webhook that has already provisioned the account.
+  const groupName = paidGroupForPlan(plan?.authentik_group ?? null);
+  if (groupName && status === "active") {
+    try {
+      await grantPaidGroup(groupName, akUser.pk);
+    } catch (err) {
+      console.error(`paid group grant failed (${groupName} ← ${username})`, err);
+    }
+  }
+
   return userId;
 }
 
@@ -161,8 +178,38 @@ async function handleSubscriptionUpdated(
   if (!akUser) return;
   if (status === "cancelled" || status === "unpaid") {
     await setUserActive(akUser.pk, false);
+    // Lapsed billing leaves the paid groups too — cancellation is real.
+    const user_ = getUserBySubscription(subscription.id);
+    const plan_ = user_?.plan_id
+      ? db.prepare("SELECT * FROM plans WHERE id = ?").get(user_.plan_id) as
+          { authentik_group?: string | null; slug?: string } | undefined
+      : undefined;
+    const groupName_ = paidGroupForPlan(plan_?.authentik_group ?? null);
+    if (groupName_) {
+      try {
+        await revokePaidGroup(groupName_, akUser.pk);
+      } catch (err) {
+        console.error(`paid group revoke failed (${groupName_} ← ${akUser.username})`, err);
+      }
+    }
   } else if (status === "active" && !akUser.is_active) {
     await setUserActive(akUser.pk, true);
+  }
+  // Back to good standing (past_due → active after a retry): make sure the
+  // paid group is present again, whatever the interim did to it.
+  if (status === "active") {
+    const planRe = user.plan_id
+      ? db.prepare("SELECT * FROM plans WHERE id = ?").get(user.plan_id) as
+          { authentik_group?: string | null } | undefined
+      : undefined;
+    const groupNameRe = paidGroupForPlan(planRe?.authentik_group ?? null);
+    if (groupNameRe) {
+      try {
+        await grantPaidGroup(groupNameRe, akUser.pk);
+      } catch (err) {
+        console.error(`paid group re-grant failed (${groupNameRe} ← ${akUser.username})`, err);
+      }
+    }
   }
 }
 
@@ -178,7 +225,22 @@ async function handleSubscriptionDeleted(
   const akUser =
     (await findUser(user.username)) ??
     (user.email ? await findUserByEmail(user.email) : null);
-  if (akUser) await setUserActive(akUser.pk, false);
+  if (akUser) {
+    await setUserActive(akUser.pk, false);
+    // And the paid group membership dies with the subscription.
+    const plan_ = user.plan_id
+      ? db.prepare("SELECT * FROM plans WHERE id = ?").get(user.plan_id) as
+          { authentik_group?: string | null } | undefined
+      : undefined;
+    const groupName_ = paidGroupForPlan(plan_?.authentik_group ?? null);
+    if (groupName_) {
+      try {
+        await revokePaidGroup(groupName_, akUser.pk);
+      } catch (err) {
+        console.error(`paid group revoke failed (${groupName_} ← ${akUser.username})`, err);
+      }
+    }
+  }
 }
 
 export async function POST(req: Request) {

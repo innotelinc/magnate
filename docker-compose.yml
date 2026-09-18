@@ -66,6 +66,17 @@ services:
       # Admin API (user provisioning / password resets) — same caution.
       AUTHENTIK_BASE_URL: "${AUTHENTIK_BASE_URL:-}"
       AUTHENTIK_BOOTSTRAP_TOKEN: "${AUTHENTIK_BOOTSTRAP_TOKEN:-}"
+      # SecretOps (Cerulean Vault) — the entrypoint resolves vault:// refs
+      # (Stripe keys) through these before boot. The path-scoped token file is
+      # minted by the platform: data/vault/token/magnate.token on .46.
+      VAULT_ADDR: "${VAULT_ADDR:-}"
+      VAULT_TOKEN: "${VAULT_TOKEN:-}"
+      VAULT_TOKEN_FILE: "${VAULT_TOKEN_FILE:-}"
+      VAULT_PREFIX: "${VAULT_PREFIX:-cerulean}"
+      PAID_GROUPS: "${PAID_GROUPS:-paid_users}"
+      # Default paid-tier group for plans without their own override.
+      # Members gain whatever the consumers grant to that group (Jellyfin
+      # LDAP filters, Distro entitlements, Olympus quotas read the same claim).
       # Admin panel — identity is Cerulean Authentik. The password env is the
       # BREAK-GLASS fallback: it only works while BREAKGLASS_LOGIN is set, and
       # the login page hides the password form otherwise (lib/auth.ts).

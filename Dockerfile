@@ -31,9 +31,11 @@ COPY --from=builder /app/public ./public
 COPY --from=builder --chown=node:node /app/.next/standalone ./
 COPY --from=builder --chown=node:node /app/.next/static ./.next/static
 
-# The entrypoint (running as root) fixes ownership of the ./data bind mount
-# for the non-root node user, then drops privileges before starting the app.
+# The entrypoint (running as root) resolves vault:// references through the
+# standalone resolver (root can read the token file under the ./data mount),
+# fixes ownership of ./data for the non-root node user, then drops privileges.
 COPY --chown=root:root docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
+COPY --chown=root:root scripts/vault-env.mjs /usr/local/bin/vault-env.mjs
 RUN chmod +x /usr/local/bin/docker-entrypoint.sh
 
 USER root

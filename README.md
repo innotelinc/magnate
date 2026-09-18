@@ -154,6 +154,29 @@ identity service.
 
 1. **Plans** — open `/admin` after logging in and **Save** the seeded plans.
    The server creates a Stripe Product + recurring Prices automatically.
+
+   `DEFAULT_PLANS` in `lib/db.ts` is not a one-shot fixture: every boot inserts
+   by slug whatever is missing (never touching a row that exists), so a plan
+   added to the code after the database was created — the Zeus `phone` plan, the
+   `agents` add-on before it — reaches an existing install instead of only a
+   fresh one. Prices and copy edited in `/admin` stay authoritative.
+
+   A plan whose row exists but whose `stripe_product_id` / `stripe_price_*_id`
+   are NULL will not be repaired by that pass, and it must not be left to
+   `syncPlanToStripe()` either: an empty column is what that function reads as
+   "no Product yet", so the obvious repair **duplicates every Product in the
+   live Stripe account**. `scripts/stripe-relink.py` repairs it the other way
+   round — it asks Stripe what already exists and fills in the NULL columns by
+   `metadata.plan_id`, then by amount:
+
+   ```bash
+   python3 scripts/stripe-relink.py --check    # report drift; change nothing
+   python3 scripts/stripe-relink.py            # link what Stripe already has
+   python3 scripts/stripe-relink.py --create-missing
+   ```
+
+   Run it after any restore of a database that predates a price change, or a
+   restart that reseeded the catalog. `npm run verify:plans` is `--check`.
 2. **Webhook** — `https://app.magnate.innotel.us/api/webhook`, subscribed to
    `checkout.session.completed`, `customer.subscription.updated`,
    `customer.subscription.deleted`, `invoice.payment_succeeded`,
@@ -276,11 +299,33 @@ app/                  Pages (landing, signup, success, cancel, manage, admin, an
 app/api/              Route handlers (checkout, webhook, claim, manage, admin CRUD, referral, AI)
 components/           React components (pricing, forms, dashboards, icons)
 lib/                  db, stripe, authentik, analytics, referrals, ai, tenant, crypto, auth, plans
-scripts/              npm-proxy-hosts.py (NPM API provisioning) — used by setup.sh
+scripts/              npm-proxy-hosts.py (NPM API provisioning) — used by setup.sh;
+                      stripe-relink.py (re-attach plans to existing Stripe objects),
+                      verify-sso.py (Authentik end to end)
 data/                 SQLite database (created at runtime, gitignored)
 ```
 
 ## Troubleshooting
+
+### "This plan isn't set up for billing yet." at checkout
+
+Two different faults answer with that one sentence, and the fix differs:
+
+- **No plan row** — the plan is in `DEFAULT_PLANS` but not in `plans`. It should
+  have been inserted by the boot-time fill, so check that the running image
+  carries the current `lib/db.ts` (a container built before the plan was added
+  will not, until it is rebuilt) and that `DATABASE_PATH` points at the database
+  you are looking at. This is what a subscribe page leaves behind when its price
+  comes from `/api/plans?service=<slug>` and the service has no row yet.
+- **Plan row without Stripe IDs** — the row is there, its
+  `stripe_product_id` / `stripe_price_monthly_id` are NULL, and Stripe still
+  holds the Products from before. Do **not** press Save in `/admin` to fix it:
+  `syncPlanToStripe()` sees the empty column and creates a second Product.
+  Re-attach instead:
+
+  ```bash
+  python3 scripts/stripe-relink.py            # or --check to see it first
+  ```
 
 ### AppArmor errors during Docker build (`apparmor failed to apply profile`)
 

@@ -8,7 +8,8 @@
     "start": "next start",
     "lint": "eslint",
     "typecheck": "tsc --noEmit",
-    "verify:sso": "python3 scripts/verify-sso.py"
+    "verify:sso": "python3 scripts/verify-sso.py",
+    "verify:plans": "python3 scripts/stripe-relink.py --check"
   },
   "dependencies": {
     "better-sqlite3": "^13.0.3",

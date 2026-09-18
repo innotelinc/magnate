@@ -206,6 +206,8 @@ export interface Plan {
   active: number;
   sort_order: number;
   service: string;
+  /** Authentik paid-tier group for subscribers; null = PAID_GROUPS default. */
+  authentik_group?: string | null;
   created_at: string;
 }
 
@@ -342,6 +344,32 @@ const DEFAULT_PLANS = [
     highlighted: 2,
     sort_order: 100,
   },
+  {
+    // The Zeus phone plan. Zeus's own subscribe page has always shown it at
+    // $19.99/mo, but it was set up inside the Zeus portal, so the one funnel
+    // that can actually create an account (Magnate's signup) had no plan to
+    // sell it with — "Get Phone" dead-ended on an Authentik notice. Now it is
+    // a Magnate plan like the agents add-on, and Zeus's page reads it back
+    // through /api/plans?service=zeus instead of hard-coding the price.
+    //
+    // No yearly price: Zeus has never quoted one, and inventing a discount
+    // here would put a number on the checkout that no page advertises.
+    name: "Phone",
+    slug: "phone",
+    service: "zeus",
+    description: "Your own number with calls, SMS, fax and voicemail — set up in the Zeus portal after checkout.",
+    price_monthly_cents: 1999,
+    price_yearly_cents: 0,
+    features: JSON.stringify([
+      "Your own phone number",
+      "Softphone extension for every device",
+      "SMS messaging",
+      "Voicemail with transcription & AI summaries",
+      "Fax (send and receive)",
+    ]),
+    highlighted: 0,
+    sort_order: 99,
+  },
 ];
 
 /**
@@ -430,6 +458,28 @@ function backfillPlanServices() {
   }
 }
 
+function seedMissingDefaultPlans() {
+  // seedPlans() only runs against an EMPTY table, so a plan added to
+  // DEFAULT_PLANS after the database was first created never reached it — the
+  // catalog and the database drifted, and the only symptom was a subscribe
+  // page whose "Continue to payment" answered "This plan isn't set up for
+  // billing yet." This inserts by slug whatever is missing, and never touches
+  // a row that exists: prices and copy edited in the master dashboard stay
+  // authoritative. Idempotent, so it runs on every boot.
+  const insert = db.prepare(`
+    INSERT OR IGNORE INTO plans (name, slug, description, price_monthly_cents, price_yearly_cents, features, highlighted, sort_order, service)
+    VALUES (@name, @slug, @description, @price_monthly_cents, @price_yearly_cents, @features, @highlighted, @sort_order, @service)
+  `);
+  const tx = db.transaction(() => {
+    for (const plan of DEFAULT_PLANS) insert.run(plan);
+  });
+  try {
+    tx();
+  } catch {
+    // Another worker migrated first — nothing to do.
+  }
+}
+
 function seedTenant() {
   const row = db
     .prepare("SELECT COUNT(*) AS c FROM tenants WHERE slug = ?")
@@ -491,7 +541,25 @@ function backfillReferralCodes() {
   }
 }
 
+/**
+ * The Authentik group a plan's subscribers land in. Optional per plan: null
+ * means "use the platform default" (PAID_GROUPS's first entry, default
+ * `paid_users`). The Stripe webhook grants it on checkout and revokes it on
+ * cancellation, so revenue drives access through the `groups` claim.
+ */
+function addPlanAuthentikGroup() {
+  const columns = db.prepare("PRAGMA table_info(plans)").all() as Array<{ name: string }>;
+  if (columns.some((c) => c.name === "authentik_group")) return;
+  try {
+    db.prepare("ALTER TABLE plans ADD COLUMN authentik_group TEXT").run();
+  } catch {
+    // Another worker migrated first — nothing to do.
+  }
+}
+
 seedPlans();
+seedMissingDefaultPlans();
 seedTenant();
 backfillPlanServices();
+addPlanAuthentikGroup();
 backfillReferralCodes();
