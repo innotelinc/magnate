@@ -108,10 +108,6 @@ value — a reference left in place reaches the container as a literal string.
 - No platform duplicates another's responsibility.
 - No credit in commits, footers, or headers to anyone but the project owner.
 
----
-
-*Magnate · RevenueOps · [Innotel Platform Stack](https://github.com/innotelinc/innotel-platform-stack)*
-
 ### Revenue → access + Vault-resolved Stripe keys (2026-09-18)
 
 The Stripe webhook now manages paid-tier Authentik groups: subscribers land
@@ -121,3 +117,14 @@ re-added on return to good standing. Plans carry an optional
 `STRIPE_SECRET_KEY` / `STRIPE_WEBHOOK_SECRET` resolve from Cerulean Vault at
 boot (`vault://cerulean/magnate/stripe#…`, standalone resolver in the
 entrypoint) — the checkout never holds secrets it does not have to.
+
+Groups are created by Cerulean's `scripts/authentik-setup.py` from
+`PAID_GROUPS` (documented in `1-primary/cerulean/.env.example`); set a plan's
+`authentik_group` to target a tier, or leave it null for the default
+(`paid_users`). Consumers read the same claim — Distro entitlements, Olympus
+Studio quotas, and the Monarch Jellyfin LDAP outpost's `paid_users` filter — so
+one webhook moves a subscriber everywhere at once.
+
+---
+
+*Magnate · RevenueOps · [Innotel Platform Stack](https://github.com/innotelinc/innotel-platform-stack)*

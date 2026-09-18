@@ -241,6 +241,18 @@ def check(condition, message):
         raise CheckFailed(message)
 
 
+def unreachable(err, host):
+    """A name that does not resolve, or a connection that never lands.
+
+    Reported, never raised: a resolver that cannot see this name is a finding
+    about *this* run, and an unhandled `socket.gaierror` out of urllib would
+    bury the checks that already ran behind a traceback.
+    """
+    if "Name or service not known" in str(err) or "Temporary failure" in str(err):
+        return f"cannot resolve {host} from this host ({err})"
+    return f"cannot reach {host} ({err})"
+
+
 def main():
     try:
         cfg = Config()
@@ -376,6 +388,9 @@ def main():
         return 2
     except CheckFailed as err:
         print(f"\n{BAD} — {err}", file=sys.stderr)
+        return 1
+    except (urllib.error.URLError, OSError) as err:
+        print(f"\n{BAD} — {unreachable(err, cfg.app)}", file=sys.stderr)
         return 1
     finally:
         if created_pk:
