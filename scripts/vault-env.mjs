@@ -220,7 +220,7 @@ async function main(argv = process.argv.slice(2)) {
   const lines = await resolveKeys(cfg, argv);
   if (lines.length) {
     console.error(
-      `[zeus][vault] resolved ${lines.length} secret reference(s) from ${cfg.store}: ${argv
+      `[magnate][vault] resolved ${lines.length} secret reference(s) from ${cfg.store}: ${argv
         .filter((key) => refName(process.env[key]))
         .join(", ")}`,
     );
@@ -235,7 +235,7 @@ const isMain =
 
 if (isMain) {
   main().catch((err) => {
-    console.error(`[zeus][vault] ${err.message}`);
+    console.error(`[magnate][vault] ${err.message}`);
     process.exit(1);
   });
 }
