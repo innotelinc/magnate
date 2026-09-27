@@ -67,8 +67,9 @@ services:
       AUTHENTIK_BASE_URL: "${AUTHENTIK_BASE_URL:-}"
       AUTHENTIK_BOOTSTRAP_TOKEN: "${AUTHENTIK_BOOTSTRAP_TOKEN:-}"
       # SecretOps (Cerulean Vault) — the entrypoint resolves vault:// refs
-      # (Stripe keys) through these before boot. The path-scoped token file is
-      # minted by the platform: data/vault/token/magnate.token on .46.
+      # (Stripe keys) through these before boot. Point VAULT_ADDR at whichever
+      # host runs Cerulean's Vault and copy the path-scoped token the platform
+      # mints for this stack into ./data/vault/token/magnate.token.
       VAULT_ADDR: "${VAULT_ADDR:-}"
       VAULT_TOKEN: "${VAULT_TOKEN:-}"
       VAULT_TOKEN_FILE: "${VAULT_TOKEN_FILE:-}"
