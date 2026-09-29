@@ -14,6 +14,7 @@ multi-tenant white-label storefronts — all fronted by Jellyfin media delivery.
 [![CI](https://github.com/innotelinc/magnate/actions/workflows/ci.yml/badge.svg)](https://github.com/innotelinc/magnate/actions/workflows/ci.yml)
 [![Conformity](https://github.com/innotelinc/magnate/actions/workflows/conform.yml/badge.svg)](https://github.com/innotelinc/magnate/actions/workflows/conform.yml)
 [![Release](https://github.com/innotelinc/magnate/actions/workflows/release.yml/badge.svg)](https://github.com/innotelinc/magnate/actions/workflows/release.yml)
+[![Theme: Unity](https://img.shields.io/badge/theme-Unity-6366f1)](https://github.com/innotelinc/innotel-platform-stack/blob/main/standards/unity/README.md)
 
 </div>
 
