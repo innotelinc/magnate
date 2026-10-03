@@ -54,6 +54,16 @@ services:
       AI_API_URL: "${AI_API_URL:-https://api.openai.com/v1}"
       AI_API_KEY: "${AI_API_KEY:-}"
       AI_MODEL: "${AI_MODEL:-gpt-4o-mini}"
+      # Genie preview subdomain ($5 plan). After checkout Magnate claims the
+      # subscriber's name from Genie (GENIE_PREVIEW_API_URL + _CLAIM_TOKEN, the
+      # same value Genie holds in PREVIEW_CLAIM_TOKEN); GENIE_PREVIEW_DOMAIN is
+      # the wildcard suffix shown on the success page. These MUST be passed
+      # through: lib/genie.ts reads them from process.env, so a value that only
+      # lives in .env never reaches the container and the claim silently stays
+      # off. Leave the token empty to sell the plan without an automatic claim.
+      GENIE_PREVIEW_API_URL: "${GENIE_PREVIEW_API_URL:-}"
+      GENIE_PREVIEW_CLAIM_TOKEN: "${GENIE_PREVIEW_CLAIM_TOKEN:-}"
+      GENIE_PREVIEW_DOMAIN: "${GENIE_PREVIEW_DOMAIN:-genie.innotel.us}"
       # Authentik (Cerulean SSO) — the admin panel's identity provider.
       # These MUST be passed through: lib/oidc.ts reads them from process.env,
       # so a value that only lives in .env (compose substitution) never reaches
