@@ -88,6 +88,13 @@ services:
     networks: [magnate-net]
     volumes:
       - ./data:/app/data
+      # The image bakes docker-entrypoint.sh, but a rebuild is not always
+      # possible in place (the Next.js build OOMs on memory-tight hosts — this
+      # one is capped at 1 GiB), and the entrypoint carries the Vault
+      # reference resolution that must run before boot. Bind-mount the
+      # checkout's copy over the baked one so an entrypoint change ships
+      # without a rebuild.
+      - ./docker-entrypoint.sh:/usr/local/bin/docker-entrypoint.sh:ro
 
   # ── Authentik — optional local identity replacement ──
   # Default deployments use the shared external Authentik instance. Enable the

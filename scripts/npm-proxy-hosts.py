@@ -2,8 +2,12 @@
 """
 npm-proxy-hosts.py — provision Nginx Proxy Manager proxy hosts + wildcard SSL.
 
-Creates the Magnate subdomains on an Nginx Proxy Manager instance via its API:
+Creates the Magnate names on an Nginx Proxy Manager instance via its API:
 
+    <DOMAIN>          -> http://127.0.0.1:$MAGNATE_PORT  (this app / storefront — the
+                         apex is the address every other platform dials, so it must
+                         exist; without it `magnate.innotel.us` resolves and serves
+                         nothing)
     app.<DOMAIN>      -> http://127.0.0.1:$MAGNATE_PORT  (this app / storefront)
     auth.<DOMAIN>     -> http://127.0.0.1:9110  (bundled Authentik)
     media.<DOMAIN>    -> http://127.0.0.1:8096  (Jellyfin)
@@ -56,6 +60,10 @@ HOSTS_JSON = env("NPM_HOSTS_JSON", "")
 MAGNATE_PORT = int(env("MAGNATE_PORT", "3000"))
 
 DEFAULT_HOSTS = [
+    # The apex. `MAGNATE_URL` on every consumer (Genesis, Distro, Olympus, Atlas) is
+    # `https://magnate.innotel.us`, so the apex is a real name the estate dials, not
+    # a cosmetic alias — and it was the one name this script never provisioned.
+    {"subdomain": "", "forward_host": "127.0.0.1", "forward_port": MAGNATE_PORT},
     {"subdomain": "app", "forward_host": "127.0.0.1", "forward_port": MAGNATE_PORT},
     {"subdomain": "auth", "forward_host": "127.0.0.1", "forward_port": 9110},
     {"subdomain": "media", "forward_host": "127.0.0.1", "forward_port": 8096},
@@ -194,7 +202,8 @@ def ensure_wildcard_cert(client: ApiClient, domain: str):
 
 def upsert_proxy_host(client: ApiClient, host_cfg: dict, domain: str, cert_id):
     subdomain = host_cfg["subdomain"].lower()
-    domain_name = f"{subdomain}.{domain}"
+    # An empty subdomain is the apex — `""..domain` would be `.magnate.innotel.us`.
+    domain_name = f"{subdomain}.{domain}" if subdomain else domain
     forward = {
         "forward_scheme": host_cfg.get("forward_scheme", "http"),
         "forward_host": host_cfg["forward_host"],

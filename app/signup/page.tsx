@@ -33,6 +33,12 @@ const SERVICE_PITCH: Record<
     back: "Back to plans",
     backHref: "/#pricing",
   },
+  genie: {
+    lead: "let's name your preview.",
+    sub: "Hold your own address under genie.innotel.us — acme.genie.innotel.us — and route it to a preview server in your Genie workspace. Billed monthly, cancel anytime.",
+    back: "Back to Genie plans",
+    backHref: "https://subscribe.genie.innotel.us",
+  },
 };
 
 const DEFAULT_PITCH = {
@@ -100,6 +106,7 @@ export default async function SignupPage({
                 slug: plan.slug,
                 priceMonthlyCents: plan.price_monthly_cents,
                 priceYearlyCents: plan.price_yearly_cents,
+                service: plan.service,
               }}
               interval={billing}
               refCode={refCode}

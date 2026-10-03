@@ -98,8 +98,15 @@ legacy Infisical workspace as its source.
 
 A `vault://` value is the platform's reference *form*; it is resolved by whichever
 layer consumes it (ONYX's Go services, Distro's Node control plane, Zeus at boot,
-Atlas at setup). This repo has no resolver, so `.env` must hold the resolved
-value — a reference left in place reaches the container as a literal string.
+Atlas at setup). **This repo resolves references at boot too**: the entrypoint's
+`VAULT_KEYS` list is passed to `scripts/vault-env.mjs`, which fetches each
+reference from Vault and `export`s the resolved value before the app starts — so
+`.env` may hold a reference and every consumer reads the plain value from
+`process.env`. A reference that cannot be resolved aborts the container rather
+than booting with a literal string. The current list covers the Stripe keys
+(`cerulean/magnate/stripe`) and `cerulean/magnate`
+(`JELLYFIN_API_KEY`, `ADMIN_PASSWORD`, `SESSION_SECRET`,
+`AUTHENTIK_BOOTSTRAP_TOKEN`, `AUTHENTIK_CLIENT_SECRET`).
 
 ## Golden rules
 
@@ -117,6 +124,17 @@ re-added on return to good standing. Plans carry an optional
 `STRIPE_SECRET_KEY` / `STRIPE_WEBHOOK_SECRET` resolve from Cerulean Vault at
 boot (`vault://cerulean/magnate/stripe#…`, standalone resolver in the
 entrypoint) — the checkout never holds secrets it does not have to.
+
+### Remaining secrets moved to Vault (2026-10-01)
+
+The rest of the stack's secrets now resolve from `cerulean/magnate` at boot too:
+`JELLYFIN_API_KEY`, `ADMIN_PASSWORD`, `SESSION_SECRET`,
+`AUTHENTIK_BOOTSTRAP_TOKEN`, `AUTHENTIK_CLIENT_SECRET` are `vault://` references
+in `.env`, listed in the entrypoint's `VAULT_KEYS`. The deployed entrypoint is
+bind-mounted from the checkout over the baked image copy
+(`./docker-entrypoint.sh:/usr/local/bin/docker-entrypoint.sh:ro`) so an
+entrypoint change ships without a rebuild — the Next.js build OOMs inside the
+1 GiB container it runs in.
 
 Groups are created by Cerulean's `scripts/authentik-setup.py` from
 `PAID_GROUPS` (documented in `1-primary/cerulean/.env.example`); set a plan's

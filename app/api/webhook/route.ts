@@ -15,6 +15,7 @@ import {
 import { decrypt } from "@/lib/crypto";
 import { getPlanBySlug } from "@/lib/plans";
 import { cleanMetadata, recordPurchaseAndFulfill } from "@/lib/purchases";
+import { claimGenieSubdomain } from "@/lib/genie";
 import { stripeWebhookSecret } from "@/lib/settings";
 import {
   creditReferrer,
@@ -276,6 +277,24 @@ export async function POST(req: Request) {
         const session = event.data.object as Stripe.Checkout.Session;
         if (session.mode === "subscription") {
           const userId = await provisionUser(session);
+          /*
+           * The Genie plan's deliverable is a name under the preview wildcard,
+           * so it is claimed now that the subscription is active. Best-effort: the
+           * account is already provisioned, and a failed claim must not make
+           * Stripe replay the whole webhook (which would re-provision the account).
+           * Genie re-checks the entitlement itself, so the name is never granted
+           * on Magnate's say-so alone.
+           */
+          const subdomain = session.metadata?.subdomain;
+          if (subdomain) {
+            const claimed = await claimGenieSubdomain(
+              subdomain,
+              session.metadata?.email ?? session.metadata?.username ?? "",
+            );
+            if (!claimed.ok) {
+              console.error(`genie subdomain claim failed (${subdomain})`, claimed.error);
+            }
+          }
           // Referral program: credit the referrer a % of the first payment.
           if (userId && session.metadata?.ref_applied === "1") {
             const user = db

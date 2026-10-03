@@ -12,8 +12,8 @@
 //             unitAmountCents: 500 },
 //     metadata?: { sku: "slot", name: "...", target: "...", ... },  // passthrough
 //     customerEmail?: "buyer@example.com",
-//     successUrl?: "https://app.rizz.innotel.us/?paid=1&session={CHECKOUT_SESSION_ID}",
-//     cancelUrl?:  "https://app.rizz.innotel.us/?paid=0",
+//     successUrl?: "https://app.rizzaura.net/?paid=1&session={CHECKOUT_SESSION_ID}",
+//     cancelUrl?:  "https://app.rizzaura.net/?paid=0",
 //   }
 //   → 200 { url, id, item } · 400 invalid · 401 bad/missing token ·
 //     500 billing not configured

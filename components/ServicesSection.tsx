@@ -50,7 +50,7 @@ const SERVICES: {
     name: "Rizz Aura",
     tag: "Social & dating",
     text: "Consumer app with one-off purchases (aura slots, boosts) settled through Magnate's Stripe ledger.",
-    url: "https://rizz.innotel.us",
+    url: "https://rizzaura.net",
     cta: "Open Rizz Aura",
     Icon: BoltIcon,
   },

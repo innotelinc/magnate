@@ -21,14 +21,17 @@ if [ "$(id -u)" = "0" ]; then
   # VAULT_* env (see .env.example):
   #   VAULT_ADDR / VAULT_TOKEN (or VAULT_TOKEN_FILE) / VAULT_PREFIX /
   #   VAULT_NAMESPACE / VAULT_SKIP_VERIFY / VAULT_CACERT
-  VAULT_KEYS="STRIPE_SECRET_KEY STRIPE_WEBHOOK_SECRET STRIPE_CURRENCY"
+  VAULT_KEYS="STRIPE_SECRET_KEY STRIPE_WEBHOOK_SECRET STRIPE_CURRENCY \
+JELLYFIN_API_KEY ADMIN_PASSWORD SESSION_SECRET \
+AUTHENTIK_BOOTSTRAP_TOKEN AUTHENTIK_CLIENT_SECRET"
   VAULT_EXPORTS="$(node /usr/local/bin/vault-env.mjs $VAULT_KEYS)" || {
     echo "!!! vault-env resolution failed — refusing to boot with unresolved vault:// refs" >&2
     exit 1
   }
   # shellcheck disable=SC2086
   eval "$VAULT_EXPORTS"
-  export STRIPE_SECRET_KEY STRIPE_WEBHOOK_SECRET STRIPE_CURRENCY
+  # shellcheck disable=SC2086
+  export $VAULT_KEYS
   exec setpriv --reuid=1000 --regid=1000 --init-groups --inh-caps=-all "$@"
 fi
 

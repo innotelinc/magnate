@@ -345,6 +345,28 @@ const DEFAULT_PLANS = [
     sort_order: 100,
   },
   {
+    // The Genie preview subdomain. Genie serves previews from a wildcard
+    // (`*.genie.innotel.us`); an auto address is `p<port>`, and this plan is what
+    // lets a subscriber hold a *name* instead — `acme.genie.innotel.us` — that
+    // keeps pointing at their workspace across restarts. Magnate claims the name
+    // from Genie after checkout (see lib/genie.ts), and Genie re-checks the
+    // entitlement before it grants it.
+    name: "Genie Subdomain",
+    slug: "genie",
+    service: "genie",
+    description:
+      "Your own name under genie.innotel.us for a preview you run in OnTrak Genie.",
+    price_monthly_cents: 500,
+    price_yearly_cents: 5000,
+    features: JSON.stringify([
+      "Your own address, e.g. acme.genie.innotel.us",
+      "Routes to a preview server in your Genie workspace",
+      "Cancel anytime — the address is released",
+    ]),
+    highlighted: 0,
+    sort_order: 98,
+  },
+  {
     // The Zeus phone plan. Zeus's own subscribe page has always shown it at
     // $19.99/mo, but it was set up inside the Zeus portal, so the one funnel
     // that can actually create an account (Magnate's signup) had no plan to
@@ -392,7 +414,8 @@ export const SERVICES: { slug: string; name: string; subscribe_url: string }[] =
   { slug: "olympus", name: "Olympus — AI studio", subscribe_url: "https://subscribe.olympus.innotel.us" },
   { slug: "plutus", name: "PLUTUS — AI shopping channel", subscribe_url: "https://subscribe.plutus.innotel.us" },
   { slug: "distro", name: "Distro — builder platform", subscribe_url: "https://subscribe.distro.innotel.us" },
-  { slug: "rizzaura", name: "Rizz Aura — community", subscribe_url: "https://subscribe.rizzaura.innotel.us" },
+  { slug: "genie", name: "Genie — preview subdomains", subscribe_url: "https://subscribe.genie.innotel.us" },
+  { slug: "rizzaura", name: "Rizz Aura — community", subscribe_url: "https://subscribe.rizzaura.net" },
   { slug: "zapit", name: "ZapIt — short links", subscribe_url: "https://subscribe.zapit.innotel.us" },
 ];
 

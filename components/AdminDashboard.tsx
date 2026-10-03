@@ -712,7 +712,7 @@ const SETTING_FIELDS: {
   {
     key: "purchase_fulfillment_url",
     label: "Purchase Fulfillment URL",
-    placeholder: "https://api.rizz.innotel.us/api/magnate/fulfill",
+    placeholder: "https://api.rizzaura.net/api/magnate/fulfill",
   },
   {
     key: "purchase_fulfillment_secret",

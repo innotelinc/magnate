@@ -6,6 +6,7 @@ import { authentikConfigured, findUser as findAuthentikUser } from "@/lib/authen
 import { encrypt, generatePassword } from "@/lib/crypto";
 import { getPlanBySlug } from "@/lib/plans";
 import { applyReferral, referralCouponId } from "@/lib/referrals";
+import { normalizeGenieSubdomain } from "@/lib/genie";
 
 export const dynamic = "force-dynamic";
 
@@ -22,6 +23,9 @@ const schema = z.object({
       "Username must be 3–32 characters using letters, numbers, dots, dashes or underscores (no leading/trailing punctuation).",
     ),
   refCode: z.string().trim().min(5).max(24).optional(),
+  // The Genie plan sells a name under the preview wildcard; every other plan
+  // ignores it. Validated here so a bad name is refused before payment.
+  subdomain: z.string().trim().max(63).optional(),
 });
 
 export async function POST(req: Request) {
@@ -39,7 +43,7 @@ export async function POST(req: Request) {
       { status: 400 },
     );
   }
-  const { planSlug, interval, email, username, refCode } = parsed.data;
+  const { planSlug, interval, email, username, refCode, subdomain } = parsed.data;
 
   const plan = getPlanBySlug(planSlug);
   if (!plan || !plan.active) {
@@ -47,6 +51,17 @@ export async function POST(req: Request) {
       { error: "That plan is not available." },
       { status: 404 },
     );
+  }
+
+  // The Genie plan's whole value is the name, so it is required for that service
+  // and meaningless for the rest.
+  let genieSubdomain: string | null = null;
+  if ((plan.service ?? "").toLowerCase() === "genie") {
+    const normalized = normalizeGenieSubdomain(subdomain ?? "");
+    if (normalized.error) {
+      return NextResponse.json({ error: normalized.error }, { status: 400 });
+    }
+    genieSubdomain = normalized.name ?? null;
   }
 
   const priceId =
@@ -146,9 +161,14 @@ export async function POST(req: Request) {
         interval,
         user_id: String(userId),
         ref_applied: refApplied ? "1" : "0",
+        ...(genieSubdomain ? { subdomain: genieSubdomain } : {}),
       },
       subscription_data: {
-        metadata: { username, user_id: String(userId) },
+        metadata: {
+          username,
+          user_id: String(userId),
+          ...(genieSubdomain ? { subdomain: genieSubdomain } : {}),
+        },
       },
       ...(refApplied && couponId
         ? { discounts: [{ coupon: couponId }] }

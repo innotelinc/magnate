@@ -12,17 +12,23 @@ interface Props {
     slug: string;
     priceMonthlyCents: number;
     priceYearlyCents: number;
+    /** Which service sells it — the Genie plan asks for a preview subdomain. */
+    service?: string;
   };
   interval: "month" | "year";
   refCode?: string | null;
 }
 
+const SUBDOMAIN_RE = /^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$/;
+
 export default function SignupForm({ plan, interval, refCode }: Props) {
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [username, setUsername] = useState("");
+  const [subdomain, setSubdomain] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const wantsSubdomain = (plan.service ?? "").toLowerCase() === "genie";
 
   const priceCents =
     interval === "month" ? plan.priceMonthlyCents : plan.priceYearlyCents;
@@ -38,6 +44,12 @@ export default function SignupForm({ plan, interval, refCode }: Props) {
       );
       return;
     }
+    if (wantsSubdomain && !SUBDOMAIN_RE.test(subdomain)) {
+      setError(
+        "Your subdomain must be 1–63 characters of letters, numbers and internal dashes.",
+      );
+      return;
+    }
 
     setLoading(true);
     try {
@@ -50,6 +62,7 @@ export default function SignupForm({ plan, interval, refCode }: Props) {
           email,
           username,
           ...(refCode ? { refCode } : {}),
+          ...(wantsSubdomain ? { subdomain } : {}),
         }),
       });
       const data = await res.json();
@@ -123,6 +136,33 @@ export default function SignupForm({ plan, interval, refCode }: Props) {
           This will be your Jellyfin username — 3–32 characters.
         </p>
       </div>
+
+      {wantsSubdomain && (
+        <div>
+          <label htmlFor="subdomain" className="mb-1.5 block text-sm font-medium text-zinc-800 dark:text-zinc-300">
+            Your preview subdomain
+          </label>
+          <div className="flex items-stretch overflow-hidden rounded-xl border border-zinc-950/10 bg-black/[0.04] focus-within:border-brand-400 focus-within:ring-2 focus-within:ring-brand-500/30 dark:border-white/10 dark:bg-white/[0.04]">
+            <input
+              id="subdomain"
+              type="text"
+              required
+              autoComplete="off"
+              placeholder="acme"
+              value={subdomain}
+              onChange={(e) => setSubdomain(e.target.value.trim().toLowerCase())}
+              className="w-full bg-transparent px-4 py-3 text-sm text-zinc-950 placeholder-zinc-400 outline-none dark:text-white dark:placeholder-zinc-600"
+            />
+            <span className="flex items-center whitespace-nowrap border-l border-zinc-950/10 px-3 text-xs text-zinc-600 dark:border-white/10 dark:text-zinc-400">
+              .genie.innotel.us
+            </span>
+          </div>
+          <p className="mt-1.5 text-xs text-zinc-600 dark:text-zinc-500">
+            This address is yours for as long as the plan is active, and routes to
+            a preview in your Genie workspace.
+          </p>
+        </div>
+      )}
 
       <div className="flex items-start gap-2.5 rounded-xl border border-brand-400/20 bg-brand-500/[0.07] px-4 py-3">
         <KeyIcon className="mt-0.5 h-4 w-4 shrink-0 text-brand-600 dark:text-brand-300" />
