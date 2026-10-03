@@ -24,7 +24,7 @@ if [ "$(id -u)" = "0" ]; then
   VAULT_KEYS="STRIPE_SECRET_KEY STRIPE_WEBHOOK_SECRET STRIPE_CURRENCY \
 JELLYFIN_API_KEY ADMIN_PASSWORD SESSION_SECRET \
 AUTHENTIK_BOOTSTRAP_TOKEN AUTHENTIK_CLIENT_SECRET \
-ENTITLEMENTS_API_TOKEN"
+ENTITLEMENTS_API_TOKEN GENIE_PREVIEW_CLAIM_TOKEN"
   VAULT_EXPORTS="$(node /usr/local/bin/vault-env.mjs $VAULT_KEYS)" || {
     echo "!!! vault-env resolution failed — refusing to boot with unresolved vault:// refs" >&2
     exit 1
