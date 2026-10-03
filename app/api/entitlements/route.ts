@@ -14,8 +14,12 @@
 // Levels:
 //   - No `plan`         → connectivity probe (entitled: null).
 //   - `plan` only       → plan-level check: an active plan is entitled.
-//   - `plan` + `user`   → subscription-level check: the user must have an
-//     active, unexpired subscription.
+//   - `plan` + `user`   → subscription-level check: the user must hold *that*
+//     plan, active and unexpired. An active subscription to some other plan is
+//     not an entitlement to this one — a Premium media subscriber is not
+//     entitled to the Genie subdomain, and answering "yes" on the strength of
+//     any active plan is how a consumer gating on a specific plan grants the
+//     wrong thing.
 //
 // Optional gate: set ENTITLEMENTS_API_TOKEN; clients must then send
 // `Authorization: Bearer <token>`. Unset = open (self-hosted/trusted net).
@@ -133,11 +137,18 @@ export async function GET(req: Request) {
     const now = Math.floor(Date.now() / 1000);
     const notExpired =
       row.current_period_end === null || row.current_period_end > now;
-    const entitled = row.status === "active" && notExpired;
+    // Hold *this* plan, not merely some active subscription: `users.plan_id` is
+    // the account's one plan, so a match is the whole test.
+    const holdsPlan = row.plan_id === plan.id;
+    const entitled = holdsPlan && row.status === "active" && notExpired;
     return NextResponse.json({
       ...echo,
       entitled,
-      reason: entitled ? "ok" : "subscription_not_active",
+      reason: entitled
+        ? "ok"
+        : !holdsPlan
+          ? "plan_not_held"
+          : "subscription_not_active",
       plan: plan.name,
       slug: plan.slug,
       status: row.status,
