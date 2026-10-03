@@ -64,6 +64,11 @@ services:
       GENIE_PREVIEW_API_URL: "${GENIE_PREVIEW_API_URL:-}"
       GENIE_PREVIEW_CLAIM_TOKEN: "${GENIE_PREVIEW_CLAIM_TOKEN:-}"
       GENIE_PREVIEW_DOMAIN: "${GENIE_PREVIEW_DOMAIN:-genie.innotel.us}"
+      # Entitlement API gate: the bearer Genie must present to
+      # GET /api/entitlements (Genie holds it as ENTITLEMENTS_API_TOKEN). Empty
+      # leaves the endpoint open on a trusted net. May be a `vault://` reference,
+      # resolved at boot by the entrypoint.
+      ENTITLEMENTS_API_TOKEN: "${ENTITLEMENTS_API_TOKEN:-}"
       # Authentik (Cerulean SSO) — the admin panel's identity provider.
       # These MUST be passed through: lib/oidc.ts reads them from process.env,
       # so a value that only lives in .env (compose substitution) never reaches
