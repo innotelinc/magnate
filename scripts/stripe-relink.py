@@ -269,6 +269,11 @@ def relink(api: Stripe, db_path: Path, *, create_missing: bool,
                         "name": plan["name"],
                         "metadata[plan_id]": str(plan["id"]),
                     })
+                    # Persist the link in the same pass. Without this the row keeps
+                    # a NULL stripe_product_id, and the next `syncPlanToStripe()`
+                    # (or a bare re-run) would create a *second* product for the
+                    # same plan — the duplication this script exists to prevent.
+                    updates.append(("stripe_product_id", product["id"], "", plan["id"]))
                     report.add(FIX, label, f"created product {product['id']}")
                 else:
                     report.add(FIX, label, "would create a Stripe product")
