@@ -7,6 +7,10 @@ import { encrypt, generatePassword } from "@/lib/crypto";
 import { getPlanBySlug } from "@/lib/plans";
 import { applyReferral, referralCouponId } from "@/lib/referrals";
 import { normalizeGenieSubdomain } from "@/lib/genie";
+import {
+  JELLYFIN_TRIAL_DAYS,
+  isJellyfinService,
+} from "@/lib/jellyfin";
 
 export const dynamic = "force-dynamic";
 
@@ -169,6 +173,11 @@ export async function POST(req: Request) {
           user_id: String(userId),
           ...(genieSubdomain ? { subdomain: genieSubdomain } : {}),
         },
+        // Jellyfin is free for 7 days for everyone: a real Stripe trial, so the
+        // subscription starts `trialing` and no invoice is raised until it ends.
+        ...(isJellyfinService(plan.service)
+          ? { trial_period_days: JELLYFIN_TRIAL_DAYS }
+          : {}),
       },
       ...(refApplied && couponId
         ? { discounts: [{ coupon: couponId }] }

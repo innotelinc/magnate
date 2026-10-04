@@ -44,7 +44,9 @@ interface Plan {
  */
 const SERVICES: { slug: string; name: string }[] = [
   { slug: "generic", name: "Platform membership (storefront)" },
+  { slug: "magnate", name: "Magnate (platform membership)" },
   { slug: "monarch", name: "Monarch — streaming" },
+  { slug: "jellyfin", name: "Jellyfin — private streaming server" },
   { slug: "zeus", name: "Zeus — voice & PBX" },
   { slug: "capstone", name: "Capstone — voice AI" },
   { slug: "oasis", name: "Oasis — mail & collaboration" },
@@ -55,8 +57,13 @@ const SERVICES: { slug: string; name: string }[] = [
   { slug: "olympus", name: "Olympus — AI studio" },
   { slug: "plutus", name: "PLUTUS — AI shopping channel" },
   { slug: "distro", name: "Distro — builder platform" },
+  { slug: "genesis", name: "Genesis — business ops" },
+  { slug: "ontrak", name: "OnTrak — training ops" },
+  { slug: "verifier", name: "Verifier — platform ops & conformity" },
+  { slug: "genie", name: "Genie — preview subdomains" },
   { slug: "rizzaura", name: "Rizz Aura — community" },
   { slug: "zapit", name: "ZapIt — short links" },
+  { slug: "cerulean", name: "Cerulean — identity & trust" },
 ];
 
 function serviceName(slug: string): string {

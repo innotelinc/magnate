@@ -16,6 +16,11 @@ import { decrypt } from "@/lib/crypto";
 import { getPlanBySlug } from "@/lib/plans";
 import { cleanMetadata, recordPurchaseAndFulfill } from "@/lib/purchases";
 import { claimGenieSubdomain } from "@/lib/genie";
+import {
+  grantJellyfinAddon,
+  grantJellyfinAddonForEmail,
+  isJellyfinService,
+} from "@/lib/jellyfin";
 import { stripeWebhookSecret } from "@/lib/settings";
 import {
   creditReferrer,
@@ -154,6 +159,18 @@ async function provisionUser(
       await grantPaidGroup(groupName, akUser.pk);
     } catch (err) {
       console.error(`paid group grant failed (${groupName} ← ${username})`, err);
+    }
+  }
+
+  // "Free Jellyfin for 3 months with any purchase": any purchase but Jellyfin
+  // itself grants the add-on. Jellyfin's own subscription does not self-grant —
+  // it starts with its 7-day trial instead (see app/api/checkout). Best-effort:
+  // a grant failure must not make Stripe replay an account that already exists.
+  if (status === "active" && !isJellyfinService(plan?.service)) {
+    try {
+      grantJellyfinAddon(userId);
+    } catch (err) {
+      console.error(`jellyfin add-on grant failed (user ${userId})`, err);
     }
   }
 
@@ -322,18 +339,26 @@ export async function POST(req: Request) {
               "payment-mode session missing mag_item_slug metadata",
             );
           }
+          const purchaseEmail =
+            typeof session.customer_email === "string"
+              ? session.customer_email
+              : null;
           await recordPurchaseAndFulfill({
             sessionId: session.id,
             itemSlug: slug,
             itemName: session.metadata?.mag_item_name ?? slug,
             amountCents: session.amount_total ?? 0,
             currency: (session.currency ?? "usd").toLowerCase(),
-            customerEmail:
-              typeof session.customer_email === "string"
-                ? session.customer_email
-                : null,
+            customerEmail: purchaseEmail,
             metadata: cleanMetadata(session.metadata),
           });
+          // A one-off purchase is a purchase too: 3 free months of Jellyfin for
+          // the buyer's Magnate account, when that address has one.
+          try {
+            grantJellyfinAddonForEmail(purchaseEmail);
+          } catch (err) {
+            console.error("jellyfin add-on grant failed for purchase", err);
+          }
         }
         break;
       }

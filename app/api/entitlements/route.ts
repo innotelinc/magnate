@@ -27,6 +27,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { db } from "@/lib/db";
 import { getPlanBySlug, getPlanById } from "@/lib/plans";
+import { isJellyfinService } from "@/lib/jellyfin";
 
 export const dynamic = "force-dynamic";
 
@@ -113,7 +114,7 @@ export async function GET(req: Request) {
   if (user) {
     const row = db
       .prepare(
-        "SELECT username, email, plan_id, status, current_period_end FROM users WHERE lower(username) = lower(?) OR lower(email) = lower(?)",
+        "SELECT username, email, plan_id, status, current_period_end, jellyfin_grant_until FROM users WHERE lower(username) = lower(?) OR lower(email) = lower(?)",
       )
       .get(user, user) as
       | {
@@ -122,6 +123,7 @@ export async function GET(req: Request) {
           plan_id: number | null;
           status: string;
           current_period_end: number | null;
+          jellyfin_grant_until: number | null;
         }
       | undefined;
     if (!row) {
@@ -140,19 +142,32 @@ export async function GET(req: Request) {
     // Hold *this* plan, not merely some active subscription: `users.plan_id` is
     // the account's one plan, so a match is the whole test.
     const holdsPlan = row.plan_id === plan.id;
-    const entitled = holdsPlan && row.status === "active" && notExpired;
+    const subscriptionEntitled = holdsPlan && row.status === "active" && notExpired;
+    // "Free Jellyfin with any purchase" is a dated grant that rides alongside
+    // the account's own plan, so a Jellyfin check succeeds on either one — a
+    // Monarch subscriber with an unexpired grant is entitled to Jellyfin even
+    // though `plan_id` names Monarch.
+    const grantUntil = isJellyfinService(plan.service)
+      ? (row.jellyfin_grant_until ?? null)
+      : null;
+    const grantActive = grantUntil !== null && grantUntil > now;
+    const entitled = subscriptionEntitled || grantActive;
     return NextResponse.json({
       ...echo,
       entitled,
       reason: entitled
         ? "ok"
-        : !holdsPlan
-          ? "plan_not_held"
-          : "subscription_not_active",
+        : holdsPlan
+          ? "subscription_not_active"
+          : "plan_not_held",
       plan: plan.name,
       slug: plan.slug,
       status: row.status,
-      expires_at: row.current_period_end ?? null,
+      expires_at: subscriptionEntitled
+        ? (row.current_period_end ?? null)
+        : grantActive
+          ? grantUntil
+          : null,
     });
   }
 

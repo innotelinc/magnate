@@ -175,6 +175,10 @@ ensureColumn(
 );
 ensureColumn("users", "last_payment_failed_at", "last_payment_failed_at TEXT");
 ensureColumn("users", "winback_status", "winback_status TEXT");
+// Free Jellyfin access granted with any purchase (3 months from the grant).
+// A unix-seconds timestamp, not a boolean: expiry is then a read-time check in
+// the entitlements API rather than a scheduled job that can be missed.
+ensureColumn("users", "jellyfin_grant_until", "jellyfin_grant_until INTEGER");
 
 // The service a plan belongs to. Empty ("generic") = the platform-wide
 // membership the storefront sells; any other value is a product funnel: the
@@ -232,6 +236,7 @@ export interface UserRow {
   payment_failed_count: number;
   last_payment_failed_at: string | null;
   winback_status: string | null;
+  jellyfin_grant_until: number | null;
   created_at: string;
 }
 
@@ -392,6 +397,29 @@ const DEFAULT_PLANS = [
     highlighted: 0,
     sort_order: 99,
   },
+  {
+    // Jellyfin is the streaming engine Monarch runs on, sold as its own
+    // product too. Two promotions attach to it: a general 7-day free trial for
+    // anyone (applied at checkout), and a 3-month free add-on granted with any
+    // other purchase (see lib/jellyfin.ts — the grant, not this plan, is what
+    // "free with any purchase" means).
+    name: "Jellyfin Streaming",
+    slug: "jellyfin",
+    service: "jellyfin",
+    description:
+      "Your own private streaming server — movies, shows and live TV, on your devices.",
+    price_monthly_cents: 500,
+    price_yearly_cents: 5000,
+    features: JSON.stringify([
+      "7-day free trial — no charge until it ends",
+      "Free for 3 months with any other purchase",
+      "Unlimited movies, shows & live TV",
+      "Watch on TV, phone, tablet & browser",
+      "Cancel anytime",
+    ]),
+    highlighted: 0,
+    sort_order: 97,
+  },
 ];
 
 /**
@@ -404,6 +432,7 @@ const DEFAULT_PLANS = [
 export const SERVICES: { slug: string; name: string; subscribe_url: string }[] = [
   { slug: "magnate", name: "Magnate (platform membership)", subscribe_url: "https://subscribe.innotel.us" },
   { slug: "monarch", name: "Monarch — streaming", subscribe_url: "https://subscribe.monarch.innotel.us" },
+  { slug: "jellyfin", name: "Jellyfin — private streaming server", subscribe_url: "https://subscribe.jellyfin.innotel.us" },
   { slug: "zeus", name: "Zeus — voice & PBX", subscribe_url: "https://subscribe.zeus.innotel.us" },
   { slug: "capstone", name: "Capstone — voice AI", subscribe_url: "https://subscribe.capstone.innotel.us" },
   { slug: "oasis", name: "Oasis — mail & collaboration", subscribe_url: "https://subscribe.oasis.innotel.us" },
@@ -414,9 +443,13 @@ export const SERVICES: { slug: string; name: string; subscribe_url: string }[] =
   { slug: "olympus", name: "Olympus — AI studio", subscribe_url: "https://subscribe.olympus.innotel.us" },
   { slug: "plutus", name: "PLUTUS — AI shopping channel", subscribe_url: "https://subscribe.plutus.innotel.us" },
   { slug: "distro", name: "Distro — builder platform", subscribe_url: "https://subscribe.distro.innotel.us" },
+  { slug: "genesis", name: "Genesis — business ops", subscribe_url: "https://subscribe.genesis.innotel.us" },
+  { slug: "ontrak", name: "OnTrak — training ops", subscribe_url: "https://subscribe.ontrak.innotel.us" },
+  { slug: "verifier", name: "Verifier — platform ops & conformity", subscribe_url: "https://subscribe.verifier.innotel.us" },
   { slug: "genie", name: "Genie — preview subdomains", subscribe_url: "https://subscribe.genie.innotel.us" },
   { slug: "rizzaura", name: "Rizz Aura — community", subscribe_url: "https://subscribe.rizzaura.net" },
   { slug: "zapit", name: "ZapIt — short links", subscribe_url: "https://subscribe.zapit.innotel.us" },
+  { slug: "cerulean", name: "Cerulean — identity & trust", subscribe_url: "https://subscribe.cerulean.innotel.us" },
 ];
 
 const DEFAULT_TENANT = {

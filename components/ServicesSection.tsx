@@ -5,8 +5,10 @@ import {
   FilmIcon,
   GlobeIcon,
   HeadphonesIcon,
+  PlayIcon,
   ShieldIcon,
   ServerIcon,
+  SparklesIcon,
 } from "./icons";
 
 /**
@@ -29,6 +31,14 @@ const SERVICES: {
     url: "https://media.magnate.innotel.us",
     cta: "Open Jellyfin",
     Icon: FilmIcon,
+  },
+  {
+    name: "Jellyfin",
+    tag: "Private streaming server",
+    text: "The streaming engine for your own library — free for 7 days for everyone, and free for 3 months with any other purchase. Sold through the same account.",
+    url: "https://subscribe.jellyfin.innotel.us",
+    cta: "See Jellyfin plans",
+    Icon: PlayIcon,
   },
   {
     name: "Zeus",
@@ -69,6 +79,38 @@ const SERVICES: {
     url: "https://zapp.innotel.us",
     cta: "Open ZapIt",
     Icon: DevicesIcon,
+  },
+  {
+    name: "Genesis",
+    tag: "Business ops",
+    text: "One workflow from an idea to a registered, reachable, bankable business. Plans and entitlements are billed through Magnate.",
+    url: "https://subscribe.genesis.innotel.us",
+    cta: "See Genesis plans",
+    Icon: SparklesIcon,
+  },
+  {
+    name: "OnTrak",
+    tag: "Training ops",
+    text: "Self-hosted IT support training, ticketing and incident evidence. Training seats and workspace plans bill through Magnate.",
+    url: "https://subscribe.ontrak.innotel.us",
+    cta: "See OnTrak plans",
+    Icon: ServerIcon,
+  },
+  {
+    name: "Verifier",
+    tag: "Platform ops",
+    text: "Conformity and attribution guard for the whole stack — the checks every other service is held to. Billed as a platform plan.",
+    url: "https://subscribe.verifier.innotel.us",
+    cta: "See Verifier plans",
+    Icon: ShieldIcon,
+  },
+  {
+    name: "Genie",
+    tag: "Preview subdomains",
+    text: "Hold your own name under genie.innotel.us and point it at a workspace preview. The name survives restarts — billed as a subscription.",
+    url: "https://subscribe.genie.innotel.us",
+    cta: "See Genie plans",
+    Icon: GlobeIcon,
   },
   {
     name: "Cerulean",
