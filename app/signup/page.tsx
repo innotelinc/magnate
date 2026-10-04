@@ -51,9 +51,16 @@ const DEFAULT_PITCH = {
 export default async function SignupPage({
   searchParams,
 }: {
-  searchParams: Promise<{ plan?: string; interval?: string; ref?: string }>;
+  searchParams: Promise<{
+    plan?: string;
+    interval?: string;
+    ref?: string;
+    /** Prefilled by a consuming service (Genie's publish panel sends the name). */
+    subdomain?: string;
+    email?: string;
+  }>;
 }) {
-  const { plan: planSlug, interval, ref } = await searchParams;
+  const { plan: planSlug, interval, ref, subdomain, email } = await searchParams;
   const plan = planSlug ? getPlanBySlug(planSlug) : undefined;
   if (!plan || !plan.active) notFound();
   const billing = interval === "year" ? "year" : "month";
@@ -110,6 +117,8 @@ export default async function SignupPage({
               }}
               interval={billing}
               refCode={refCode}
+              initialSubdomain={subdomain?.trim().slice(0, 63) || null}
+              initialEmail={email?.trim().slice(0, 254) || null}
             />
           </div>
         </div>

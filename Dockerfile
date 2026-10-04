@@ -25,7 +25,13 @@ ENV PORT=3000
 ENV HOSTNAME=0.0.0.0
 ENV DATABASE_PATH=/app/data/magnate.db
 
-RUN mkdir -p /app/data && chown node:node /app/data
+# `curl` is here for the operator, not for the app: a billing container is one
+# people debug from inside, and `node:22-slim` ships no HTTP client. It is the
+# same reason every other image in the estate carries it.
+RUN apt-get update \
+  && apt-get install -y --no-install-recommends curl ca-certificates \
+  && rm -rf /var/lib/apt/lists/* \
+  && mkdir -p /app/data && chown node:node /app/data
 
 COPY --from=builder /app/public ./public
 COPY --from=builder --chown=node:node /app/.next/standalone ./

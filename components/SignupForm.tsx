@@ -17,15 +17,23 @@ interface Props {
   };
   interval: "month" | "year";
   refCode?: string | null;
+  /**
+   * Prefilled by the service that sent the buyer here — Genie's publish panel
+   * deep-links with the name the buyer already chose. Prefilled rather than
+   * fixed: it is still their field to change, and a name they picked once should
+   * not have to be typed a second time (or arrive wrong because it was retyped).
+   */
+  initialSubdomain?: string | null;
+  initialEmail?: string | null;
 }
 
 const SUBDOMAIN_RE = /^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$/;
 
-export default function SignupForm({ plan, interval, refCode }: Props) {
+export default function SignupForm({ plan, interval, refCode, initialSubdomain, initialEmail }: Props) {
   const router = useRouter();
-  const [email, setEmail] = useState("");
+  const [email, setEmail] = useState(initialEmail ?? "");
   const [username, setUsername] = useState("");
-  const [subdomain, setSubdomain] = useState("");
+  const [subdomain, setSubdomain] = useState(initialSubdomain ?? "");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const wantsSubdomain = (plan.service ?? "").toLowerCase() === "genie";
