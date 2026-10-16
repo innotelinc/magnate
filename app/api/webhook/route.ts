@@ -322,9 +322,17 @@ export async function POST(req: Request) {
                 typeof user.plan_id === "number" ? user.plan_id : null;
               const interval =
                 session.metadata?.interval === "year" ? "year" : "month";
+              // A per-unit plan's first payment is the unit count times the unit
+              // price, so the count has to reach the reward calculation.
+              const boughtUnits = Number(session.metadata?.units);
               await creditReferrer(
                 user,
-                firstPaymentCentsFor(user.id, planId, interval),
+                firstPaymentCentsFor(
+                  user.id,
+                  planId,
+                  interval,
+                  Number.isFinite(boughtUnits) && boughtUnits > 0 ? boughtUnits : 1,
+                ),
               );
             }
           }

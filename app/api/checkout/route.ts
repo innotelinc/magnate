@@ -4,7 +4,7 @@ import { db } from "@/lib/db";
 import { getStripe } from "@/lib/stripe";
 import { authentikConfigured, findUser as findAuthentikUser } from "@/lib/authentik";
 import { encrypt, generatePassword } from "@/lib/crypto";
-import { getPlanBySlug } from "@/lib/plans";
+import { billingUnitOf, getPlanBySlug, isPerUnit } from "@/lib/plans";
 import { applyReferral, referralCouponId } from "@/lib/referrals";
 import { normalizeGenieSubdomain } from "@/lib/genie";
 import {
@@ -30,6 +30,9 @@ const schema = z.object({
   // The Genie plan sells a name under the preview wildcard; every other plan
   // ignores it. Validated here so a bad name is refused before payment.
   subdomain: z.string().trim().max(63).optional(),
+  // How many units of a per-unit plan ("3 classes"). Ignored by a plan sold as
+  // a whole subscription, where the line item is one of the plan.
+  units: z.number().int().min(1).max(1000).optional(),
 });
 
 export async function POST(req: Request) {
@@ -57,6 +60,24 @@ export async function POST(req: Request) {
     );
   }
 
+  // A per-unit plan is bought in multiples of its unit, monthly — the unit price
+  // is a recurring monthly one, so there is no yearly figure to charge and a
+  // request for one is refused rather than quietly billed by the month. The
+  // count is what the line item multiplies: a plan priced per class is not the
+  // price of the account, and charging it once would under-bill every buyer who
+  // asked for more than one.
+  const perUnit = isPerUnit(plan);
+  const unit = billingUnitOf(plan);
+  if (perUnit && interval !== "month") {
+    return NextResponse.json(
+      {
+        error: `This plan is billed per ${unit}, monthly — yearly billing isn't available.`,
+      },
+      { status: 400 },
+    );
+  }
+  const units = perUnit ? (parsed.data.units ?? 1) : 1;
+
   // The Genie plan's whole value is the name, so it is required for that service
   // and meaningless for the rest.
   let genieSubdomain: string | null = null;
@@ -68,8 +89,9 @@ export async function POST(req: Request) {
     genieSubdomain = normalized.name ?? null;
   }
 
-  const priceId =
-    interval === "month"
+  const priceId = perUnit
+    ? plan.stripe_price_per_unit_id
+    : interval === "month"
       ? plan.stripe_price_monthly_id
       : plan.stripe_price_yearly_id;
   if (!priceId) {
@@ -155,7 +177,7 @@ export async function POST(req: Request) {
   try {
     const session = await getStripe().checkout.sessions.create({
       mode: "subscription",
-      line_items: [{ price: priceId, quantity: 1 }],
+      line_items: [{ price: priceId, quantity: units }],
       customer_email: email,
       client_reference_id: String(userId),
       metadata: {
@@ -166,12 +188,16 @@ export async function POST(req: Request) {
         user_id: String(userId),
         ref_applied: refApplied ? "1" : "0",
         ...(genieSubdomain ? { subdomain: genieSubdomain } : {}),
+        // What was actually bought, so the count is readable on the session and
+        // on the subscription rather than only in the line item's total.
+        ...(perUnit ? { billing_unit: unit, units: String(units) } : {}),
       },
       subscription_data: {
         metadata: {
           username,
           user_id: String(userId),
           ...(genieSubdomain ? { subdomain: genieSubdomain } : {}),
+          ...(perUnit ? { billing_unit: unit, units: String(units) } : {}),
         },
         // Jellyfin is free for 7 days for everyone: a real Stripe trial, so the
         // subscription starts `trialing` and no invoice is raised until it ends.

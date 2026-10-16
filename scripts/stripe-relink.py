@@ -3,10 +3,11 @@
 
 A Magnate database holds the only record of which Stripe Product and Prices a
 plan bills against — `plans.stripe_product_id`, `stripe_price_monthly_id`,
-`stripe_price_yearly_id`. Recreate the database (a fresh seed after a host move,
-a backup restored from before a price change) and those three columns come back
-NULL while the Products live on in Stripe, still tagged `metadata.plan_id` with
-the row they belong to.
+`stripe_price_yearly_id`, and `stripe_price_per_unit_id` for a plan sold per unit
+(one recurring monthly price that the checkout multiplies by the count). Recreate
+the database (a fresh seed after a host move, a backup restored from before a
+price change) and those columns come back NULL while the Products live on in
+Stripe, still tagged `metadata.plan_id` with the row they belong to.
 
 `syncPlanToStripe()` cannot see that. It creates a Product whenever the column
 is empty, so the obvious repair doubles every product in the live account — and
@@ -194,8 +195,10 @@ def plans_from_db(path: Path) -> list[sqlite3.Row]:
     try:
         return list(con.execute(
             "SELECT id, name, slug, service, active, price_monthly_cents,"
-            " price_yearly_cents, stripe_product_id, stripe_price_monthly_id,"
-            " stripe_price_yearly_id FROM plans ORDER BY id"
+            " price_yearly_cents, billing_unit, price_per_unit_cents,"
+            " stripe_product_id, stripe_price_monthly_id,"
+            " stripe_price_yearly_id, stripe_price_per_unit_id"
+            " FROM plans ORDER BY id"
         ))
     finally:
         con.close()
@@ -294,27 +297,42 @@ def relink(api: Stripe, db_path: Path, *, create_missing: bool,
 
         prices = product_prices(api, product["id"])
 
-        for interval, column, cents in (
-            ("month", "stripe_price_monthly_id", plan["price_monthly_cents"]),
-            ("year", "stripe_price_yearly_id", plan["price_yearly_cents"]),
-        ):
+        # Which prices this plan bills against. A per-unit plan has exactly one:
+        # the recurring monthly amount for a single unit. Its plan-level month and
+        # year figures are zero by design, so asking Stripe for those would report
+        # every per-unit plan as unbillable — the failure this script exists to
+        # name, aimed at the wrong thing.
+        if (plan["billing_unit"] or "").strip() != "" and plan["price_per_unit_cents"] > 0:
+            wanted = ((
+                "month",
+                "stripe_price_per_unit_id",
+                plan["price_per_unit_cents"],
+                f"per {plan['billing_unit'].strip()} monthly",
+            ),)
+        else:
+            wanted = (
+                ("month", "stripe_price_monthly_id", plan["price_monthly_cents"], "monthly"),
+                ("year", "stripe_price_yearly_id", plan["price_yearly_cents"], "yearly"),
+            )
+
+        for interval, column, cents, words in wanted:
             stored = plan[column]
             if cents == 0 and not stored:
-                report.add(OK, label, f"no {interval}ly price — not advertised")
+                report.add(OK, label, f"no {words} price — not advertised")
                 continue
             if stored:
                 existing = next((p for p in prices if p["id"] == stored), None)
                 if existing is None:
                     report.add(FAIL, label,
-                               f"stored {interval}ly price {stored} is gone from Stripe")
+                               f"stored {words} price {stored} is gone from Stripe")
                 elif existing["unit_amount"] != cents:
                     report.add(WARN, label,
-                               f"{interval}ly price is ${existing['unit_amount'] / 100:.2f} "
+                               f"{words} price is ${existing['unit_amount'] / 100:.2f} "
                                f"but the plan advertises ${cents / 100:.2f} — "
                                "re-price in the dashboard to move it")
                 else:
                     report.add(OK, label,
-                               f"{interval}ly {stored} (${cents / 100:.2f})")
+                               f"{words} {stored} (${cents / 100:.2f})")
                 continue
 
             if cents == 0:
@@ -324,7 +342,7 @@ def relink(api: Stripe, db_path: Path, *, create_missing: bool,
             if found:
                 updates.append((column, found["id"], "", plan["id"]))
                 report.add(FIX, label,
-                           f"{interval}ly ${cents / 100:.2f} -> existing {found['id']}")
+                           f"{words} ${cents / 100:.2f} -> existing {found['id']}")
             elif create_missing:
                 if apply_changes:
                     data = {
@@ -337,20 +355,20 @@ def relink(api: Stripe, db_path: Path, *, create_missing: bool,
                     created = api.post("prices", data)
                     updates.append((column, created["id"], "", plan["id"]))
                     report.add(FIX, label,
-                               f"created {interval}ly price {created['id']} "
+                               f"created {words} price {created['id']} "
                                f"(${cents / 100:.2f})")
                 else:
                     report.add(FIX, label,
-                               f"would create a {interval}ly price "
+                               f"would create a {words} price "
                                f"(${cents / 100:.2f})")
             else:
                 report.add(FAIL, label,
-                           f"no active {interval}ly price at ${cents / 100:.2f} "
+                           f"no active {words} price at ${cents / 100:.2f} "
                            "on this product")
 
     if updates and apply_changes:
         columns = {"stripe_product_id", "stripe_price_monthly_id",
-                   "stripe_price_yearly_id"}
+                   "stripe_price_yearly_id", "stripe_price_per_unit_id"}
         assert all(u[0] in columns for u in updates)
         with con:
             for column, value, _unused, plan_id in updates:

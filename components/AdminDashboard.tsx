@@ -29,6 +29,12 @@ interface Plan {
   description: string | null;
   priceMonthlyCents: number;
   priceYearlyCents: number;
+  /** The unit the plan is sold in multiples of (e.g. "class"); "" = one plan. */
+  billingUnit: string;
+  /** What one unit costs per month, in cents; 0 = no per-unit price set. */
+  pricePerUnitCents: number;
+  /** True when the plan is billed per unit, from Magnate's own answer. */
+  perUnit: boolean;
   features: string[];
   highlighted: boolean;
   addon: boolean;
@@ -224,6 +230,15 @@ function PlanEditor({
     initial ? String(initial.priceYearlyCents / 100) : "",
   );
   const [features, setFeatures] = useState(initial?.features.join("\n") ?? "");
+  // A plan sold in multiples of a unit ("per class") instead of as one
+  // subscription. Both fields are needed for it to mean anything: the unit says
+  // what the count is, the price says what one costs.
+  const [billingUnit, setBillingUnit] = useState(initial?.billingUnit ?? "");
+  const [perUnitPrice, setPerUnitPrice] = useState(
+    initial && initial.pricePerUnitCents > 0
+      ? String(initial.pricePerUnitCents / 100)
+      : "",
+  );
   // Which service this plan is sold for. "generic" = the platform membership
   // the storefront sells; anything else is that service's own price.
   const [service, setService] = useState(initial?.service ?? "generic");
@@ -253,6 +268,8 @@ function PlanEditor({
       active,
       sortOrder: 0,
       service,
+      billingUnit: billingUnit.trim().toLowerCase(),
+      pricePerUnitCents: Math.round(parseFloat(perUnitPrice || "0") * 100),
     };
     setSaving(true);
     try {
@@ -305,6 +322,25 @@ function PlanEditor({
         <div>
           <label className="mb-1 block text-xs text-zinc-600 dark:text-zinc-400">Yearly price ($)</label>
           <input className={inputCls} type="number" min="0" step="0.01" value={yearly} onChange={(e) => setYearly(e.target.value)} placeholder="50.00" />
+        </div>
+        <div>
+          <label className="mb-1 block text-xs text-zinc-600 dark:text-zinc-400">
+            Sold per unit (optional)
+          </label>
+          <input className={inputCls} value={billingUnit} onChange={(e) => setBillingUnit(e.target.value)} placeholder="class" />
+          <p className="mt-1 text-xs text-zinc-500">
+            Name one unit — “class”, “seat” — and the buyer chooses how many.
+          </p>
+        </div>
+        <div>
+          <label className="mb-1 block text-xs text-zinc-600 dark:text-zinc-400">
+            Price per unit, monthly ($)
+          </label>
+          <input className={inputCls} type="number" min="0" step="0.01" value={perUnitPrice} onChange={(e) => setPerUnitPrice(e.target.value)} placeholder="27.50" />
+          <p className="mt-1 text-xs text-zinc-500">
+            Billed monthly per unit; the monthly and yearly prices above are then
+            unused.
+          </p>
         </div>
         <div className="sm:col-span-2">
           <label className="mb-1 block text-xs text-zinc-600 dark:text-zinc-400">
@@ -1478,8 +1514,17 @@ export default function AdminDashboard() {
                               </span>
                             </p>
                             <p className="text-xs text-zinc-600 dark:text-zinc-500">
-                              {money(plan.priceMonthlyCents, status?.stripeCurrency ?? "usd")}/mo ·{" "}
-                              {money(plan.priceYearlyCents, status?.stripeCurrency ?? "usd")}/yr
+                              {plan.perUnit ? (
+                                <>
+                                  {money(plan.pricePerUnitCents, status?.stripeCurrency ?? "usd")}
+                                  {" "}per {plan.billingUnit}, monthly
+                                </>
+                              ) : (
+                                <>
+                                  {money(plan.priceMonthlyCents, status?.stripeCurrency ?? "usd")}/mo ·{" "}
+                                  {money(plan.priceYearlyCents, status?.stripeCurrency ?? "usd")}/yr
+                                </>
+                              )}
                             </p>
                             {plan.service && plan.service !== "generic" && (
                               <p className="mt-0.5 text-xs font-medium text-brand-600 dark:text-brand-300">
@@ -1583,9 +1628,10 @@ export default function AdminDashboard() {
                           ) : (
                             <span className="text-xs font-medium text-zinc-700 dark:text-zinc-300">
                               {svc
-                                .map(
-                                  (p) =>
-                                    `${p.name} ${money(p.priceMonthlyCents, status?.stripeCurrency ?? "usd")}/mo`,
+                                .map((p) =>
+                                  p.perUnit
+                                    ? `${p.name} ${money(p.pricePerUnitCents, status?.stripeCurrency ?? "usd")} per ${p.billingUnit}, monthly`
+                                    : `${p.name} ${money(p.priceMonthlyCents, status?.stripeCurrency ?? "usd")}/mo`,
                                 )
                                 .join(" · ")}
                             </span>

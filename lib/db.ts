@@ -186,6 +186,30 @@ ensureColumn("users", "jellyfin_grant_until", "jellyfin_grant_until INTEGER");
 // reads its own price back through /api/plans?service=<slug>.
 ensureColumn("plans", "service", "service TEXT NOT NULL DEFAULT 'generic'");
 
+// How a plan is sold. An empty `billing_unit` is the usual whole subscription —
+// every plan predates the column, so that is what they are. A named unit
+// ("class") means the plan is bought in *multiples* of it: the checkout asks for
+// a count and bills that many, so the price is per unit rather than per plan.
+ensureColumn("plans", "billing_unit", "billing_unit TEXT NOT NULL DEFAULT ''");
+
+// What one unit costs, in cents, per month. Zero means no per-unit price is set
+// — a plan can name a unit before it is priced, and quoting a per-unit amount
+// that nobody set is the one thing the catalog must never do.
+ensureColumn(
+  "plans",
+  "price_per_unit_cents",
+  "price_per_unit_cents INTEGER NOT NULL DEFAULT 0",
+);
+
+// The recurring Stripe Price for ONE unit of a per-unit plan. A third price
+// column because the other two are the plan-level amounts, which a per-unit plan
+// leaves at zero ($0/month for the whole plan, multiplied by the count).
+ensureColumn(
+  "plans",
+  "stripe_price_per_unit_id",
+  "stripe_price_per_unit_id TEXT",
+);
+
 db.exec(`
   CREATE UNIQUE INDEX IF NOT EXISTS idx_users_referral_code
     ON users(referral_code);
@@ -210,6 +234,12 @@ export interface Plan {
   active: number;
   sort_order: number;
   service: string;
+  /** The unit this plan is sold in multiples of (e.g. "class"); "" = one plan. */
+  billing_unit: string;
+  /** What one unit costs per month, in cents; 0 = no per-unit price set. */
+  price_per_unit_cents: number;
+  /** The recurring Stripe Price for one unit, when the plan is sold per unit. */
+  stripe_price_per_unit_id: string | null;
   /** Authentik paid-tier group for subscribers; null = PAID_GROUPS default. */
   authentik_group?: string | null;
   created_at: string;

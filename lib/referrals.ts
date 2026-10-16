@@ -10,7 +10,7 @@
 
 import { db, type UserRow } from "./db";
 import { getStripe, stripeConfigured, stripeCurrency } from "./stripe";
-import { getPlanById } from "./plans";
+import { getPlanById, isPerUnit } from "./plans";
 
 export function referralRewardPercent(): number {
   const raw = process.env.REFERRAL_REWARD_PERCENT;
@@ -116,10 +116,17 @@ export function firstPaymentCentsFor(
   userId: number,
   planId: number | null,
   interval: "month" | "year" | undefined,
+  /** Units bought, for a per-unit plan. The first payment is the whole line
+   *  item, so a reward computed from one unit's price would under-credit every
+   *  referrer whose friend subscribed to more than one. */
+  units = 1,
 ): number {
   if (!planId && !interval) return 0;
   const plan = planId ? getPlanById(planId) : undefined;
   if (!plan) return 0;
+  if (isPerUnit(plan)) {
+    return plan.price_per_unit_cents * Math.max(1, Math.round(units));
+  }
   return interval === "year"
     ? plan.price_yearly_cents
     : plan.price_monthly_cents;

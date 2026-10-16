@@ -14,6 +14,10 @@ interface Props {
     priceYearlyCents: number;
     /** Which service sells it — the Genie plan asks for a preview subdomain. */
     service?: string;
+    /** The unit the plan is sold in multiples of (e.g. "class"); "" = one plan. */
+    billingUnit?: string;
+    /** What one unit costs per month, in cents; 0 = not sold per unit. */
+    pricePerUnitCents?: number;
   };
   interval: "month" | "year";
   refCode?: string | null;
@@ -36,10 +40,27 @@ export default function SignupForm({ plan, interval, refCode, initialSubdomain, 
   const [subdomain, setSubdomain] = useState(initialSubdomain ?? "");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [units, setUnits] = useState("1");
   const wantsSubdomain = (plan.service ?? "").toLowerCase() === "genie";
 
-  const priceCents =
-    interval === "month" ? plan.priceMonthlyCents : plan.priceYearlyCents;
+  // A plan sold per unit is billed monthly for as many units as the buyer names;
+  // the amount shown is what the checkout will charge, so it multiplies here
+  // exactly as it does there.
+  const unit = (plan.billingUnit ?? "").trim();
+  const perUnit = unit !== "" && (plan.pricePerUnitCents ?? 0) > 0;
+  /**
+   * The unit, pluralized for a count. The naive `${unit}s` is wrong for exactly
+   * the unit this feature was built for — "class" reads "classs" — and this is
+   * the one place a buyer sees the unit spelled out beside a number.
+   */
+  const unitWord = (count: number) =>
+    count === 1 ? unit : /(?:s|x|z|ch|sh)$/.test(unit) ? `${unit}es` : `${unit}s`;
+  const unitCount = Math.max(1, Math.min(1000, Math.round(Number(units) || 1)));
+  const priceCents = perUnit
+    ? (plan.pricePerUnitCents ?? 0) * unitCount
+    : interval === "month"
+      ? plan.priceMonthlyCents
+      : plan.priceYearlyCents;
   const price = priceCents / 100;
 
   async function handleSubmit(e: React.FormEvent) {
@@ -70,6 +91,7 @@ export default function SignupForm({ plan, interval, refCode, initialSubdomain, 
           email,
           username,
           ...(refCode ? { refCode } : {}),
+          ...(perUnit ? { units: unitCount } : {}),
           ...(wantsSubdomain ? { subdomain } : {}),
         }),
       });
@@ -99,16 +121,44 @@ export default function SignupForm({ plan, interval, refCode, initialSubdomain, 
         <div>
           <p className="text-sm font-semibold">{plan.name}</p>
           <p className="text-xs text-zinc-600 dark:text-zinc-500">
-            {interval === "month" ? "Monthly" : "Yearly"} billing
+            {perUnit
+              ? `Monthly, ${unitCount} ${unitWord(unitCount)}`
+              : interval === "month"
+                ? "Monthly"
+                : "Yearly"}{" "}
+            billing
           </p>
         </div>
         <p className="text-lg font-bold">
           ${price % 1 === 0 ? price.toFixed(0) : price.toFixed(2)}
           <span className="text-xs font-normal text-zinc-600 dark:text-zinc-500">
-            /{interval === "month" ? "mo" : "yr"}
+            /{perUnit || interval === "month" ? "mo" : "yr"}
           </span>
         </p>
       </div>
+
+      {perUnit && (
+        <div>
+          <label htmlFor="units" className="mb-1.5 block text-sm font-medium text-zinc-800 dark:text-zinc-300">
+            How many {unitWord(2)}?
+          </label>
+          <input
+            id="units"
+            type="number"
+            min="1"
+            max="1000"
+            step="1"
+            required
+            value={units}
+            onChange={(e) => setUnits(e.target.value)}
+            className="w-full rounded-xl border border-zinc-950/10 bg-black/[0.04] px-4 py-3 text-sm text-zinc-950 placeholder-zinc-400 outline-none transition-colors focus:border-brand-400 focus:ring-2 focus:ring-brand-500/30 dark:border-white/10 dark:bg-white/[0.04] dark:text-white dark:placeholder-zinc-600"
+          />
+          <p className="mt-1.5 text-xs text-zinc-600 dark:text-zinc-500">
+            Billed ${((plan.pricePerUnitCents ?? 0) / 100).toFixed(2)} per {unit}, per month.
+            Change the count and the total above follows.
+          </p>
+        </div>
+      )}
 
       <div>
         <label htmlFor="email" className="mb-1.5 block text-sm font-medium text-zinc-800 dark:text-zinc-300">

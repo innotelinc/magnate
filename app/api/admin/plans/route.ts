@@ -32,6 +32,15 @@ const planSchema = z.object({
     .max(32)
     .regex(/^[a-z0-9-]*$/, "Service must be a lowercase slug (or empty for generic).")
     .optional(),
+  // How the plan is sold. A named unit ("class") makes it a per-unit plan: the
+  // checkout asks for a count and bills `pricePerUnitCents` for each, monthly.
+  // Empty (or omitted) is the usual whole-subscription plan.
+  billingUnit: z
+    .string()
+    .max(32)
+    .regex(/^[a-z0-9-]*$/, "Billing unit must be a lowercase word (or empty).")
+    .optional(),
+  pricePerUnitCents: z.number().int().min(0).max(100000000).optional(),
 });
 
 async function unauthorized() {
