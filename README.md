@@ -240,6 +240,38 @@ unconfigured or the deployment is unreachable.
 not reachable from the deploy host), and `1` fails the run. GitHub-hosted CI
 cannot reach the LAN, so the deploy path — not CI — is where this is enforced.
 
+### Admin API keys (automation)
+
+A session is a person at a browser and it lasts a week. Work that has no browser
+— a script that creates a plan, a pipeline that re-prices one — uses a **standing
+admin key**, so it never needs `BREAKGLASS_LOGIN` and never needs anybody signed
+in:
+
+```bash
+# Mint one (panel: Settings → API keys, or over the API with an admin
+# credential). The token is shown once; only its SHA-256 is stored.
+curl -sX POST https://app.magnate.innotel.us/api/admin/keys \
+  -H "Authorization: Bearer $ADMIN_KEY" -H 'content-type: application/json' \
+  -d '{"name":"catalog automation"}'
+
+# Use it on any admin route.
+curl -s https://app.magnate.innotel.us/api/admin/plans \
+  -H "Authorization: Bearer $ADMIN_KEY"
+```
+
+A key is an admin: it creates and re-prices plans, manages users and reads the
+status, and revocation is immediate. It cannot change the admin password — that
+stays with the browser session, because the password is what a browser signs in
+with. Revoke with `DELETE /api/admin/keys/<id>` or the button in the panel; a
+revoked key is recorded rather than deleted, so the list keeps saying it existed.
+Keys do not expire — an unused one shows as `never used` in the panel, which is
+the one worth revoking, and minting a new key is the rotation.
+
+`npm run verify:keys` starts a throwaway instance and drives every one of those
+properties end to end — that only a hash is stored, that the key works with
+break-glass off, that it cannot change the password, and that revoking it is
+immediate — so they are checked rather than assumed.
+
 ## AI recommendations & churn prevention
 
 Point the app at any OpenAI-compatible chat-completions API:

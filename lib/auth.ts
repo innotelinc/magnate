@@ -52,3 +52,91 @@ export function validateAdminToken(token: string | null | undefined): boolean {
   if (!row) return false;
   return new Date(row.expires_at).getTime() > Date.now();
 }
+
+/* ---------- standing admin API keys (automation) ---------- */
+
+/**
+ * A standing admin API key is the *other* way to be an admin here.
+ *
+ * The panel is a person at a browser: Cerulean signs them in, the session lasts
+ * a week, and when it is gone they sign in again. Automation has no browser, and
+ * the only alternative was to re-enable break-glass, sign in with a password and
+ * restart the app — for every routine change, forever. So a key is a credential
+ * that does not expire, is not tied to a machine, and can be revoked on its own.
+ *
+ * What is stored is a SHA-256 of the key and never the key: a database copy, a
+ * backup, an export is then not a set of working credentials, and the value
+ * exists in exactly one place after it is minted — wherever it was written down.
+ */
+const ADMIN_KEY_PREFIX = "mag_admin_";
+
+export interface AdminApiKey {
+  id: number;
+  name: string;
+  created_at: string;
+  last_used_at: string | null;
+  revoked_at: string | null;
+}
+
+const KEY_COLUMNS = "id, name, created_at, last_used_at, revoked_at";
+
+function hashAdminApiKey(token: string): string {
+  return crypto.createHash("sha256").update(token).digest("hex");
+}
+
+/**
+ * Mint a key and return its value — the only time it is ever readable.
+ *
+ * No expiry, deliberately: a key that stops working should stop because someone
+ * revoked it, not because it quietly timed out and the automation started
+ * failing in a way nobody can see from the dashboard.
+ */
+export function mintAdminApiKey(name: string): { key: AdminApiKey; token: string } {
+  const token = ADMIN_KEY_PREFIX + crypto.randomBytes(32).toString("hex");
+  const info = db
+    .prepare("INSERT INTO admin_api_keys (name, token_hash) VALUES (?, ?)")
+    .run(name.trim(), hashAdminApiKey(token));
+  const key = db
+    .prepare(`SELECT ${KEY_COLUMNS} FROM admin_api_keys WHERE id = ?`)
+    .get(Number(info.lastInsertRowid)) as AdminApiKey;
+  return { key, token };
+}
+
+/**
+ * The name of the live key this token is, or null when it is not one.
+ *
+ * Records the use — at most hourly, so a busy automation does not turn every
+ * request into a write — because an unused standing key is exactly the one worth
+ * revoking and there is no other way to tell it from a key in constant use.
+ */
+export function adminApiKeyName(token: string | null | undefined): string | null {
+  if (!token || !token.startsWith(ADMIN_KEY_PREFIX)) return null;
+  const row = db
+    .prepare(
+      "SELECT id, name FROM admin_api_keys WHERE token_hash = ? AND revoked_at IS NULL",
+    )
+    .get(hashAdminApiKey(token)) as { id: number; name: string } | undefined;
+  if (!row) return null;
+  db.prepare(
+    `UPDATE admin_api_keys SET last_used_at = datetime('now')
+      WHERE id = ? AND (last_used_at IS NULL OR last_used_at < datetime('now', '-1 hour'))`,
+  ).run(row.id);
+  return row.name;
+}
+
+/** Every key ever minted, newest first. Revoked ones are listed, not hidden. */
+export function listAdminApiKeys(): AdminApiKey[] {
+  return db
+    .prepare(`SELECT ${KEY_COLUMNS} FROM admin_api_keys ORDER BY id DESC`)
+    .all() as AdminApiKey[];
+}
+
+/** Revoke a key. Returns false when there is no live key with that id. */
+export function revokeAdminApiKey(id: number): boolean {
+  const info = db
+    .prepare(
+      "UPDATE admin_api_keys SET revoked_at = datetime('now') WHERE id = ? AND revoked_at IS NULL",
+    )
+    .run(id);
+  return info.changes > 0;
+}

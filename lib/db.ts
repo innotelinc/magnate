@@ -85,6 +85,21 @@ db.exec(`
     expires_at TEXT NOT NULL
   );
 
+  -- Standing admin API keys: the credential automation changes the catalog with.
+  -- A session is a person at a browser and expires in a week; this is what makes
+  -- routine work (create a plan, re-price one, read a status) possible without a
+  -- person and without break-glass. Only a SHA-256 of the key is kept, so the
+  -- database — and any copy of it — is not a set of working credentials, and a
+  -- key that is lost is replaced rather than recovered.
+  CREATE TABLE IF NOT EXISTS admin_api_keys (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL,
+    token_hash TEXT NOT NULL UNIQUE,
+    created_at TEXT NOT NULL DEFAULT (datetime('now')),
+    last_used_at TEXT,
+    revoked_at TEXT
+  );
+
   CREATE TABLE IF NOT EXISTS webhook_events (
     id TEXT PRIMARY KEY,
     type TEXT NOT NULL,

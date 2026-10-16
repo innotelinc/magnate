@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { requireAdmin } from "@/lib/route-auth";
+import { getAdminToken } from "@/lib/route-auth";
 import { db } from "@/lib/db";
 import { verifyAdminPassword } from "@/lib/auth";
 import { setSetting } from "@/lib/settings";
@@ -13,10 +13,11 @@ const schema = z.object({
 });
 
 export async function POST(req: Request) {
-  let token: string;
-  try {
-    token = await requireAdmin();
-  } catch {
+  // A signed-in browser, not a standing API key: the admin password is what the
+  // *browser* signs in with, so changing it stays the interactive half of the
+  // panel. Automation can do everything else an admin can.
+  const token = await getAdminToken();
+  if (token === null) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 

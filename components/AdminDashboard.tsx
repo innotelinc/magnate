@@ -1032,6 +1032,173 @@ function ChangePasswordCard({
   );
 }
 
+/* ---------- standing admin API keys ---------- */
+
+interface AdminKeyRow {
+  id: number;
+  name: string;
+  created_at: string;
+  last_used_at: string | null;
+  revoked_at: string | null;
+}
+
+/**
+ * The keys automation holds.
+ *
+ * A session is a person at a browser; this is the other way to be an admin, for
+ * work that has no browser at all. The value is shown once — here — so the card
+ * says so where the person is standing when they mint one, and the list keeps
+ * revoked keys: a key that is gone from the list is a key nobody can prove was
+ * ever revoked.
+ */
+function ApiKeysCard() {
+  const [keys, setKeys] = useState<AdminKeyRow[] | null>(null);
+  const [name, setName] = useState("");
+  const [minted, setMinted] = useState<{ token: string; name: string } | null>(null);
+  const [copied, setCopied] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+
+  const load = useCallback(async () => {
+    try {
+      const data = await api<{ keys: AdminKeyRow[] }>("/api/admin/keys");
+      setKeys(data.keys);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Could not load the keys.");
+    }
+  }, []);
+
+  useEffect(() => {
+    // Defer the first load so we don't synchronously set state in the effect.
+    const timer = setTimeout(() => void load(), 0);
+    return () => clearTimeout(timer);
+  }, [load]);
+
+  async function mint() {
+    setError(null);
+    setBusy(true);
+    try {
+      const data = await api<{ key: AdminKeyRow; token: string }>("/api/admin/keys", {
+        method: "POST",
+        body: JSON.stringify({ name }),
+      });
+      setMinted({ token: data.token, name: data.key.name });
+      setName("");
+      setCopied(false);
+      await load();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Could not mint a key.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function revoke(key: AdminKeyRow) {
+    setError(null);
+    setBusy(true);
+    try {
+      await api(`/api/admin/keys/${key.id}`, { method: "DELETE" });
+      await load();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Could not revoke the key.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <div className="glass rounded-2xl p-5">
+      <h3 className="flex items-center gap-2 text-sm font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
+        <KeyIcon className="h-4 w-4" />
+        API keys
+      </h3>
+      <p className="mt-1 text-xs text-zinc-600 dark:text-zinc-500">
+        For automation: a key is an admin credential that does not expire and needs no
+        break-glass. Send it as <code>Authorization: Bearer …</code> on the admin API.
+      </p>
+
+      <div className="mt-4 flex gap-3">
+        <input
+          className={inputCls}
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          placeholder="What is it for? e.g. catalog automation"
+        />
+        <button
+          onClick={mint}
+          disabled={busy || name.trim() === ""}
+          className="whitespace-nowrap rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white transition-all hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          Mint a key
+        </button>
+      </div>
+
+      {minted && (
+        <div className="mt-4 rounded-xl border border-amber-500/30 bg-amber-500/10 p-4">
+          <p className="text-sm text-amber-700 dark:text-amber-300">
+            “{minted.name}” — copy it now. This is the only time it is shown: only its
+            hash is stored, so it cannot be read back, here or anywhere.
+          </p>
+          <div className="mt-2 flex items-center gap-2">
+            <code className="min-w-0 flex-1 truncate rounded-lg bg-black/[0.06] px-3 py-2 font-mono text-xs dark:bg-white/[0.06]">
+              {minted.token}
+            </code>
+            <button
+              onClick={() => {
+                void navigator.clipboard?.writeText(minted.token);
+                setCopied(true);
+              }}
+              className="flex items-center gap-1.5 whitespace-nowrap rounded-lg border border-zinc-950/15 px-3 py-2 text-xs font-medium transition-colors hover:border-zinc-950/30 dark:border-white/15 dark:hover:border-white/30"
+            >
+              {copied ? <CheckIcon className="h-3.5 w-3.5" /> : <CopyIcon className="h-3.5 w-3.5" />}
+              {copied ? "Copied" : "Copy"}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {error && (
+        <div className="mt-4 rounded-lg border border-rose-500/30 bg-rose-500/10 px-3 py-2 text-sm text-rose-600 dark:text-rose-300">
+          {error}
+        </div>
+      )}
+
+      {keys !== null && keys.length > 0 && (
+        <div className="mt-4 divide-y divide-zinc-950/[0.06] dark:divide-white/[0.06]">
+          {keys.map((key) => (
+            <div key={key.id} className="flex items-center justify-between gap-3 py-2.5">
+              <div className="min-w-0">
+                <p className="truncate text-sm text-zinc-800 dark:text-zinc-200">
+                  {key.name}
+                  {key.revoked_at !== null && (
+                    <span className="ml-2 rounded-full bg-zinc-400/10 px-2 py-0.5 text-[10px] font-medium text-zinc-600 dark:text-zinc-400">
+                      revoked
+                    </span>
+                  )}
+                </p>
+                <p className="text-xs text-zinc-600 dark:text-zinc-500">
+                  minted {key.created_at} ·{" "}
+                  {key.last_used_at ? `last used ${key.last_used_at}` : "never used"}
+                </p>
+              </div>
+              {key.revoked_at === null && (
+                <button
+                  onClick={() => void revoke(key)}
+                  disabled={busy}
+                  className="flex items-center gap-1.5 whitespace-nowrap rounded-lg border border-rose-500/30 px-3 py-1.5 text-xs font-medium text-rose-600 transition-colors hover:bg-rose-500/10 disabled:opacity-50 dark:text-rose-300"
+                >
+                  <TrashIcon className="h-3.5 w-3.5" />
+                  Revoke
+                </button>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 /* ---------- user password reset modal ---------- */
 
 function PasswordResetModal({
@@ -1820,6 +1987,7 @@ export default function AdminDashboard() {
               refresh();
             }}
           />
+          <ApiKeysCard />
           {editingSettings ? (
             <SettingsEditor
               settings={settings}

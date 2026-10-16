@@ -9,7 +9,8 @@
     "lint": "eslint",
     "typecheck": "tsc --noEmit",
     "verify:sso": "python3 scripts/verify-sso.py",
-    "verify:plans": "python3 scripts/stripe-relink.py --check"
+    "verify:plans": "python3 scripts/stripe-relink.py --check",
+    "verify:keys": "bash scripts/verify-admin-keys.sh"
   },
   "dependencies": {
     "better-sqlite3": "^13.0.3",
