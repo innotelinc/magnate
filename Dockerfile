@@ -14,8 +14,17 @@ COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 ENV NEXT_TELEMETRY_DISABLED=1
 # Cap the JS heap so `next build` cannot OOM-kill the build on memory-shared hosts.
-ENV NODE_OPTIONS=--max-old-space-size=3072
-RUN npm run build
+# Tunable so a build fits the host: a 768 MiB container OOM-kills `next build`
+# when the heap cap sits above its own memory limit. Pass
+# `--build-arg NODE_HEAP=512` on a small host.
+ARG NODE_HEAP=3072
+ENV NODE_OPTIONS=--max-old-space-size=${NODE_HEAP}
+# Bundler flags for `next build`. Turbopack is Next's default and sizes its
+# native memory to the core count, ignoring NODE_OPTIONS — a host smaller
+# than the build needs should pass `--build-arg NEXT_BUILD_FLAGS=--webpack`,
+# which runs the webpack pipeline and honours the heap cap above.
+ARG NEXT_BUILD_FLAGS=
+RUN npm run build -- ${NEXT_BUILD_FLAGS}
 
 FROM node:22-slim AS runner
 WORKDIR /app
@@ -25,7 +34,13 @@ ENV PORT=3000
 ENV HOSTNAME=0.0.0.0
 ENV DATABASE_PATH=/app/data/magnate.db
 
-RUN mkdir -p /app/data && chown node:node /app/data
+# `curl` is here for the operator, not for the app: a billing container is one
+# people debug from inside, and `node:22-slim` ships no HTTP client. It is the
+# same reason every other image in the estate carries it.
+RUN apt-get update \
+  && apt-get install -y --no-install-recommends curl ca-certificates \
+  && rm -rf /var/lib/apt/lists/* \
+  && mkdir -p /app/data && chown node:node /app/data
 
 COPY --from=builder /app/public ./public
 COPY --from=builder --chown=node:node /app/.next/standalone ./

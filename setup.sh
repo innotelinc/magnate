@@ -106,7 +106,7 @@ cat <<'EOF'
 
    https://app.magnate.innotel.us      storefront (this app)
    https://auth.magnate.innotel.us     Authentik
-   https://media.magnate.innotel.us    Jellyfin
+   https://media.innotel.us    Jellyfin
    https://billing.magnate.innotel.us  billing / Stripe portal UI
    https://admin.magnate.innotel.us    admin panel
 

@@ -5,6 +5,7 @@ import Link from "next/link";
 import {
   CheckIcon,
   CopyIcon,
+  DevicesIcon,
   KeyIcon,
   UserIcon,
   FilmIcon,
@@ -19,6 +20,8 @@ interface ClaimResult {
   password?: string;
   alreadyClaimed?: boolean;
   planSlug?: string | null;
+  /** The Zeus phone line this purchase assigned, when the plan was in that funnel. */
+  zeusNumber?: string | null;
   referralCode?: string | null;
   referralLink?: string | null;
   error?: string;
@@ -32,6 +35,7 @@ type Phase =
       password: string;
       alreadyClaimed: boolean;
       planSlug: string | null;
+      zeusNumber: string | null;
       referralCode: string | null;
       referralLink: string | null;
     }
@@ -87,6 +91,7 @@ export default function SuccessClient({
           password: data.password!,
           alreadyClaimed: Boolean(data.alreadyClaimed),
           planSlug: data.planSlug ?? null,
+          zeusNumber: data.zeusNumber ?? null,
           referralCode: data.referralCode ?? null,
           referralLink: data.referralLink ?? null,
         });
@@ -202,6 +207,26 @@ export default function SuccessClient({
           </div>
           <CopyButton value={phase.password} />
         </div>
+
+        {/* The phone plan's whole deliverable is the line, so it is shown with
+            the credentials rather than left for the buyer to find in the Zeus
+            portal. Absent when the webhook's assignment has not finished yet. */}
+        {phase.zeusNumber && (
+          <div className="glass flex items-center justify-between gap-3 rounded-2xl px-5 py-4">
+            <div className="flex items-center gap-3">
+              <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-500/15 text-emerald-600 ring-1 ring-zinc-950/10 dark:text-emerald-300 dark:ring-white/10">
+                <DevicesIcon className="h-5 w-5" />
+              </span>
+              <div>
+                <p className="text-xs text-zinc-600 dark:text-zinc-500">
+                  Your phone number
+                </p>
+                <p className="font-mono text-base font-semibold">{phase.zeusNumber}</p>
+              </div>
+            </div>
+            <CopyButton value={phase.zeusNumber} />
+          </div>
+        )}
       </div>
 
       <div

@@ -16,6 +16,18 @@ import { decrypt } from "@/lib/crypto";
 import { getPlanBySlug } from "@/lib/plans";
 import { cleanMetadata, recordPurchaseAndFulfill } from "@/lib/purchases";
 import { claimGenieSubdomain } from "@/lib/genie";
+import {
+  grantJellyfinAddon,
+  grantJellyfinAddonForEmail,
+  isJellyfinService,
+} from "@/lib/jellyfin";
+import { isZeusService, provisionZeusNumber } from "@/lib/zeus";
+import {
+  firstMailboxFor,
+  isOasisService,
+  mailDomainFromMetadata,
+  provisionMailTenant,
+} from "@/lib/oasis-mail";
 import { stripeWebhookSecret } from "@/lib/settings";
 import {
   creditReferrer,
@@ -157,6 +169,18 @@ async function provisionUser(
     }
   }
 
+  // "Free Jellyfin for 3 months with any purchase": any purchase but Jellyfin
+  // itself grants the add-on. Jellyfin's own subscription does not self-grant —
+  // it starts with its 7-day trial instead (see app/api/checkout). Best-effort:
+  // a grant failure must not make Stripe replay an account that already exists.
+  if (status === "active" && !isJellyfinService(plan?.service)) {
+    try {
+      grantJellyfinAddon(userId);
+    } catch (err) {
+      console.error(`jellyfin add-on grant failed (user ${userId})`, err);
+    }
+  }
+
   return userId;
 }
 
@@ -295,6 +319,100 @@ export async function POST(req: Request) {
               console.error(`genie subdomain claim failed (${subdomain})`, claimed.error);
             }
           }
+          /*
+           * A Zeus-service plan's deliverable is a phone line: the plan is
+           * "your own number with calls, SMS, fax and voicemail", and the agents
+           * add-on is inbound routing for it. Magnate can provision the account
+           * (Authentik is the identity store) but only Zeus holds the pool, so
+           * ask Zeus to assign one — otherwise the buyer lands on a dashboard
+           * with an invoice and no number.
+           *
+           * Only once billing is *active*: provisioning the account for a
+           * pending or failed subscription must not spend a number on it. The
+           * call names the address rather than a number, Zeus allocates and
+           * answers with the line it chose, and it is idempotent — the phone
+           * plan and the agents add-on together hold one number, not two.
+           *
+           * Best-effort, like the Genie claim above: a Zeus that is slow or down
+           * must not fail a checkout webhook that has already provisioned the
+           * account. A failure is recorded on the user, where the admin panel
+           * shows it, and the operator can retry the assignment there.
+           */
+          const planSlug = session.metadata?.plan_slug;
+          const plan = planSlug ? getPlanBySlug(planSlug) : undefined;
+          if (userId && isZeusService(plan?.service)) {
+            const buyer = db
+              .prepare("SELECT email, status FROM users WHERE id = ?")
+              .get(userId) as { email: string; status: string } | undefined;
+            if (buyer?.status === "active" && buyer.email) {
+              const assigned = await provisionZeusNumber({
+                email: buyer.email,
+                plan: planSlug ?? null,
+              });
+              if (assigned.ok) {
+                db.prepare(
+                  "UPDATE users SET zeus_number = ?, provisioning_error = NULL WHERE id = ?",
+                ).run(assigned.number ?? null, userId);
+              } else {
+                db.prepare(
+                  "UPDATE users SET provisioning_error = ? WHERE id = ?",
+                ).run(`number assignment failed: ${assigned.error}`, userId);
+                console.error(
+                  `zeus number assignment failed (user ${userId})`,
+                  assigned.error,
+                );
+              }
+            }
+          }
+          /*
+           * A mail plan's deliverable is a mailbox at the buyer's own domain, and
+           * the checkout is where that domain is named (`mag_domain`, `domain` or
+           * `mail_domain` in the session metadata). Magnate owns the billing
+           * decision and the account, but not the resolver, the CA or the mail
+           * store, so it does not build the tenant itself: it holds one Cerulean
+           * service key and asks Cerulean once (POST /api/service/tenants), which
+           * registers the zone and has Oasis build the mail domain, its DNS and
+           * the first mailbox. One write, one credential, one owner of trust.
+           *
+           * Best-effort, like the Zeus assignment above: the subscription is
+           * billed either way, so a Cerulean that is slow or down is recorded on
+           * the user (where the admin panel shows it) rather than failing the
+           * webhook. The call is idempotent, so a Stripe retry cannot leave a
+           * second tenant behind.
+           */
+          if (userId && isOasisService(plan?.service)) {
+            const buyer = db
+              .prepare("SELECT email, status FROM users WHERE id = ?")
+              .get(userId) as { email: string; status: string } | undefined;
+            const mailDomain = mailDomainFromMetadata(session.metadata);
+            if (!mailDomain) {
+              db.prepare(
+                "UPDATE users SET provisioning_error = ? WHERE id = ?",
+              ).run(
+                "mail provisioning skipped: the checkout named no domain",
+                userId,
+              );
+            } else if (buyer?.status === "active" && buyer.email) {
+              const tenant = await provisionMailTenant({
+                domain: mailDomain,
+                email: firstMailboxFor(mailDomain, buyer.email),
+                description: plan?.name ?? null,
+              });
+              if (tenant.ok) {
+                db.prepare(
+                  "UPDATE users SET mail_domain = ?, provisioning_error = NULL WHERE id = ?",
+                ).run(tenant.domain ?? mailDomain, userId);
+              } else {
+                db.prepare(
+                  "UPDATE users SET provisioning_error = ? WHERE id = ?",
+                ).run(`mail tenant failed: ${tenant.error}`, userId);
+                console.error(
+                  `oasis mail tenant failed (user ${userId})`,
+                  tenant.error,
+                );
+              }
+            }
+          }
           // Referral program: credit the referrer a % of the first payment.
           if (userId && session.metadata?.ref_applied === "1") {
             const user = db
@@ -305,9 +423,17 @@ export async function POST(req: Request) {
                 typeof user.plan_id === "number" ? user.plan_id : null;
               const interval =
                 session.metadata?.interval === "year" ? "year" : "month";
+              // A per-unit plan's first payment is the unit count times the unit
+              // price, so the count has to reach the reward calculation.
+              const boughtUnits = Number(session.metadata?.units);
               await creditReferrer(
                 user,
-                firstPaymentCentsFor(user.id, planId, interval),
+                firstPaymentCentsFor(
+                  user.id,
+                  planId,
+                  interval,
+                  Number.isFinite(boughtUnits) && boughtUnits > 0 ? boughtUnits : 1,
+                ),
               );
             }
           }
@@ -322,18 +448,26 @@ export async function POST(req: Request) {
               "payment-mode session missing mag_item_slug metadata",
             );
           }
+          const purchaseEmail =
+            typeof session.customer_email === "string"
+              ? session.customer_email
+              : null;
           await recordPurchaseAndFulfill({
             sessionId: session.id,
             itemSlug: slug,
             itemName: session.metadata?.mag_item_name ?? slug,
             amountCents: session.amount_total ?? 0,
             currency: (session.currency ?? "usd").toLowerCase(),
-            customerEmail:
-              typeof session.customer_email === "string"
-                ? session.customer_email
-                : null,
+            customerEmail: purchaseEmail,
             metadata: cleanMetadata(session.metadata),
           });
+          // A one-off purchase is a purchase too: 3 free months of Jellyfin for
+          // the buyer's Magnate account, when that address has one.
+          try {
+            grantJellyfinAddonForEmail(purchaseEmail);
+          } catch (err) {
+            console.error("jellyfin add-on grant failed for purchase", err);
+          }
         }
         break;
       }

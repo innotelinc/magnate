@@ -17,6 +17,21 @@ import type { NextRequest } from "next/server";
  *   AUTHENTIK_ADMIN_EMAILS  comma-separated emails allowed into the admin panel
  */
 
+/**
+ * The two one-time cookies the authorization-code flow carries from the login
+ * route to the callback: the CSRF state and the PKCE verifier.
+ *
+ * They live here rather than in `/api/auth/authentik/login` — where the callback
+ * used to import them from — because Next validates a route file's exports
+ * against a fixed set (the HTTP handlers plus a handful of segment options), and
+ * a constant exported "for the callback" fails that validation:
+ * `next build` refuses the module with
+ * `Type 'OmitWithTag<typeof import(".../login/route")...>' does not satisfy ...`.
+ * The flow's cookie names are the flow's, so they belong with it.
+ */
+export const OIDC_STATE_COOKIE = "oidc_state";
+export const OIDC_VERIFIER_COOKIE = "oidc_verifier";
+
 export function oidcEnabled(): boolean {
   return Boolean(
     process.env.AUTHENTIK_ISSUER_URL &&

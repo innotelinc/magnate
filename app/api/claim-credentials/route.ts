@@ -41,6 +41,7 @@ export async function GET(req: Request) {
         referral_code: string | null;
         referrals_count: number;
         referral_earned_cents: number;
+        zeus_number: string | null;
       }
     | undefined;
 
@@ -81,6 +82,12 @@ export async function GET(req: Request) {
     password,
     alreadyClaimed,
     planSlug: plan?.slug ?? null,
+    // The Zeus line this purchase assigned, when the plan was in that funnel: the
+    // number is the deliverable, so the success page names it rather than leaving
+    // the buyer to find it in the portal. Null while the webhook's assignment has
+    // not finished (or failed) — the page polls, and the operator sees the reason
+    // in the admin panel.
+    zeusNumber: user.zeus_number ?? null,
     // Affiliate & referral: the new subscriber's own shareable code.
     referralCode: user.referral_code ?? null,
     referralLink: user.referral_code

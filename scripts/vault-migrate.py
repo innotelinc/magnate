@@ -15,8 +15,13 @@ After it runs, ``.env`` may carry a reference instead of the value:
 which is the ``vault://<mount>/<path>#<key>`` convention Cerulean resolves at
 startup, so the stack and the platform agree on one format.
 
-Nothing here is destructive. The target secret is read first and the write is a
-union, so keys already in Vault are preserved; a re-run with nothing new reports
+Nothing here is destructive. The target secret is read first, and the write is a
+KV v2 **merge**: only the keys being moved are sent, and every other name in the
+secret stays — including a name another writer added after this script read the
+secret, which a read-then-write-the-whole-thing cannot see. A store that refuses
+the merge method (a token minted before the ``patch`` capability, or a proxy
+that will not pass the method through) gets the older behaviour — the whole
+union written back — and a line saying so. A re-run with nothing new reports
 "already in sync" and writes nothing. Values are never printed — only key names,
 and the script refuses to run if the target path is a KV **v1** mount (v1 has no
 versioning and cannot hold secrets the way these stacks expect).
@@ -124,7 +129,13 @@ class Client:
         self.namespace = namespace
         self.context = build_ssl_context()
 
-    def api(self, method: str, path: str, body: dict | None = None) -> tuple[int, dict]:
+    def api(
+        self,
+        method: str,
+        path: str,
+        body: dict | None = None,
+        content_type: str = "application/json",
+    ) -> tuple[int, dict]:
         url = f"{self.addr}/v1/{path.lstrip('/')}"
         data = json.dumps(body).encode() if body is not None else None
 
@@ -132,7 +143,9 @@ class Client:
         request.add_header("X-Vault-Token", self.token)
         request.add_header("Accept", "application/json")
         if data is not None:
-            request.add_header("Content-Type", "application/json")
+            # A KV v2 merge is `PATCH` with `application/merge-patch+json`; every other
+            # call here is a JSON body.
+            request.add_header("Content-Type", content_type)
         if self.namespace:
             request.add_header("X-Vault-Namespace", self.namespace)
 
@@ -390,17 +403,40 @@ def main() -> int:
 
     print(
         f"--- writing {len(changed)} key(s) to {prefix}/{path} "
-        f"({len(existing)} existing preserved) ---"
+        f"({len(existing)} already there, left to the store) ---"
     )
-    status, written = client.api("POST", f"{prefix}/data/{path}", {"data": merged})
+    sent = changed
+    status, written = client.api(
+        "PATCH",
+        f"{prefix}/data/{path}",
+        {"data": changed},
+        content_type="application/merge-patch+json",
+    )
+    if status in (403, 405):
+        # The token predates the `patch` capability, or something in front of Vault will
+        # not pass the method through. Fall back to the read-modify-write this script
+        # used to do — correct on its own, but it cannot see a name that landed between
+        # the read above and this write, which is the whole reason to merge instead.
+        print("    (the store refused a merge — writing the whole secret back instead)")
+        sent = merged
+        status, written = client.api("POST", f"{prefix}/data/{path}", {"data": sent})
     if status not in (200, 204):
         fail(f"Writing {prefix}/data/{path} failed: HTTP {status} — {written.get('errors')}")
 
-    # Read it back: a write that did not land is worse than one that errored.
+    # Read it back: a write that did not land is worse than one that errored. What this
+    # run *sent* has to come back with the value it sent; the names it only read have to
+    # still be there. Their values are another writer's business — a merge is what makes
+    # a concurrent change survivable rather than a failed check here.
     after, _ = read_target(client, prefix, path)
-    missing = [k for k in merged if after.get(k) != merged[k]]
+    missing = [k for k, v in sent.items() if after.get(k) != v]
     if missing:
         fail(f"These keys did not read back identically: {', '.join(sorted(missing))}")
+    lost = [k for k in existing if k not in after]
+    if lost:
+        fail(
+            f"These keys were in {prefix}/{path} before this run and are gone after it: "
+            f"{', '.join(sorted(lost))}"
+        )
 
     print(f"--- {prefix}/{path} now holds {len(after)} key(s) ---")
     print()

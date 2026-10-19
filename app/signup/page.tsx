@@ -4,7 +4,7 @@ import Nav from "@/components/Nav";
 import Footer from "@/components/Footer";
 import SignupForm from "@/components/SignupForm";
 import { PlayIcon } from "@/components/icons";
-import { getPlanBySlug } from "@/lib/plans";
+import { getPlanBySlug, isPerUnit } from "@/lib/plans";
 
 export const dynamic = "force-dynamic";
 
@@ -39,6 +39,12 @@ const SERVICE_PITCH: Record<
     back: "Back to Genie plans",
     backHref: "https://subscribe.genie.innotel.us",
   },
+  atlas: {
+    lead: "let's get you building.",
+    sub: "Your own repositories, reviews and CI on the ecosystem's Atlas forge. Billed per class, monthly — add or drop a class any time.",
+    back: "Back to Atlas plans",
+    backHref: "https://subscribe.atlas.innotel.us",
+  },
 };
 
 const DEFAULT_PITCH = {
@@ -51,12 +57,22 @@ const DEFAULT_PITCH = {
 export default async function SignupPage({
   searchParams,
 }: {
-  searchParams: Promise<{ plan?: string; interval?: string; ref?: string }>;
+  searchParams: Promise<{
+    plan?: string;
+    interval?: string;
+    ref?: string;
+    /** Prefilled by a consuming service (Genie's publish panel sends the name). */
+    subdomain?: string;
+    email?: string;
+  }>;
 }) {
-  const { plan: planSlug, interval, ref } = await searchParams;
+  const { plan: planSlug, interval, ref, subdomain, email } = await searchParams;
   const plan = planSlug ? getPlanBySlug(planSlug) : undefined;
   if (!plan || !plan.active) notFound();
-  const billing = interval === "year" ? "year" : "month";
+  // A per-unit plan only has a monthly price, so a link asking for yearly is
+  // answered with the monthly billing it actually has rather than a checkout the
+  // API would refuse.
+  const billing = isPerUnit(plan) ? "month" : interval === "year" ? "year" : "month";
   const refCode = ref?.trim().slice(0, 24) || null;
   const pitch = SERVICE_PITCH[(plan.service ?? "").toLowerCase()] ?? DEFAULT_PITCH;
 
@@ -107,9 +123,13 @@ export default async function SignupPage({
                 priceMonthlyCents: plan.price_monthly_cents,
                 priceYearlyCents: plan.price_yearly_cents,
                 service: plan.service,
+                billingUnit: plan.billing_unit,
+                pricePerUnitCents: plan.price_per_unit_cents,
               }}
               interval={billing}
               refCode={refCode}
+              initialSubdomain={subdomain?.trim().slice(0, 63) || null}
+              initialEmail={email?.trim().slice(0, 254) || null}
             />
           </div>
         </div>

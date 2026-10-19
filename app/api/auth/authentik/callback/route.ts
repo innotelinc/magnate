@@ -2,16 +2,14 @@ import { NextResponse, type NextRequest } from "next/server";
 import { cookies } from "next/headers";
 import { COOKIE_NAME, createAdminSession } from "@/lib/auth";
 import {
+  OIDC_STATE_COOKIE,
+  OIDC_VERIFIER_COOKIE,
   exchangeCode,
   getUserInfo,
   isAdminUser,
   oidcEnabled,
   publicOrigin,
 } from "@/lib/oidc";
-import {
-  OIDC_STATE_COOKIE,
-  OIDC_VERIFIER_COOKIE,
-} from "@/app/api/auth/authentik/login/route";
 
 export const dynamic = "force-dynamic";
 

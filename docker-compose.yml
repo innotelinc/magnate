@@ -27,7 +27,7 @@ services:
       STRIPE_WEBHOOK_SECRET: "${STRIPE_WEBHOOK_SECRET:-whsec_xxx}"
       STRIPE_CURRENCY: "${STRIPE_CURRENCY:-usd}"
       # Jellyfin server + API key (Dashboard → Advanced → API Keys)
-      JELLYFIN_URL: "${JELLYFIN_URL:-https://media.magnate.innotel.us}"
+      JELLYFIN_URL: "${JELLYFIN_URL:-https://media.innotel.us}"
       JELLYFIN_API_KEY: "${JELLYFIN_API_KEY:-your-jellyfin-api-key}"
       # Authentik — external by default. Set AUTHENTIK_BASE_URL and
       # AUTHENTIK_BOOTSTRAP_TOKEN for the shared IdentityOps instance, or
@@ -64,6 +64,23 @@ services:
       GENIE_PREVIEW_API_URL: "${GENIE_PREVIEW_API_URL:-}"
       GENIE_PREVIEW_CLAIM_TOKEN: "${GENIE_PREVIEW_CLAIM_TOKEN:-}"
       GENIE_PREVIEW_DOMAIN: "${GENIE_PREVIEW_DOMAIN:-genie.innotel.us}"
+      # Zeus (voice & PBX). A Zeus-service plan's deliverable is a phone
+      # number, so after checkout Magnate asks Zeus to assign one to the
+      # buyer's portal account (lib/zeus.ts -> POST /api/service/provision,
+      # Bearer token scoped `numbers:provision` on Zeus). These MUST be
+      # passed through: lib/zeus.ts reads them from process.env, so a value
+      # that only lives in .env never reaches the container and the
+      # assignment silently stays off. Leave the token empty to sell the
+      # plans without assigning a number.
+      ZEUS_PROVISION_URL: "${ZEUS_PROVISION_URL:-}"
+      ZEUS_PROVISION_TOKEN: "${ZEUS_PROVISION_TOKEN:-}"
+      # Cerulean (TrustOps) — the estate's one write for a tenant. Like the
+      # Zeus pair above, these must be passed through: lib/oasis-mail.ts
+      # reads them from process.env, and CERULEAN_SERVICE_KEY is a vault://
+      # reference the entrypoint resolves before boot. Leave it empty to sell
+      # mail plans without provisioning their tenant.
+      CERULEAN_API_URL: "${CERULEAN_API_URL:-}"
+      CERULEAN_SERVICE_KEY: "${CERULEAN_SERVICE_KEY:-}"
       # Entitlement API gate: the bearer Genie must present to
       # GET /api/entitlements (Genie holds it as ENTITLEMENTS_API_TOKEN). Empty
       # leaves the endpoint open on a trusted net. May be a `vault://` reference,

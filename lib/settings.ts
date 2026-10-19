@@ -61,7 +61,7 @@ export function stripeCurrency(): string {
 
 export function jellyfinUrl(): string {
   return (
-    getSetting("jellyfin_url") || "https://media.magnate.innotel.us"
+    getSetting("jellyfin_url") || "https://media.innotel.us"
   );
 }
 

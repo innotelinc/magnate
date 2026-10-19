@@ -87,6 +87,29 @@ export function toHighlightInt(opts: {
   return opts.highlighted ? 1 : 0;
 }
 
+/**
+ * The unit a plan is sold in, or "" when it is sold as one subscription.
+ *
+ * Trimmed because the column arrives through `ALTER TABLE … DEFAULT ''` and a
+ * unit of spaces would name a unit nobody can read.
+ */
+export function billingUnitOf(plan: Plan): string {
+  return (plan.billing_unit ?? "").trim();
+}
+
+/**
+ * Whether this plan is billed per unit (e.g. per class) rather than as one
+ * subscription.
+ *
+ * Both halves have to be there: a unit names what the count *is*, and a price
+ * says what one costs. A plan with a unit but no price is a plan whose per-unit
+ * amount is not decided yet — billing it would charge zero per unit, so it is
+ * not treated as a per-unit plan until an amount is set.
+ */
+export function isPerUnit(plan: Plan): boolean {
+  return billingUnitOf(plan) !== "" && plan.price_per_unit_cents > 0;
+}
+
 export function planPublic(plan: Plan) {
   return {
     id: plan.id,
@@ -95,6 +118,12 @@ export function planPublic(plan: Plan) {
     description: plan.description,
     priceMonthlyCents: plan.price_monthly_cents,
     priceYearlyCents: plan.price_yearly_cents,
+    // How the plan is sold, for the catalog's readers: consumers quote the price
+    // beside the unit (`$27.50 per class`) instead of inventing one, and a plan
+    // sold as a whole subscription says so by naming no unit.
+    billingUnit: billingUnitOf(plan),
+    pricePerUnitCents: plan.price_per_unit_cents ?? 0,
+    perUnit: isPerUnit(plan),
     features: parseFeatures(plan),
     highlighted: plan.highlighted === 1,
     addon: plan.highlighted === 2,
@@ -116,13 +145,17 @@ interface PlanInput {
   sortOrder: number;
   /** Which service this plan is sold for ("generic" = platform membership). */
   service?: string;
+  /** The unit the plan is sold in multiples of (e.g. "class"); "" = one plan. */
+  billingUnit?: string;
+  /** What one unit costs per month, in cents; 0 = no per-unit price set. */
+  pricePerUnitCents?: number;
 }
 
 export function createPlan(input: PlanInput): Plan {
   const info = db
     .prepare(
-      `INSERT INTO plans (name, slug, description, price_monthly_cents, price_yearly_cents, features, highlighted, active, sort_order, service)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      `INSERT INTO plans (name, slug, description, price_monthly_cents, price_yearly_cents, features, highlighted, active, sort_order, service, billing_unit, price_per_unit_cents)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     )
     .run(
       input.name,
@@ -135,6 +168,8 @@ export function createPlan(input: PlanInput): Plan {
       input.active ? 1 : 0,
       input.sortOrder,
       input.service ?? "generic",
+      (input.billingUnit ?? "").trim(),
+      input.pricePerUnitCents ?? 0,
     );
   return getPlanById(Number(info.lastInsertRowid))!;
 }
@@ -157,7 +192,8 @@ export function updatePlan(
   db.prepare(
     `UPDATE plans SET
        name = ?, slug = ?, description = ?, price_monthly_cents = ?, price_yearly_cents = ?,
-       features = ?, highlighted = ?, active = ?, sort_order = ?, service = ?
+       features = ?, highlighted = ?, active = ?, sort_order = ?, service = ?,
+       billing_unit = ?, price_per_unit_cents = ?
      WHERE id = ?`,
   ).run(
     input.name ?? existing.name,
@@ -170,6 +206,10 @@ export function updatePlan(
     input.active !== undefined ? (input.active ? 1 : 0) : existing.active,
     input.sortOrder ?? existing.sort_order,
     input.service ?? existing.service ?? "generic",
+    input.billingUnit !== undefined
+      ? input.billingUnit.trim()
+      : billingUnitOf(existing),
+    input.pricePerUnitCents ?? existing.price_per_unit_cents ?? 0,
     id,
   );
   return getPlanById(id);
@@ -194,6 +234,8 @@ interface SyncResult {
   stripeProductId?: string;
   stripePriceMonthlyId?: string;
   stripePriceYearlyId?: string;
+  /** The recurring price for one unit, when the plan is sold per unit. */
+  stripePricePerUnitId?: string;
 }
 
 /**
@@ -228,7 +270,10 @@ export async function syncPlanToStripe(plan: Plan): Promise<SyncResult | null> {
     interval: "month" | "year",
     amount: number,
     existingId: string | null,
-    column: "stripe_price_monthly_id" | "stripe_price_yearly_id",
+    column:
+      | "stripe_price_monthly_id"
+      | "stripe_price_yearly_id"
+      | "stripe_price_per_unit_id",
   ): Promise<string | undefined> {
     if (existingId) {
       try {
@@ -252,6 +297,25 @@ export async function syncPlanToStripe(plan: Plan): Promise<SyncResult | null> {
       plan.id,
     );
     return price.id;
+  }
+
+  // A per-unit plan bills the unit count against one recurring price, so the
+  // amount that has to exist in Stripe is `price_per_unit_cents` — monthly, the
+  // only interval a per-unit plan has. The plan-level month/year figures are
+  // left out deliberately: they are zero on such a plan, and creating a $0
+  // price in the live account is a price something could be billed against.
+  if (isPerUnit(plan)) {
+    const perUnitId = await ensurePrice(
+      "month",
+      plan.price_per_unit_cents,
+      plan.stripe_price_per_unit_id,
+      "stripe_price_per_unit_id",
+    );
+    return {
+      synced: true,
+      stripeProductId: productId,
+      stripePricePerUnitId: perUnitId,
+    };
   }
 
   const monthlyId = await ensurePrice(
