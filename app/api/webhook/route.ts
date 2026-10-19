@@ -15,6 +15,8 @@ import {
 import { decrypt } from "@/lib/crypto";
 import { getPlanBySlug } from "@/lib/plans";
 import { cleanMetadata, recordPurchaseAndFulfill } from "@/lib/purchases";
+import { creditsForPlan, grantCredits } from "@/lib/credits";
+import { getPlanById } from "@/lib/plans";
 import { claimGenieSubdomain } from "@/lib/genie";
 import {
   grantJellyfinAddon,
@@ -437,6 +439,44 @@ export async function POST(req: Request) {
               );
             }
           }
+          /*
+           * A per-unit credit plan's deliverable is credits: the checkout asked
+           * for a count, so the payment buys that many units of the product the
+           * service meters (Engineer: one credit per project).
+           *
+           * Deliberately last, and deliberately throwing on failure: the buyer
+           * has been charged, so a plane that is down must leave the event
+           * unprocessed and let Stripe redeliver it. Everything above is
+           * idempotent (the account is looked up before it is created), and the
+           * plane dedupes the grant on `checkout:<session>`, so the replay
+           * cannot charge or grant twice. With no plane configured the grant is
+           * skipped — a Magnate that does not meter credits still sells.
+           */
+          const creditPlanSlug = session.metadata?.plan_slug;
+          const creditPlan = creditPlanSlug
+            ? getPlanBySlug(creditPlanSlug)
+            : undefined;
+          const creditUnits = Number(session.metadata?.units);
+          const purchased = creditsForPlan(
+            creditPlan,
+            Number.isFinite(creditUnits) && creditUnits > 0 ? creditUnits : 1,
+          );
+          if (purchased) {
+            const buyerEmail =
+              session.metadata?.email ?? session.customer_email ?? null;
+            if (!buyerEmail) {
+              throw new Error(
+                `credit plan ${creditPlanSlug} paid without an address to grant to`,
+              );
+            }
+            await grantCredits({
+              email: buyerEmail,
+              product: purchased.product,
+              credits: purchased.credits,
+              reference: `checkout:${session.id}`,
+              reason: `magnate checkout for ${creditPlanSlug}`,
+            });
+          }
         } else if (session.mode === "payment") {
           // One-off purchase from a consuming platform (cash shop): ledger it
           // under Magnate and notify the platform via its fulfillment hook.
@@ -490,7 +530,10 @@ export async function POST(req: Request) {
           amount_paid?: number;
           currency?: string;
           lines?: {
-            data?: Array<{ period?: { start?: number; end?: number } }>;
+            data?: Array<{
+              period?: { start?: number; end?: number };
+              quantity?: number | null;
+            }>;
           };
         };
         if (typeof invoice.subscription === "string") {
@@ -513,6 +556,28 @@ export async function POST(req: Request) {
                 invoice.lines?.data?.[0]?.period?.start ?? null,
                 invoice.lines?.data?.[0]?.period?.end ?? null,
               );
+            }
+            /*
+             * The same plan, one month later: a credit plan bought in multiples
+             * tops the balance up by the quantity on the invoice. Keyed on the
+             * invoice so a redelivered renewal grants nothing extra.
+             */
+            const renewalPlan =
+              typeof user.plan_id === "number"
+                ? getPlanById(user.plan_id)
+                : undefined;
+            const renewing = creditsForPlan(
+              renewalPlan,
+              invoice.lines?.data?.[0]?.quantity ?? 1,
+            );
+            if (renewing && invoice.id) {
+              await grantCredits({
+                email: user.email,
+                product: renewing.product,
+                credits: renewing.credits,
+                reference: `invoice:${invoice.id}`,
+                reason: `magnate renewal for ${renewalPlan?.slug ?? renewalPlan?.name ?? "plan"}`,
+              });
             }
           }
         }

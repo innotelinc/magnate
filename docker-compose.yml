@@ -86,6 +86,14 @@ services:
       # leaves the endpoint open on a trusted net. May be a `vault://` reference,
       # resolved at boot by the entrypoint.
       ENTITLEMENTS_API_TOKEN: "${ENTITLEMENTS_API_TOKEN:-}"
+      # The control plane (Distro) whose ledger owns credit balances. When a
+      # per-unit credit plan is paid for (a plan with billing_unit "credit"),
+      # lib/credits.ts grants the units to the buyer there, keyed on the payment
+      # so a retried webhook cannot grant twice. Empty = this Magnate does not
+      # meter credits and the grant is skipped; a plane that is set but down
+      # fails the event instead, so Stripe redelivers it.
+      CONTROL_PLANE_INTERNAL_URL: "${CONTROL_PLANE_INTERNAL_URL:-}"
+      CONTROL_INTERNAL_TOKEN: "${CONTROL_INTERNAL_TOKEN:-}"
       # Authentik (Cerulean SSO) — the admin panel's identity provider.
       # These MUST be passed through: lib/oidc.ts reads them from process.env,
       # so a value that only lives in .env (compose substitution) never reaches
