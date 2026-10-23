@@ -1,4 +1,4 @@
-FROM node:22-slim AS deps
+FROM node:24-slim AS deps
 WORKDIR /app
 # better-sqlite3 is a native module: node-gyp needs Python + a C++ toolchain to
 # compile it when no prebuilt binary is available.
@@ -8,7 +8,7 @@ RUN apt-get update \
 COPY package.json package-lock.json ./
 RUN npm ci
 
-FROM node:22-slim AS builder
+FROM node:24-slim AS builder
 WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
@@ -26,7 +26,7 @@ ENV NODE_OPTIONS=--max-old-space-size=${NODE_HEAP}
 ARG NEXT_BUILD_FLAGS=
 RUN npm run build -- ${NEXT_BUILD_FLAGS}
 
-FROM node:22-slim AS runner
+FROM node:24-slim AS runner
 WORKDIR /app
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
@@ -35,7 +35,7 @@ ENV HOSTNAME=0.0.0.0
 ENV DATABASE_PATH=/app/data/magnate.db
 
 # `curl` is here for the operator, not for the app: a billing container is one
-# people debug from inside, and `node:22-slim` ships no HTTP client. It is the
+# people debug from inside, and `node:24-slim` ships no HTTP client. It is the
 # same reason every other image in the estate carries it.
 RUN apt-get update \
   && apt-get install -y --no-install-recommends curl ca-certificates \
