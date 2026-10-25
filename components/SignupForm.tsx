@@ -190,9 +190,6 @@ export default function SignupForm({ plan, interval, refCode, initialSubdomain, 
           onChange={(e) => setUsername(e.target.value.trim())}
           className="w-full rounded-xl border border-zinc-950/10 bg-black/[0.04] px-4 py-3 text-sm text-zinc-950 placeholder-zinc-400 outline-none transition-colors focus:border-brand-400 focus:ring-2 focus:ring-brand-500/30 dark:border-white/10 dark:bg-white/[0.04] dark:text-white dark:placeholder-zinc-600"
         />
-        <p className="mt-1.5 text-xs text-zinc-600 dark:text-zinc-500">
-          This will be your Jellyfin username — 3–32 characters.
-        </p>
       </div>
 
       {wantsSubdomain && (
