@@ -62,6 +62,24 @@ function getUserBySubscription(subId: string): UserRow | undefined {
     .get(subId) as UserRow | undefined;
 }
 
+/**
+ * Whether this plan's access is a group on the account rather than the account
+ * itself.
+ *
+ * A plan that names an `authentik_group` is enforced by membership: the consumer
+ * reads the `groups` claim, so removing the group ends the access while the
+ * person keeps the one account the rest of the estate signs them in with. A
+ * plan with no group (Jellyfin, over LDAP) has no such lever — its access *is*
+ * the account being enabled — so only those are disabled.
+ */
+function accessIsGroupBased(user: UserRow): boolean {
+  if (typeof user.plan_id !== "number") return false;
+  const plan = db
+    .prepare("SELECT authentik_group FROM plans WHERE id = ?")
+    .get(user.plan_id) as { authentik_group?: string | null } | undefined;
+  return Boolean((plan?.authentik_group ?? "").trim());
+}
+
 
 function mapStatus(status: Stripe.Subscription.Status): string {
   switch (status) {
@@ -204,7 +222,14 @@ async function handleSubscriptionUpdated(
     (user.email ? await findUserByEmail(user.email) : null);
   if (!akUser) return;
   if (status === "cancelled" || status === "unpaid") {
-    await setUserActive(akUser.pk, false);
+    // The plan's group is removed below, which is the access for a group-based
+    // plan. Only a plan whose access is the account itself is disabled, and
+    // only when nothing else on that address is still being paid for: one
+    // Authentik account is the estate's single sign-on, and billing for one
+    // service must not decide what else it opens.
+    if (!accessIsGroupBased(user)) {
+      await setUserActive(akUser.pk, false);
+    }
     // Lapsed billing leaves the paid groups too — cancellation is real.
     const user_ = getUserBySubscription(subscription.id);
     const plan_ = user_?.plan_id
@@ -253,7 +278,13 @@ async function handleSubscriptionDeleted(
     (await findUser(user.username)) ??
     (user.email ? await findUserByEmail(user.email) : null);
   if (akUser) {
-    await setUserActive(akUser.pk, false);
+    // One plan ended. A plan that granted a group has lost it below, and that
+    // is the access; the account stays, so cancelling this service cannot shut
+    // the person out of the rest of the estate. A plan with no group is still
+    // enforced by the account, unless another plan on the address is active.
+    if (!accessIsGroupBased(user)) {
+      await setUserActive(akUser.pk, false);
+    }
     // And the paid group membership dies with the subscription.
     const plan_ = user.plan_id
       ? db.prepare("SELECT * FROM plans WHERE id = ?").get(user.plan_id) as

@@ -184,13 +184,18 @@ export async function addGroupMember(groupPk: number, userPk: number): Promise<v
  * remove_user action on this API version, so membership is patched directly:
  * the groups list is rewritten minus this group.
  */
+/**
+ * Take a user out of a group by name.
+ *
+ * Through the group's own endpoint: the user object's `groups` field carries
+ * group UUIDs, not objects, so the previous read-filter-PATCH (which compared
+ * `g.name` on a string) matched nothing and every cancellation quietly left the
+ * person in the plan's group.
+ */
 export async function removeGroupMember(groupName: string, userPk: number): Promise<void> {
-  const user = await request<{ pk: number; groups: Array<{ name: string; pk: number }> }>(
-    "GET",
-    `/core/users/${userPk}/`,
-  );
-  const remaining = (user.groups ?? []).filter((g) => g.name !== groupName).map((g) => g.pk);
-  await request<void>("PATCH", `/core/users/${userPk}/`, { groups: remaining });
+  const group = await findGroup(groupName);
+  if (!group) return;
+  await request<void>("POST", `/core/groups/${group.pk}/remove_user/`, { pk: userPk });
 }
 
 /**
