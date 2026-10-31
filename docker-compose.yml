@@ -94,6 +94,18 @@ services:
       # fails the event instead, so Stripe redelivers it.
       CONTROL_PLANE_INTERNAL_URL: "${CONTROL_PLANE_INTERNAL_URL:-}"
       CONTROL_INTERNAL_TOKEN: "${CONTROL_INTERNAL_TOKEN:-}"
+      # Sage session keys (docs/sage-sessions.md). A Sage plan is priced per
+      # fifteen-minute session and sold as a one-time payment; the webhook mints
+      # one OmniRoute key per seat bought and the sweep deletes it when the
+      # window closes. GATEWAY_ADMIN_PASSWORD is the dashboard credential (a
+      # vault:// reference like the Stripe keys, resolved by the entrypoint), and
+      # SAGE_SWEEP_TOKEN is what the host cron presents to /api/sage/sweep.
+      # Empty GATEWAY_URL turns sessions off: a paid session then fails loudly
+      # rather than handing out a key that does not exist.
+      GATEWAY_URL: "${GATEWAY_URL:-}"
+      GATEWAY_ADMIN_PASSWORD: "${GATEWAY_ADMIN_PASSWORD:-}"
+      SAGE_SWEEP_TOKEN: "${SAGE_SWEEP_TOKEN:-}"
+      SAGE_SESSION_MINUTES: "${SAGE_SESSION_MINUTES:-15}"
       # Authentik (Cerulean SSO) — the admin panel's identity provider.
       # These MUST be passed through: lib/oidc.ts reads them from process.env,
       # so a value that only lives in .env (compose substitution) never reaches

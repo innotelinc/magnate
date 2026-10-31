@@ -14,6 +14,7 @@ import {
 } from "@/lib/authentik";
 import { decrypt } from "@/lib/crypto";
 import { getPlanBySlug } from "@/lib/plans";
+import { mintSageSessions } from "@/lib/sage";
 import { cleanMetadata, recordPurchaseAndFulfill } from "@/lib/purchases";
 import { creditsForPlan, grantCredits } from "@/lib/credits";
 import { getPlanById } from "@/lib/plans";
@@ -509,35 +510,61 @@ export async function POST(req: Request) {
             });
           }
         } else if (session.mode === "payment") {
-          // One-off purchase from a consuming platform (cash shop): ledger it
-          // under Magnate and notify the platform via its fulfillment hook.
-          // Throwing here keeps the event unprocessed so Stripe retries until
-          // the platform has acknowledged the callback.
-          const slug = session.metadata?.mag_item_slug;
-          if (!slug) {
-            throw new Error(
-              "payment-mode session missing mag_item_slug metadata",
-            );
-          }
-          const purchaseEmail =
-            typeof session.customer_email === "string"
-              ? session.customer_email
-              : null;
-          await recordPurchaseAndFulfill({
-            sessionId: session.id,
-            itemSlug: slug,
-            itemName: session.metadata?.mag_item_name ?? slug,
-            amountCents: session.amount_total ?? 0,
-            currency: (session.currency ?? "usd").toLowerCase(),
-            customerEmail: purchaseEmail,
-            metadata: cleanMetadata(session.metadata),
-          });
-          // A one-off purchase is a purchase too: 3 free months of Jellyfin for
-          // the buyer's Magnate account, when that address has one.
-          try {
-            grantJellyfinAddonForEmail(purchaseEmail);
-          } catch (err) {
-            console.error("jellyfin add-on grant failed for purchase", err);
+          /*
+           * A Sage session purchase is a one-time payment whose deliverable is
+           * not a cash-shop item but a gateway key that lives for fifteen
+           * minutes. It is minted here, once per seat bought, so the buyer
+           * leaves the success page with keys that already work. Throwing keeps
+           * the event unprocessed and lets Stripe redeliver: somebody who paid
+           * must not be left without a key, and the mint is idempotent on
+           * `(session, seat)` so a replay cannot spend a second one.
+           */
+          const sagePlanSlug = session.metadata?.mag_sage_plan;
+          if (sagePlanSlug) {
+            const seats = Number(session.metadata?.mag_sage_sessions);
+            await mintSageSessions({
+              stripeSessionId: session.id,
+              planSlug: sagePlanSlug,
+              email:
+                session.metadata?.mag_sage_email ||
+                (typeof session.customer_email === "string"
+                  ? session.customer_email
+                  : null),
+              quantity: Number.isFinite(seats) && seats > 0 ? seats : 1,
+              amountCents: session.amount_total ?? 0,
+              currency: (session.currency ?? "usd").toLowerCase(),
+            });
+          } else {
+            // One-off purchase from a consuming platform (cash shop): ledger it
+            // under Magnate and notify the platform via its fulfillment hook.
+            // Throwing here keeps the event unprocessed so Stripe retries until
+            // the platform has acknowledged the callback.
+            const slug = session.metadata?.mag_item_slug;
+            if (!slug) {
+              throw new Error(
+                "payment-mode session missing mag_item_slug metadata",
+              );
+            }
+            const purchaseEmail =
+              typeof session.customer_email === "string"
+                ? session.customer_email
+                : null;
+            await recordPurchaseAndFulfill({
+              sessionId: session.id,
+              itemSlug: slug,
+              itemName: session.metadata?.mag_item_name ?? slug,
+              amountCents: session.amount_total ?? 0,
+              currency: (session.currency ?? "usd").toLowerCase(),
+              customerEmail: purchaseEmail,
+              metadata: cleanMetadata(session.metadata),
+            });
+            // A one-off purchase is a purchase too: 3 free months of Jellyfin
+            // for the buyer's Magnate account, when that address has one.
+            try {
+              grantJellyfinAddonForEmail(purchaseEmail);
+            } catch (err) {
+              console.error("jellyfin add-on grant failed for purchase", err);
+            }
           }
         }
         break;

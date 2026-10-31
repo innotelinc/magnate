@@ -50,6 +50,12 @@ export default async function Nav() {
           >
             FAQ
           </Link>
+          <Link
+            href="/sage"
+            className="transition-colors hover:text-zinc-950 dark:hover:text-white"
+          >
+            Sage sessions
+          </Link>
         </div>
 
         <div className="flex items-center gap-3">

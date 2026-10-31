@@ -145,6 +145,33 @@ db.exec(`
     fulfilled_at TEXT,
     created_at TEXT NOT NULL DEFAULT (datetime('now'))
   );
+
+  -- Sage sessions: one OmniRoute gateway key, one fifteen-minute window.
+  -- A row per seat bought, keyed on the Stripe Checkout session so a redelivered
+  -- webhook can find what it already minted instead of spending a second key
+  -- (docs/sage-sessions.md). The stored gateway_key is only live until
+  -- expires_at, at which point the sweep deletes the key on the gateway and the
+  -- value here is a dead string.
+  CREATE TABLE IF NOT EXISTS sage_sessions (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    code TEXT NOT NULL UNIQUE,
+    stripe_session_id TEXT NOT NULL,
+    seat INTEGER NOT NULL DEFAULT 1,
+    plan_slug TEXT NOT NULL,
+    plan_name TEXT NOT NULL,
+    customer_email TEXT,
+    amount_cents INTEGER NOT NULL DEFAULT 0,
+    currency TEXT NOT NULL DEFAULT 'usd',
+    gateway_key_id TEXT,
+    gateway_key TEXT,
+    gateway_key_name TEXT,
+    state TEXT NOT NULL DEFAULT 'pending',
+    issued_at TEXT,
+    expires_at TEXT,
+    revoked_at TEXT,
+    error TEXT,
+    created_at TEXT NOT NULL DEFAULT (datetime('now'))
+  );
 `);
 
 /* ---------- schema migrations (idempotent, safe on existing DBs) ---------- */
@@ -243,6 +270,12 @@ db.exec(`
     ON referral_events(referred_user_id);
   CREATE INDEX IF NOT EXISTS idx_payments_user ON payments(user_id);
   CREATE INDEX IF NOT EXISTS idx_payments_created ON payments(created_at);
+  -- One key per seat: the webhook retries until it is marked processed, and a
+  -- seat that already holds a live key must not get a second one.
+  CREATE UNIQUE INDEX IF NOT EXISTS idx_sage_sessions_seat
+    ON sage_sessions(stripe_session_id, seat);
+  CREATE INDEX IF NOT EXISTS idx_sage_sessions_state
+    ON sage_sessions(state, expires_at);
 `);
 
 export interface Plan {
@@ -335,7 +368,23 @@ export function parseTenantDomains(tenant: Pick<Tenant, "domains">): string[] {
     .filter(Boolean);
 }
 
-const DEFAULT_PLANS = [
+interface DefaultPlan {
+  name: string;
+  slug: string;
+  description: string;
+  price_monthly_cents: number;
+  price_yearly_cents: number;
+  features: string;
+  service: string;
+  highlighted: number;
+  sort_order: number;
+  /** The unit the plan is sold in multiples of; "" = one subscription. */
+  billing_unit?: string;
+  /** What one unit costs, in cents (per session for a Sage plan). */
+  price_per_unit_cents?: number;
+}
+
+const DEFAULT_PLANS: DefaultPlan[] = [
   {
     // Basic/Standard/Premium ARE the Monarch streaming membership today — the
     // storefront grid is Monarch's funnel. The dashboard re-prices any of them.
@@ -478,6 +527,77 @@ const DEFAULT_PLANS = [
     highlighted: 0,
     sort_order: 97,
   },
+  /*
+   * Sage sessions. Sage is not a monthly seat: what a buyer needs is a gateway
+   * key for the length of one class or one exam, so its plans are priced per
+   * SESSION (fifteen minutes by default, SAGE_SESSION_MINUTES) and are sold as a
+   * one-time payment from /sage, never as a subscription — /api/checkout refuses
+   * them. `highlighted: 2` keeps them off the storefront grid, which sells
+   * Monarch's memberships; a service's own page reads its own plans.
+   *
+   * The tiers differ in what the key is allowed to spend on models: the session
+   * length is the same for all three, and Sage caps spend at 40% of the session
+   * price on the gateway.
+   */
+  {
+    name: "Sage Trial Session",
+    slug: "sage-session-trial",
+    service: "sage",
+    description:
+      "Fifteen minutes of Sage for one exercise — one key, as many turns as you need inside the window.",
+    price_monthly_cents: 0,
+    price_yearly_cents: 0,
+    billing_unit: "session",
+    price_per_unit_cents: 300,
+    features: JSON.stringify([
+      "15 minutes of gateway access",
+      "One key, reusable inside the window",
+      "One exercise or short quiz",
+      "Key revoked automatically at the end",
+    ]),
+    highlighted: 2,
+    sort_order: 90,
+  },
+  {
+    name: "Sage Standard Session",
+    slug: "sage-session-standard",
+    service: "sage",
+    description:
+      "Fifteen minutes for a full quiz or a short essay: the same window, a wider model budget behind it.",
+    price_monthly_cents: 0,
+    price_yearly_cents: 0,
+    billing_unit: "session",
+    price_per_unit_cents: 900,
+    features: JSON.stringify([
+      "15 minutes of gateway access",
+      "One key, reusable inside the window",
+      "A full quiz or short essay",
+      "Higher model budget per session",
+      "Key revoked automatically at the end",
+    ]),
+    highlighted: 2,
+    sort_order: 91,
+  },
+  {
+    name: "Sage Intensive Session",
+    slug: "sage-session-intensive",
+    service: "sage",
+    description:
+      "Fifteen minutes for an exam or a long paper, with the largest model budget a session can carry.",
+    price_monthly_cents: 0,
+    price_yearly_cents: 0,
+    billing_unit: "session",
+    price_per_unit_cents: 1900,
+    features: JSON.stringify([
+      "15 minutes of gateway access",
+      "One key, reusable inside the window",
+      "An exam or a long paper",
+      "Largest model budget per session",
+      "Key revoked automatically at the end",
+    ]),
+    highlighted: 2,
+    sort_order: 92,
+  },
 ];
 
 /**
@@ -505,6 +625,7 @@ export const SERVICES: { slug: string; name: string; subscribe_url: string }[] =
   { slug: "ontrak", name: "OnTrak — training ops", subscribe_url: "https://subscribe.ontrak.innotel.us" },
   { slug: "verifier", name: "Verifier — platform ops & conformity", subscribe_url: "https://subscribe.verifier.innotel.us" },
   { slug: "genie", name: "Genie — preview subdomains", subscribe_url: "https://subscribe.genie.innotel.us" },
+  { slug: "sage", name: "Sage — session keys", subscribe_url: "https://app.magnate.innotel.us/sage" },
   { slug: "rizzaura", name: "Rizz Aura — community", subscribe_url: "https://subscribe.rizzaura.net" },
   { slug: "zapit", name: "ZapIt — short links", subscribe_url: "https://subscribe.zapit.innotel.us" },
   { slug: "cerulean", name: "Cerulean — identity & trust", subscribe_url: "https://subscribe.cerulean.innotel.us" },
@@ -535,11 +656,13 @@ function seedPlans() {
   // INSERT OR IGNORE keeps seeding idempotent even when multiple processes
   // (e.g. build workers) initialize the database at the same time.
   const insert = db.prepare(`
-    INSERT OR IGNORE INTO plans (name, slug, description, price_monthly_cents, price_yearly_cents, features, highlighted, sort_order, service)
-    VALUES (@name, @slug, @description, @price_monthly_cents, @price_yearly_cents, @features, @highlighted, @sort_order, @service)
+    INSERT OR IGNORE INTO plans (name, slug, description, price_monthly_cents, price_yearly_cents, features, highlighted, sort_order, service, billing_unit, price_per_unit_cents)
+    VALUES (@name, @slug, @description, @price_monthly_cents, @price_yearly_cents, @features, @highlighted, @sort_order, @service, @billing_unit, @price_per_unit_cents)
   `);
   const tx = db.transaction(() => {
-    for (const plan of DEFAULT_PLANS) insert.run(plan);
+    for (const plan of DEFAULT_PLANS) {
+      insert.run({ billing_unit: "", price_per_unit_cents: 0, ...plan });
+    }
   });
   try {
     tx();
@@ -581,11 +704,13 @@ function seedMissingDefaultPlans() {
   // a row that exists: prices and copy edited in the master dashboard stay
   // authoritative. Idempotent, so it runs on every boot.
   const insert = db.prepare(`
-    INSERT OR IGNORE INTO plans (name, slug, description, price_monthly_cents, price_yearly_cents, features, highlighted, sort_order, service)
-    VALUES (@name, @slug, @description, @price_monthly_cents, @price_yearly_cents, @features, @highlighted, @sort_order, @service)
+    INSERT OR IGNORE INTO plans (name, slug, description, price_monthly_cents, price_yearly_cents, features, highlighted, sort_order, service, billing_unit, price_per_unit_cents)
+    VALUES (@name, @slug, @description, @price_monthly_cents, @price_yearly_cents, @features, @highlighted, @sort_order, @service, @billing_unit, @price_per_unit_cents)
   `);
   const tx = db.transaction(() => {
-    for (const plan of DEFAULT_PLANS) insert.run(plan);
+    for (const plan of DEFAULT_PLANS) {
+      insert.run({ billing_unit: "", price_per_unit_cents: 0, ...plan });
+    }
   });
   try {
     tx();

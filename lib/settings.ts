@@ -20,6 +20,12 @@ const ENV_FALLBACKS: Record<string, string | undefined> = {
   account_portal_url: process.env.ACCOUNT_PORTAL_URL,
   purchase_fulfillment_url: process.env.MAGNATE_PURCHASE_FULFILLMENT_URL,
   purchase_fulfillment_secret: process.env.MAGNATE_PURCHASE_FULFILLMENT_SECRET,
+  // Sage session keys are minted on the estate's OmniRoute gateway, so Magnate
+  // holds one dashboard credential and the shared secret its cron presents.
+  gateway_url: process.env.GATEWAY_URL,
+  gateway_admin_password: process.env.GATEWAY_ADMIN_PASSWORD,
+  sage_sweep_token: process.env.SAGE_SWEEP_TOKEN,
+  sage_session_minutes: process.env.SAGE_SESSION_MINUTES,
 };
 
 /* ---------- public API ---------- */
@@ -110,6 +116,31 @@ export function purchaseFulfillmentSecret(): string {
 }
 
 /**
+ * The OmniRoute gateway a Sage session key is minted on.
+ * Empty = sessions are not sold and a paid session fails loudly (the webhook
+ * throws so Stripe retries) rather than handing out a key that does not exist.
+ */
+export function gatewayUrl(): string {
+  return getSetting("gateway_url") ?? "";
+}
+
+/** Dashboard password for that gateway; minting needs a session cookie. */
+export function gatewayAdminPassword(): string {
+  return getSetting("gateway_admin_password") ?? "";
+}
+
+/** Shared secret the sweep cron presents to `POST /api/sage/sweep`. */
+export function sageSweepToken(): string {
+  return getSetting("sage_sweep_token") ?? "";
+}
+
+/** How long a paid Sage session lasts. Fifteen minutes unless overridden. */
+export function sageSessionMinutes(): number {
+  const raw = Number(getSetting("sage_session_minutes"));
+  return Number.isFinite(raw) && raw >= 1 && raw <= 240 ? Math.trunc(raw) : 15;
+}
+
+/**
  * Returns only DB-stored settings (no env fallback).
  * Used for export/backup so the file contains only overrides.
  */
@@ -126,6 +157,10 @@ export function getExportableSettings(): Record<string, string> {
     "account_portal_url",
     "purchase_fulfillment_url",
     "purchase_fulfillment_secret",
+    "gateway_url",
+    "gateway_admin_password",
+    "sage_sweep_token",
+    "sage_session_minutes",
   ];
 
   const result: Record<string, string> = {};
@@ -150,6 +185,10 @@ export function settingsStatus() {
     authentikConfigured: Boolean(authentikBaseUrl() && authentikBootstrapToken()),
     authentikBaseUrl: authentikBaseUrl(),
     accountPortalUrl: accountPortalUrl(),
+    // Sage sessions: a gateway to mint on and a password to mint with are both
+    // required, so the pair is what "configured" means here.
+    gatewayConfigured: Boolean(gatewayUrl() && gatewayAdminPassword()),
+    gatewayUrl: gatewayUrl(),
   };
 }
 
@@ -173,6 +212,10 @@ export function getSettingsForAdmin(): Record<
     "account_portal_url",
     "purchase_fulfillment_url",
     "purchase_fulfillment_secret",
+    "gateway_url",
+    "gateway_admin_password",
+    "sage_sweep_token",
+    "sage_session_minutes",
   ];
 
   const result: Record<

@@ -5,6 +5,7 @@ import { getStripe } from "@/lib/stripe";
 import { authentikConfigured, findUser as findAuthentikUser } from "@/lib/authentik";
 import { encrypt, generatePassword } from "@/lib/crypto";
 import { billingUnitOf, getPlanBySlug, isPerUnit } from "@/lib/plans";
+import { isSageService } from "@/lib/sage";
 import { applyReferral, referralCouponId } from "@/lib/referrals";
 import { normalizeGenieSubdomain } from "@/lib/genie";
 import {
@@ -57,6 +58,20 @@ export async function POST(req: Request) {
     return NextResponse.json(
       { error: "That plan is not available." },
       { status: 404 },
+    );
+  }
+
+  // Sage is sold as fifteen-minute SESSIONS, not as a monthly plan. This funnel
+  // is subscriptions only: taking a per-session price through it would bill it
+  // every month and hand the buyer a key that expired in a quarter of an hour.
+  // Sessions are bought on /sage through /api/sage/checkout.
+  if (isSageService(plan.service)) {
+    return NextResponse.json(
+      {
+        error:
+          "Sage is sold as fifteen-minute sessions, not a monthly plan — buy one from the Sage sessions page.",
+      },
+      { status: 400 },
     );
   }
 
