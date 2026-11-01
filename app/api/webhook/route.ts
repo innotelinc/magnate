@@ -15,6 +15,7 @@ import {
 import { decrypt } from "@/lib/crypto";
 import { getPlanBySlug } from "@/lib/plans";
 import { mintSageSessions } from "@/lib/sage";
+import { mintCourseMateKeys } from "@/lib/coursemate";
 import { cleanMetadata, recordPurchaseAndFulfill } from "@/lib/purchases";
 import { creditsForPlan, grantCredits } from "@/lib/credits";
 import { getPlanById } from "@/lib/plans";
@@ -519,8 +520,26 @@ export async function POST(req: Request) {
            * must not be left without a key, and the mint is idempotent on
            * `(session, seat)` so a replay cannot spend a second one.
            */
+          const coursematePlanSlug = session.metadata?.mag_coursemate_plan;
           const sagePlanSlug = session.metadata?.mag_sage_plan;
-          if (sagePlanSlug) {
+          if (coursematePlanSlug) {
+            // Same object as a Sage session, a longer window: one gateway key
+            // per unit bought, minted here so the buyer leaves with a key that
+            // already works.
+            const bought = Number(session.metadata?.mag_coursemate_keys);
+            await mintCourseMateKeys({
+              stripeSessionId: session.id,
+              planSlug: coursematePlanSlug,
+              email:
+                session.metadata?.mag_coursemate_email ||
+                (typeof session.customer_email === "string"
+                  ? session.customer_email
+                  : null),
+              quantity: Number.isFinite(bought) && bought > 0 ? bought : 1,
+              amountCents: session.amount_total ?? 0,
+              currency: (session.currency ?? "usd").toLowerCase(),
+            });
+          } else if (sagePlanSlug) {
             const seats = Number(session.metadata?.mag_sage_sessions);
             await mintSageSessions({
               stripeSessionId: session.id,

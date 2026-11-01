@@ -6,6 +6,7 @@ import { authentikConfigured, findUser as findAuthentikUser } from "@/lib/authen
 import { encrypt, generatePassword } from "@/lib/crypto";
 import { billingUnitOf, getPlanBySlug, isPerUnit } from "@/lib/plans";
 import { isSageService } from "@/lib/sage";
+import { isCourseMateService } from "@/lib/coursemate";
 import { applyReferral, referralCouponId } from "@/lib/referrals";
 import { normalizeGenieSubdomain } from "@/lib/genie";
 import {
@@ -70,6 +71,19 @@ export async function POST(req: Request) {
       {
         error:
           "Sage is sold as fifteen-minute sessions, not a monthly plan — buy one from the Sage sessions page.",
+      },
+      { status: 400 },
+    );
+  }
+
+  // CourseMate is sold the same way Sage is: one timed key, minted on payment.
+  // A subscription taken here would bill monthly and mint nothing, so the key
+  // funnel is the only door.
+  if (isCourseMateService(plan.service)) {
+    return NextResponse.json(
+      {
+        error:
+          "CourseMate is sold as a timed API key, not a subscription — buy one from the CourseMate keys page.",
       },
       { status: 400 },
     );
