@@ -13,6 +13,15 @@ export interface PublicPlan {
   priceYearlyCents: number;
   features: string[];
   highlighted: boolean;
+  // Carried by `planPublic()`. The catalogue grid reads these to quote a plan
+  // in the unit it is sold in (`$3 per session`) instead of its zero monthly
+  // figure, and to label an add-on that belongs to another product's funnel.
+  service?: string;
+  billingUnit?: string;
+  pricePerUnitCents?: number;
+  perUnit?: boolean;
+  addon?: boolean;
+  active?: boolean;
 }
 
 export default function PricingSection({

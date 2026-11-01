@@ -65,7 +65,7 @@ issues a **wildcard Let's Encrypt certificate** via DNS challenge:
 
 | Host | Service |
 | --- | --- |
-| `app.magnate.innotel.us` | Storefront (this app) |
+| `magnate.innotel.us` | Storefront (this app) |
 | `auth.cerulean.innotel.us` | Cerulean Authentik (SSO, LDAP outpost) |
 | `media.innotel.us` | Jellyfin media server |
 | `billing.magnate.innotel.us` | Billing / Stripe portal UI |
@@ -74,7 +74,7 @@ issues a **wildcard Let's Encrypt certificate** via DNS challenge:
 ## Architecture
 
 ```
-Visitor ──▶ app.magnate.innotel.us ──▶ /signup ──▶ Stripe Checkout
+Visitor ──▶ magnate.innotel.us ──▶ /signup ──▶ Stripe Checkout
                                                      │
                      webhook (checkout.session.completed)
                                                      ▼
@@ -116,7 +116,7 @@ Key variables (full list in `.env.sample`):
 
 | Variable | Description |
 | --- | --- |
-| `APP_URL` | Storefront URL (Stripe redirects), e.g. `https://app.magnate.innotel.us` |
+| `APP_URL` | Storefront URL (Stripe redirects), e.g. `https://magnate.innotel.us` |
 | `MAGNATE_PORT` | Host port published for the app (default `3000`) |
 | `BILLING_API_URL` | Legacy no-op — the ARR billing-api was retired; Magnate enforces access itself |
 | `STRIPE_SECRET_KEY` / `STRIPE_WEBHOOK_SECRET` / `STRIPE_CURRENCY` | Stripe setup |
@@ -178,7 +178,7 @@ identity service.
 
    Run it after any restore of a database that predates a price change, or a
    restart that reseeded the catalog. `npm run verify:plans` is `--check`.
-2. **Webhook** — `https://app.magnate.innotel.us/api/webhook`, subscribed to
+2. **Webhook** — `https://magnate.innotel.us/api/webhook`, subscribed to
    `checkout.session.completed`, `customer.subscription.updated`,
    `customer.subscription.deleted`, `invoice.payment_succeeded`,
    `invoice.payment_failed`. Copy the signing secret into
@@ -250,12 +250,12 @@ in:
 ```bash
 # Mint one (panel: Settings → API keys, or over the API with an admin
 # credential). The token is shown once; only its SHA-256 is stored.
-curl -sX POST https://app.magnate.innotel.us/api/admin/keys \
+curl -sX POST https://magnate.innotel.us/api/admin/keys \
   -H "Authorization: Bearer $ADMIN_KEY" -H 'content-type: application/json' \
   -d '{"name":"catalog automation"}'
 
 # Use it on any admin route.
-curl -s https://app.magnate.innotel.us/api/admin/plans \
+curl -s https://magnate.innotel.us/api/admin/plans \
   -H "Authorization: Bearer $ADMIN_KEY"
 ```
 

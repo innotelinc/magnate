@@ -104,7 +104,7 @@ cat <<'EOF'
 ────────────────────────────────────────────────────────────────
  Magnate is deployed. Now visit:
 
-   https://app.magnate.innotel.us      storefront (this app)
+   https://magnate.innotel.us      storefront (this app)
    https://auth.magnate.innotel.us     Authentik
    https://media.innotel.us    Jellyfin
    https://billing.magnate.innotel.us  billing / Stripe portal UI
