@@ -4,6 +4,7 @@ import Footer from "@/components/Footer";
 import AppsSection from "@/components/AppsSection";
 import ServicesSection from "@/components/ServicesSection";
 import PricingSection, { type PublicPlan } from "@/components/PricingSection";
+import CatalogSection from "@/components/CatalogSection";
 import {
   BoltIcon,
   DevicesIcon,
@@ -19,7 +20,7 @@ import {
   GlobeIcon,
   RefreshIcon,
 } from "@/components/icons";
-import { listStorefrontPlans, planPublic } from "@/lib/plans";
+import { listPlansByService, listStorefrontPlans, planPublic } from "@/lib/plans";
 import { getBrand } from "@/lib/tenant";
 
 const APP_URL = process.env.APP_URL || "http://localhost:3000";
@@ -40,6 +41,13 @@ export default async function Home({
   // presented as the price of the platform. Add-on plans (highlighted = 2,
   // e.g. the Zeus AI-agents add-on) are sold from their own product's page.
   const plans = listStorefrontPlans().map(planPublic) as PublicPlan[];
+  // The whole catalogue, the way subscribe.innotel.us presents it: every live
+  // plan, grouped by the service that sells it. This is the same table the apex
+  // grid reads over /api/plans, so the two cannot disagree about a price.
+  const catalog = Object.entries(listPlansByService()).map(([service, group]) => ({
+    service,
+    plans: group.map(planPublic) as PublicPlan[],
+  }));
   // Null (not Infinity) when the platform itself has no plan yet — the hero
   // copy and the pricing section both handle that case.
   const cheapestPrice = plans.length
@@ -208,6 +216,9 @@ export default async function Home({
 
         {/* PRICING */}
         <PricingSection plans={plans} refCode={refCode} />
+
+        {/* SUBSCRIPTIONS — the subscribe.innotel.us catalogue, live */}
+        <CatalogSection groups={catalog} />
 
         {/* SERVICES */}
         <ServicesSection />

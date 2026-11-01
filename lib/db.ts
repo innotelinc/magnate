@@ -625,7 +625,7 @@ export const SERVICES: { slug: string; name: string; subscribe_url: string }[] =
   { slug: "ontrak", name: "OnTrak — training ops", subscribe_url: "https://subscribe.ontrak.innotel.us" },
   { slug: "verifier", name: "Verifier — platform ops & conformity", subscribe_url: "https://subscribe.verifier.innotel.us" },
   { slug: "genie", name: "Genie — preview subdomains", subscribe_url: "https://subscribe.genie.innotel.us" },
-  { slug: "sage", name: "Sage — session keys", subscribe_url: "https://app.magnate.innotel.us/sage" },
+  { slug: "sage", name: "Sage — session keys", subscribe_url: "https://magnate.innotel.us/sage" },
   { slug: "rizzaura", name: "Rizz Aura — community", subscribe_url: "https://subscribe.rizzaura.net" },
   { slug: "zapit", name: "ZapIt — short links", subscribe_url: "https://subscribe.zapit.innotel.us" },
   { slug: "cerulean", name: "Cerulean — identity & trust", subscribe_url: "https://subscribe.cerulean.innotel.us" },
@@ -639,7 +639,7 @@ const DEFAULT_TENANT = {
     "Magnate is the billing platform for the whole stack — media streaming, PBX hosting, AI voice agents and every other service on one account with one invoice. Managed memberships, recurring billing and one-off purchases across the platform.",
   domains: JSON.stringify([
     "magnate.innotel.us",
-    "app.magnate.innotel.us",
+    "magnate.innotel.us",
     // The canonical public billing/storefront domain for the whole Innotel
     // stack (Stripe webhook + checkout redirects are registered here).
     "subscribe.innotel.us",

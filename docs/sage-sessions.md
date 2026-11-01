@@ -76,7 +76,7 @@ everything (403) — it deletes credentials, so it is not open.
 Check the wiring:
 
 ```
-curl -s https://app.magnate.innotel.us/api/plans?service=sage | jq '.plans[] | {slug, pricePerUnitCents, billingUnit}'
+curl -s https://magnate.innotel.us/api/plans?service=sage | jq '.plans[] | {slug, pricePerUnitCents, billingUnit}'
 ```
 
 Three plans with `billingUnit: "session"` and a per-session price mean the

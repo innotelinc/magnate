@@ -65,6 +65,34 @@ export default function SageSessionsPage() {
             </ul>
           </div>
 
+          {/* The base URL and one working call: a buyer with a key and no example
+              guesses at the path, so the page shows both. */}
+          <div className="mt-8 rounded-2xl border border-zinc-950/10 bg-black/[0.02] p-5 dark:border-white/[0.07] dark:bg-white/[0.02]">
+            <p className="text-xs font-semibold uppercase tracking-[0.14em] text-brand-500">
+              Endpoint
+            </p>
+            <p className="mt-2 font-mono text-sm text-zinc-800 dark:text-zinc-200">
+              https://gateway.innotel.us/v1
+            </p>
+            <p className="mt-4 text-xs font-semibold uppercase tracking-[0.14em] text-brand-500">
+              Try it with the key from your session
+            </p>
+            <pre className="mt-2 overflow-x-auto rounded-xl bg-zinc-950 p-4 text-xs leading-relaxed text-zinc-100">
+              <code>{`curl -s https://gateway.innotel.us/v1/chat/completions \\
+  -H "Authorization: Bearer $SAGE_KEY" \\
+  -H "Content-Type: application/json" \\
+  -d '{
+    "model": "auto/best-chat",
+    "messages": [{ "role": "user", "content": "Explain mitosis in two sentences." }]
+  }'`}</code>
+            </pre>
+            <p className="mt-3 text-xs text-zinc-600 dark:text-zinc-500">
+              Any OpenAI-compatible client works — set the base URL to the
+              endpoint above and the session key as the API key. The key answers
+              only while its window is open.
+            </p>
+          </div>
+
           <div className="mt-10">
             <SageSessionsClient
               plans={plans}
