@@ -21,11 +21,14 @@ if [ "$(id -u)" = "0" ]; then
   # VAULT_* env (see .env.example):
   #   VAULT_ADDR / VAULT_TOKEN (or VAULT_TOKEN_FILE) / VAULT_PREFIX /
   #   VAULT_NAMESPACE / VAULT_SKIP_VERIFY / VAULT_CACERT
+  # GATEWAY_ADMIN_PASSWORD is on this list because Sage session keys are minted
+  # on the estate gateway: a reference that is not named here is never resolved,
+  # and the app then logs in to the gateway with the literal `vault://…` text.
   VAULT_KEYS="STRIPE_SECRET_KEY STRIPE_WEBHOOK_SECRET STRIPE_CURRENCY \
 JELLYFIN_API_KEY ADMIN_PASSWORD SESSION_SECRET \
 AUTHENTIK_BOOTSTRAP_TOKEN AUTHENTIK_CLIENT_SECRET \
 ENTITLEMENTS_API_TOKEN GENIE_PREVIEW_CLAIM_TOKEN \
-CERULEAN_SERVICE_KEY"
+CERULEAN_SERVICE_KEY GATEWAY_ADMIN_PASSWORD"
   VAULT_EXPORTS="$(node /usr/local/bin/vault-env.mjs $VAULT_KEYS)" || {
     echo "!!! vault-env resolution failed — refusing to boot with unresolved vault:// refs" >&2
     exit 1
