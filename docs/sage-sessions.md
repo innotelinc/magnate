@@ -44,12 +44,20 @@ Both of these live in `docker-compose.yml`, fed from `.env`:
 
 ```
 # the dashboard credential on the gateway (vault:// ref, like the Stripe keys)
-GATEWAY_ADMIN_PASSWORD="vault://cerulean/gateway#ADMIN_PASSWORD"
+GATEWAY_ADMIN_PASSWORD="vault://cerulean/magnate/gateway#ADMIN_PASSWORD"
 GATEWAY_URL=https://gateway.innotel.us
 # what the cron presents; generate once, e.g. `openssl rand -hex 24`
 SAGE_SWEEP_TOKEN=<hex>
 SAGE_SESSION_MINUTES=15     # optional; 1–240, defaults to 15
 ```
+
+Two things have to hold for that reference to work, and both fail loudly
+rather than silently: the key must be named in `VAULT_KEYS` in
+`docker-entrypoint.sh` (a reference that is not listed is never resolved, and the
+app then logs in with the literal `vault://…` text), and the path must be one the
+magnate token's policy can read (a path it cannot read aborts the boot instead of
+starting without the credential). `cerulean/magnate/*` is the tree that token
+owns; `cerulean/gateway` is not readable by it.
 
 The sweep needs a cron on the host, every two minutes:
 
