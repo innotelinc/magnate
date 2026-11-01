@@ -22,7 +22,10 @@ export default async function SuccessPage({
         <div className="pointer-events-none absolute -top-32 left-1/2 h-96 w-[600px] -translate-x-1/2 rounded-full bg-emerald-500/15 blur-[120px]" />
         <div className="relative mx-auto flex min-h-[calc(100vh-4rem)] max-w-xl items-center px-4 py-14 sm:px-6">
           {isSage ? (
-            <SageSuccessClient sessionId={session_id ?? null} />
+            <SageSuccessClient
+              sessionId={session_id ?? null}
+              sageUrl={process.env.SAGE_APP_URL || "https://sage.innotel.tech"}
+            />
           ) : (
             <SuccessClient
               sessionId={session_id ?? null}
