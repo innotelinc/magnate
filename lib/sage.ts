@@ -62,6 +62,8 @@ export interface SageSessionRow {
   gateway_key: string | null;
   gateway_key_name: string | null;
   state: string;
+  /** The token the Sage app redeems; set for every row, including old ones. */
+  claim_token: string | null;
   issued_at: string | null;
   expires_at: string | null;
   revoked_at: string | null;
@@ -250,12 +252,16 @@ export async function mintSageSessions(
       existing?.code ??
       `sage-${crypto.randomBytes(5).toString("hex")}`;
     const name = `${code}-${plan.slug}`;
+    // 36 hex characters: unguessable enough that the token in a claim link is
+    // the only thing standing between a stranger and a key that is, at most,
+    // fifteen minutes of someone else's cheap model spend.
+    const claimToken = crypto.randomBytes(18).toString("hex");
 
     if (!existing) {
       db.prepare(
         `INSERT OR IGNORE INTO sage_sessions
-           (code, stripe_session_id, seat, plan_slug, plan_name, customer_email, amount_cents, currency)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+           (code, stripe_session_id, seat, plan_slug, plan_name, customer_email, amount_cents, currency, claim_token)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       ).run(
         code,
         input.stripeSessionId,
@@ -265,6 +271,7 @@ export async function mintSageSessions(
         input.email,
         perSessionCents,
         input.currency,
+        claimToken,
       );
     }
 
@@ -313,12 +320,23 @@ export function sessionsForCheckout(stripeSessionId: string): SageSessionRow[] {
     .all(stripeSessionId) as SageSessionRow[];
 }
 
+/** The seat a claim token names, or undefined when the token is unknown. */
+export function sessionByClaimToken(
+  token: string,
+): SageSessionRow | undefined {
+  return db
+    .prepare("SELECT * FROM sage_sessions WHERE claim_token = ?")
+    .get(token) as SageSessionRow | undefined;
+}
+
 export interface PublicSageSession {
   code: string;
   planSlug: string;
   planName: string;
   /** The key itself, while the session is live; null once it is gone. */
   key: string | null;
+  /** What the app redeems the key with, instead of the buyer pasting it. */
+  claimToken: string | null;
   active: boolean;
   expiresAt: string | null;
   secondsLeft: number;
@@ -335,6 +353,7 @@ export function publicSageSession(row: SageSessionRow): PublicSageSession {
     planSlug: row.plan_slug,
     planName: row.plan_name,
     key: active ? row.gateway_key : null,
+    claimToken: row.claim_token,
     active,
     expiresAt: row.expires_at,
     secondsLeft,

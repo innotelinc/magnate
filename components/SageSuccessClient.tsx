@@ -10,6 +10,7 @@ interface SessionView {
   planSlug: string;
   planName: string;
   key: string | null;
+  claimToken: string | null;
   active: boolean;
   expiresAt: string | null;
   secondsLeft: number;
@@ -26,7 +27,14 @@ function clock(seconds: number): string {
   return `${m}:${String(s).padStart(2, "0")}`;
 }
 
-export default function SageSuccessClient({ sessionId }: { sessionId: string | null }) {
+export default function SageSuccessClient({
+  sessionId,
+  sageUrl,
+}: {
+  sessionId: string | null;
+  /** Where the claim link lands; the app redeems the token on load. */
+  sageUrl: string;
+}) {
   const [phase, setPhase] = useState<Phase>({ kind: "polling" });
   const [attempt, setAttempt] = useState(0);
 
@@ -121,12 +129,9 @@ export default function SageSuccessClient({ sessionId }: { sessionId: string | n
           Your session key{phase.sessions.length === 1 ? " is" : "s are"} ready
         </h1>
         <p className="mt-3 text-zinc-600 dark:text-zinc-400">
-          Point Sage at{" "}
-          <span className="font-mono text-zinc-800 dark:text-zinc-300">
-            https://gateway.innotel.us/v1
-          </span>{" "}
-          with the key below. Use it as often as you like — it dies when the clock
-          does.
+          Tap <strong>Open Sage</strong> and the app installs the key itself, or
+          copy it into Settings → Gateway. Use it as often as you like — it dies
+          when the clock does.
         </p>
       </div>
 
@@ -154,6 +159,17 @@ export default function SageSuccessClient({ sessionId }: { sessionId: string | n
                 ? `${clock(session.secondsLeft)} left in this session.`
                 : "This session has ended. Buy another on the Sage sessions page."}
             </p>
+            {session.active && session.claimToken && session.key && (
+              // The whole handoff: the app reads the token from the fragment,
+              // trades it for this key and stores it. Nothing to retype on a
+              // phone, and nothing in the key that outlives its window.
+              <a
+                href={`${sageUrl.replace(/\/+$/, "")}/#claim=${session.claimToken}`}
+                className="mt-3 inline-flex w-full items-center justify-center rounded-xl bg-zinc-950 px-4 py-2.5 text-sm font-medium text-white transition-transform hover:-translate-y-0.5 dark:bg-white dark:text-zinc-950"
+              >
+                Open Sage with this key
+              </a>
+            )}
           </div>
         ))}
       </div>

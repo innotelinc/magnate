@@ -254,6 +254,20 @@ ensureColumn(
   "price_per_unit_cents INTEGER NOT NULL DEFAULT 0",
 );
 
+// The token the Sage app redeems. A bought key used to be a string the buyer
+// copied out of the success page by hand; now the page also offers a link that
+// carries this token, and the app exchanges it for the key itself. The token is
+// useless on its own — the claim endpoint answers only while the seat's window
+// is open — so it is not a second credential to protect, just an address for
+// the one that already exists.
+ensureColumn("sage_sessions", "claim_token", "claim_token TEXT");
+
+// Sessions minted before the column existed still get a token, so a buyer whose
+// confirmation page is already open can claim the key that was issued to them.
+db.prepare(
+  "UPDATE sage_sessions SET claim_token = lower(hex(randomblob(18))) WHERE claim_token IS NULL",
+).run();
+
 // The recurring Stripe Price for ONE unit of a per-unit plan. A third price
 // column because the other two are the plan-level amounts, which a per-unit plan
 // leaves at zero ($0/month for the whole plan, multiplied by the count).
@@ -276,6 +290,10 @@ db.exec(`
     ON sage_sessions(stripe_session_id, seat);
   CREATE INDEX IF NOT EXISTS idx_sage_sessions_state
     ON sage_sessions(state, expires_at);
+  -- A claim token names exactly one seat; two rows sharing one would let a
+  -- single purchase open two keys.
+  CREATE UNIQUE INDEX IF NOT EXISTS idx_sage_sessions_claim
+    ON sage_sessions(claim_token);
 `);
 
 export interface Plan {
