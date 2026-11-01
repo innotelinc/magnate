@@ -72,7 +72,7 @@ export interface SageSessionRow {
 }
 
 /** `2026-10-31 14:07:59` — the shape SQLite's datetime() compares against. */
-function utcStamp(date: Date): string {
+export function utcStamp(date: Date): string {
   return date.toISOString().replace("T", " ").slice(0, 19);
 }
 
@@ -90,7 +90,7 @@ export function sageGatewayConfigured(): boolean {
  * password has to be configured: without one this stays off rather than minting
  * unauthenticated against whatever the edge happens to expose.
  */
-class GatewayAdmin {
+export class GatewayAdmin {
   private cookie: string | null = null;
 
   private base(): string {
@@ -208,15 +208,30 @@ export interface MintSageInput {
  * it is marked processed, and a replay must not spend a second key on a seat
  * that already has one. A seat whose mint failed is retried in place.
  */
-export async function mintSageSessions(
-  input: MintSageInput,
+export interface MintKeysInput extends MintSageInput {
+  /** The plan's service: a plan may only be bought from its own funnel. */
+  service: string;
+  /** How long each minted key lives, in minutes. */
+  minutes: number;
+}
+
+/**
+ * Mint one gateway key per unit bought, for whichever service asked.
+ *
+ * Sage and CourseMate sell the same object — an OmniRoute key with a spend cap
+ * and a deadline — and differ only in how long the key lives and which service
+ * the plan belongs to, so the mint is shared rather than copied. Idempotency,
+ * claim tokens and revocation are therefore identical for both.
+ */
+export async function mintKeySessions(
+  input: MintKeysInput,
 ): Promise<SageSessionRow[]> {
   const plan = getPlanBySlug(input.planSlug);
   if (!plan) {
-    throw new Error(`sage plan ${input.planSlug} is not in the catalog`);
+    throw new Error(`plan ${input.planSlug} is not in the catalog`);
   }
-  if (!isSageService(plan.service)) {
-    throw new Error(`plan ${plan.slug} is not a Sage plan`);
+  if ((plan.service ?? "").trim().toLowerCase() !== input.service) {
+    throw new Error(`plan ${plan.slug} is not a ${input.service} plan`);
   }
   if (!sageGatewayConfigured()) {
     throw new Error("GATEWAY_URL is not configured");
@@ -226,7 +241,7 @@ export async function mintSageSessions(
     Math.max(Math.trunc(input.quantity) || 1, 1),
     SAGE_MAX_SESSIONS,
   );
-  const minutes = sageSessionMinutes();
+  const minutes = input.minutes;
   const perSessionCents = Math.round(
     input.amountCents / Math.max(quantity, 1),
   ) || plan.price_per_unit_cents;
@@ -250,7 +265,7 @@ export async function mintSageSessions(
 
     const code =
       existing?.code ??
-      `sage-${crypto.randomBytes(5).toString("hex")}`;
+      `${input.service}-${crypto.randomBytes(5).toString("hex")}`;
     const name = `${code}-${plan.slug}`;
     // 36 hex characters: unguessable enough that the token in a claim link is
     // the only thing standing between a stranger and a key that is, at most,
@@ -298,7 +313,7 @@ export async function mintSageSessions(
       db.prepare(
         "UPDATE sage_sessions SET state = 'failed', error = ? WHERE stripe_session_id = ? AND seat = ?",
       ).run(message, input.stripeSessionId, seat);
-      throw new Error(`could not mint Sage session ${seat}: ${message}`);
+      throw new Error(`could not mint ${input.service} key ${seat}: ${message}`);
     }
 
     const row = db
@@ -310,6 +325,17 @@ export async function mintSageSessions(
   }
 
   return minted;
+}
+
+/** Fifteen minutes of gateway access, one key per seat. */
+export async function mintSageSessions(
+  input: MintSageInput,
+): Promise<SageSessionRow[]> {
+  return mintKeySessions({
+    ...input,
+    service: SAGE_SERVICE,
+    minutes: sageSessionMinutes(),
+  });
 }
 
 export function sessionsForCheckout(stripeSessionId: string): SageSessionRow[] {

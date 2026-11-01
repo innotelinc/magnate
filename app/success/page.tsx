@@ -2,6 +2,7 @@ import Nav from "@/components/Nav";
 import Footer from "@/components/Footer";
 import SuccessClient from "@/components/SuccessClient";
 import SageSuccessClient from "@/components/SageSuccessClient";
+import CourseMateKeySuccessClient from "@/components/CourseMateKeySuccessClient";
 import { accountPortalUrl, jellyfinUrl } from "@/lib/settings";
 
 export const dynamic = "force-dynamic";
@@ -15,6 +16,8 @@ export default async function SuccessPage({
   // A Sage purchase has no account and no password: what it delivers is a
   // gateway key with a fifteen-minute life, so it gets its own reveal.
   const isSage = kind === "sage";
+  // Same shape of thing: no account, one gateway key, revealed once.
+  const isCourseMate = kind === "coursemate";
   return (
     <>
       <Nav />
@@ -26,6 +29,8 @@ export default async function SuccessPage({
               sessionId={session_id ?? null}
               sageUrl={process.env.SAGE_APP_URL || "https://sage.innotel.tech"}
             />
+          ) : isCourseMate ? (
+            <CourseMateKeySuccessClient sessionId={session_id ?? null} />
           ) : (
             <SuccessClient
               sessionId={session_id ?? null}

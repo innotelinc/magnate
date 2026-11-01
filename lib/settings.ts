@@ -141,6 +141,18 @@ export function sageSessionMinutes(): number {
 }
 
 /**
+ * How long a bought CourseMate key lives. Thirty days unless overridden.
+ *
+ * Longer than a Sage session on purpose: CourseMate is used across a term of
+ * lectures, so a key that dies in a quarter of an hour would be a key the buyer
+ * has to re-buy before every class.
+ */
+export function coursemateKeyDays(): number {
+  const raw = Number(getSetting("coursemate_key_days"));
+  return Number.isFinite(raw) && raw >= 1 && raw <= 365 ? Math.trunc(raw) : 30;
+}
+
+/**
  * Returns only DB-stored settings (no env fallback).
  * Used for export/backup so the file contains only overrides.
  */
@@ -161,6 +173,7 @@ export function getExportableSettings(): Record<string, string> {
     "gateway_admin_password",
     "sage_sweep_token",
     "sage_session_minutes",
+    "coursemate_key_days",
   ];
 
   const result: Record<string, string> = {};
@@ -216,6 +229,7 @@ export function getSettingsForAdmin(): Record<
     "gateway_admin_password",
     "sage_sweep_token",
     "sage_session_minutes",
+    "coursemate_key_days",
   ];
 
   const result: Record<
