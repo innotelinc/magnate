@@ -4,7 +4,18 @@ name: magnate
 
 services:
   magnate:
-    build: .
+    # The image's build stage caps Next's heap at NODE_HEAP (3072 by default) and
+    # lets a small host switch the bundler. Both live here because the box that
+    # builds this decides them, not the laptop that edits it: i3 has 768 MiB and
+    # no swap, where the 3072 default is an instant OOM kill (exit 137) and
+    # Turbopack sizes its native memory to the core count while ignoring
+    # NODE_OPTIONS. Pinning 512 MiB and webpack is what lets that host build at
+    # all; a roomier host can raise NODE_HEAP without touching the Dockerfile.
+    build:
+      context: .
+      args:
+        NODE_HEAP: "512"
+        NEXT_BUILD_FLAGS: "--webpack"
     container_name: magnate
     restart: unless-stopped
     # Memory posture (docs/service-audit.md): billing API is light; cap for
