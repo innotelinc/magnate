@@ -141,15 +141,17 @@ export function sageSessionMinutes(): number {
 }
 
 /**
- * How long a bought CourseMate key lives. Thirty days unless overridden.
+ * How long a bought CourseMate key lives. Sixty minutes unless overridden.
  *
- * Longer than a Sage session on purpose: CourseMate is used across a term of
- * lectures, so a key that dies in a quarter of an hour would be a key the buyer
- * has to re-buy before every class.
+ * Sold by the session, like Sage, but four times the length and the dearest key
+ * in the estate — a CourseMate session covers a whole lecture, and the key is
+ * deleted from the gateway when that hour is up. Stored in minutes because that
+ * is the unit the shared mint records its deadline in; a days-based window here
+ * was a term of access, which is not what the session price is for.
  */
-export function coursemateKeyDays(): number {
-  const raw = Number(getSetting("coursemate_key_days"));
-  return Number.isFinite(raw) && raw >= 1 && raw <= 365 ? Math.trunc(raw) : 30;
+export function coursemateSessionMinutes(): number {
+  const raw = Number(getSetting("coursemate_session_minutes"));
+  return Number.isFinite(raw) && raw >= 5 && raw <= 1440 ? Math.trunc(raw) : 60;
 }
 
 /**
@@ -173,7 +175,7 @@ export function getExportableSettings(): Record<string, string> {
     "gateway_admin_password",
     "sage_sweep_token",
     "sage_session_minutes",
-    "coursemate_key_days",
+    "coursemate_session_minutes",
   ];
 
   const result: Record<string, string> = {};
@@ -229,7 +231,7 @@ export function getSettingsForAdmin(): Record<
     "gateway_admin_password",
     "sage_sweep_token",
     "sage_session_minutes",
-    "coursemate_key_days",
+    "coursemate_session_minutes",
   ];
 
   const result: Record<

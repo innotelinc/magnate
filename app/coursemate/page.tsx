@@ -5,14 +5,14 @@ import CourseMateKeysClient, {
 } from "@/components/CourseMateKeysClient";
 import { listPlansForService, planPublic } from "@/lib/plans";
 import { COURSEMATE_MAX_KEYS, COURSEMATE_SPEND_SHARE } from "@/lib/coursemate";
-import { coursemateKeyDays } from "@/lib/settings";
+import { coursemateSessionMinutes } from "@/lib/settings";
 
 export const dynamic = "force-dynamic";
 
 export const metadata = {
-  title: "CourseMate keys — one key, one term",
+  title: "CourseMate keys — one key, one lecture",
   description:
-    "A CourseMate API key on our own OmniRoute gateway: pay once, paste it into the app, use it across the term. No account and no subscription.",
+    "A CourseMate API key on our own OmniRoute gateway: pay once, paste it into the app, use it for a sixty-minute session. No account and no subscription.",
 };
 
 /**
@@ -23,7 +23,7 @@ export const metadata = {
  * nothing on this page has a price hard-coded.
  */
 export default function CourseMateKeysPage() {
-  const days = coursemateKeyDays();
+  const minutes = coursemateSessionMinutes();
   const plans: CourseMatePlanOption[] = listPlansForService("coursemate").map(
     (plan) => {
       const pub = planPublic(plan);
@@ -48,7 +48,7 @@ export default function CourseMateKeysPage() {
               CourseMate
             </p>
             <h1 className="mt-3 text-4xl font-bold tracking-tight sm:text-5xl">
-              One key, one term, no account.
+              One key, one lecture, no account.
             </h1>
             <p className="mt-4 text-zinc-600 dark:text-zinc-400">
               CourseMate runs at{" "}
@@ -56,8 +56,9 @@ export default function CourseMateKeysPage() {
                 cm.innotel.us
               </span>{" "}
               — the app already knows that, so the only thing to buy is the key.
-              Pay once and it works for {days} days, on as many lectures as you
-              sit through, and then it is deleted from the gateway.
+              Pay once and it works for {minutes} minutes — a whole lecture, at
+              four times the length of a Sage session — and then it is deleted
+              from the gateway.
             </p>
             <ul className="mt-5 grid gap-2 text-sm text-zinc-600 dark:text-zinc-400 sm:grid-cols-2">
               <li>· Paste it into CourseMate → Settings → API key</li>
@@ -75,13 +76,13 @@ export default function CourseMateKeysPage() {
               The server the app talks to
             </p>
             <p className="mt-2 font-mono text-sm text-zinc-800 dark:text-zinc-200">
-              https://cm.innotel.tech
+              https://cm.innotel.us
             </p>
             <p className="mt-4 text-xs font-semibold uppercase tracking-[0.14em] text-brand-500">
               Try the key from the command line
             </p>
             <pre className="mt-2 overflow-x-auto rounded-xl bg-zinc-950 p-4 text-xs leading-relaxed text-zinc-100">
-              <code>{`curl -s https://cm.innotel.tech/api/health \\
+              <code>{`curl -s https://cm.innotel.us/api/health \\
   -H "Authorization: Bearer $COURSEMATE_KEY"`}</code>
             </pre>
             <p className="mt-3 text-xs text-zinc-600 dark:text-zinc-500">
@@ -93,7 +94,7 @@ export default function CourseMateKeysPage() {
           <div className="mt-10">
             <CourseMateKeysClient
               plans={plans}
-              days={days}
+              minutes={minutes}
               maxKeys={COURSEMATE_MAX_KEYS}
             />
           </div>

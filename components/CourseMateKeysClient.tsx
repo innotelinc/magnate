@@ -16,11 +16,11 @@ function money(cents: number): string {
 
 export default function CourseMateKeysClient({
   plans,
-  days,
+  minutes,
   maxKeys,
 }: {
   plans: CourseMatePlanOption[];
-  days: number;
+  minutes: number;
   maxKeys: number;
 }) {
   const [planSlug, setPlanSlug] = useState(plans[0]?.slug ?? "");
@@ -87,7 +87,7 @@ export default function CourseMateKeysClient({
                 {money(option.pricePerKeyCents)}
               </span>
               <span className="mt-1 text-xs text-zinc-600 dark:text-zinc-400">
-                per key · {days} days
+                per key · {minutes} min session
               </span>
               {option.description ? (
                 <span className="mt-3 text-sm text-zinc-600 dark:text-zinc-400">

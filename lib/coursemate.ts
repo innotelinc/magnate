@@ -4,8 +4,9 @@
  * CourseMate is sold the same way Sage is: no account, no seat, no stored card —
  * one OmniRoute API key, minted when Stripe confirms the money and deleted from
  * the gateway when its window closes. The only difference is the window. A Sage
- * session is fifteen minutes of one exercise; a CourseMate key has to survive a
- * term of lectures, so it lives `coursemateKeyDays()` days.
+ * session is fifteen minutes of one exercise; a CourseMate key lives
+ * `coursemateSessionMinutes()` — sixty minutes, the length of a lecture — which
+ * is why it is priced above every Sage session.
  *
  * Everything else is shared with Sage (`mintKeySessions` in lib/sage.ts): the
  * same table, the same spend cap as a share of the price, the same idempotency
@@ -19,7 +20,7 @@
  */
 
 import { mintKeySessions, type SageSessionRow } from "./sage";
-import { coursemateKeyDays } from "./settings";
+import { coursemateSessionMinutes } from "./settings";
 
 export const COURSEMATE_SERVICE = "coursemate";
 
@@ -35,7 +36,7 @@ export function isCourseMateService(service?: string | null): boolean {
 
 /** The key's life in minutes — the unit the shared mint stores its deadline in. */
 export function coursemateWindowMinutes(): number {
-  return Math.max(1, Math.round(coursemateKeyDays() * 24 * 60));
+  return coursemateSessionMinutes();
 }
 
 export interface MintCourseMateInput {

@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { getStripe, stripeConfigured } from "@/lib/stripe";
-import { coursemateKeyDays, stripeCurrency } from "@/lib/settings";
+import { coursemateSessionMinutes, stripeCurrency } from "@/lib/settings";
 import { getPlanBySlug } from "@/lib/plans";
 import { COURSEMATE_MAX_KEYS, isCourseMateService } from "@/lib/coursemate";
 
@@ -86,7 +86,7 @@ export async function POST(req: Request) {
   if (!unitCents || unitCents <= 0) return fail("This key is not priced yet.", 500);
 
   const appUrl = process.env.APP_URL || "http://localhost:3000";
-  const days = coursemateKeyDays();
+  const minutes = coursemateSessionMinutes();
 
   try {
     // Priced inline rather than as a Stripe Price: a key never renews, so there
@@ -103,7 +103,7 @@ export async function POST(req: Request) {
               name: plan.name,
               description:
                 plan.description ??
-                `CourseMate API key — ${days} days on gateway.innotel.us.`,
+                `CourseMate API key — ${minutes} minutes on gateway.innotel.us.`,
             },
           },
           quantity: keys,
