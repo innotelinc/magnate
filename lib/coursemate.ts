@@ -13,7 +13,7 @@
  * the same sweep. That is deliberate — a second copy of the mint would be a
  * second place for a revocation bug to live.
  *
- * The server that spends these keys is cm.innotel.tech. It has no account list:
+ * The server that spends these keys is cm.innotel.us. It has no account list:
  * it asks the gateway whether the bearer is a live key, which is exactly what a
  * minted key is.
  */

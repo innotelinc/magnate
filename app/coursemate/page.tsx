@@ -53,7 +53,7 @@ export default function CourseMateKeysPage() {
             <p className="mt-4 text-zinc-600 dark:text-zinc-400">
               CourseMate runs at{" "}
               <span className="font-mono text-zinc-800 dark:text-zinc-200">
-                cm.innotel.tech
+                cm.innotel.us
               </span>{" "}
               — the app already knows that, so the only thing to buy is the key.
               Pay once and it works for {days} days, on as many lectures as you

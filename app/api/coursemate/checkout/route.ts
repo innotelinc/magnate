@@ -7,6 +7,42 @@ import { COURSEMATE_MAX_KEYS, isCourseMateService } from "@/lib/coursemate";
 
 export const dynamic = "force-dynamic";
 
+/**
+ * Who may start a checkout from a browser.
+ *
+ * CourseMate's own site sells keys now — its page posts here and then follows
+ * the Stripe URL — so this endpoint has to answer a cross-origin request. An
+ * allowlist rather than `*`: the response is a payment URL for whoever asked,
+ * and nothing about it is meant to be embedded anywhere else. The legacy
+ * `.tech` host stays in the list for the length of the domain move.
+ */
+const ALLOWED_ORIGINS = [
+  "https://cm.innotel.us",
+  "https://cm.innotel.tech",
+  "http://localhost:8790",
+  "http://127.0.0.1:8790",
+];
+
+function cors(origin: string | null): Record<string, string> {
+  const headers: Record<string, string> = {
+    Vary: "Origin",
+    "Access-Control-Allow-Methods": "POST, OPTIONS",
+    "Access-Control-Allow-Headers": "Content-Type",
+    "Access-Control-Max-Age": "600",
+  };
+  if (origin && ALLOWED_ORIGINS.includes(origin)) {
+    headers["Access-Control-Allow-Origin"] = origin;
+  }
+  return headers;
+}
+
+export async function OPTIONS(req: Request) {
+  return new NextResponse(null, {
+    status: 204,
+    headers: cors(req.headers.get("origin")),
+  });
+}
+
 const schema = z.object({
   planSlug: z.string().min(1).max(64),
   email: z.string().email().max(254),
@@ -22,44 +58,32 @@ const schema = z.object({
  * stays the single place a price is set and nothing is hard-coded here.
  */
 export async function POST(req: Request) {
-  if (!stripeConfigured()) {
-    return NextResponse.json(
-      { error: "Billing is not configured." },
-      { status: 503 },
-    );
-  }
+  const headers = cors(req.headers.get("origin"));
+  const fail = (error: string, status: number) =>
+    NextResponse.json({ error }, { status, headers });
+
+  if (!stripeConfigured()) return fail("Billing is not configured.", 503);
 
   let body: unknown;
   try {
     body = await req.json();
   } catch {
-    return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
+    return fail("Invalid JSON body", 400);
   }
 
   const parsed = schema.safeParse(body);
   if (!parsed.success) {
-    return NextResponse.json(
-      { error: parsed.error.issues[0]?.message ?? "Invalid input" },
-      { status: 400 },
-    );
+    return fail(parsed.error.issues[0]?.message ?? "Invalid input", 400);
   }
   const { planSlug, email, keys } = parsed.data;
 
   const plan = getPlanBySlug(planSlug);
   if (!plan || !plan.active || !isCourseMateService(plan.service)) {
-    return NextResponse.json(
-      { error: "That CourseMate key is not available." },
-      { status: 404 },
-    );
+    return fail("That CourseMate key is not available.", 404);
   }
 
   const unitCents = plan.price_per_unit_cents ?? 0;
-  if (!unitCents || unitCents <= 0) {
-    return NextResponse.json(
-      { error: "This key is not priced yet." },
-      { status: 500 },
-    );
-  }
+  if (!unitCents || unitCents <= 0) return fail("This key is not priced yet.", 500);
 
   const appUrl = process.env.APP_URL || "http://localhost:3000";
   const days = coursemateKeyDays();
@@ -98,15 +122,12 @@ export async function POST(req: Request) {
       allow_promotion_codes: true,
     });
 
-    return NextResponse.json({ url: session.url });
+    return NextResponse.json({ url: session.url }, { headers });
   } catch (err) {
     console.error("coursemate key checkout failed", err);
-    return NextResponse.json(
-      {
-        error:
-          "Could not start the checkout. Please make sure billing is configured and try again.",
-      },
-      { status: 500 },
+    return fail(
+      "Could not start the checkout. Please make sure billing is configured and try again.",
+      500,
     );
   }
 }
