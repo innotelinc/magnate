@@ -644,6 +644,7 @@ export const SERVICES: { slug: string; name: string; subscribe_url: string }[] =
   { slug: "verifier", name: "Verifier — platform ops & conformity", subscribe_url: "https://subscribe.verifier.innotel.us" },
   { slug: "genie", name: "Genie — preview subdomains", subscribe_url: "https://subscribe.genie.innotel.us" },
   { slug: "sage", name: "Sage — session keys", subscribe_url: "https://magnate.innotel.us/sage" },
+  { slug: "coursemate", name: "CourseMate — term keys", subscribe_url: "https://magnate.innotel.us/coursemate" },
   { slug: "rizzaura", name: "Rizz Aura — community", subscribe_url: "https://subscribe.rizzaura.net" },
   { slug: "zapit", name: "ZapIt — short links", subscribe_url: "https://subscribe.zapit.innotel.us" },
   { slug: "cerulean", name: "Cerulean — identity & trust", subscribe_url: "https://subscribe.cerulean.innotel.us" },
