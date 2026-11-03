@@ -120,6 +120,8 @@ services:
       GATEWAY_ADMIN_PASSWORD: "${GATEWAY_ADMIN_PASSWORD:-}"
       SAGE_SWEEP_TOKEN: "${SAGE_SWEEP_TOKEN:-}"
       SAGE_SESSION_MINUTES: "${SAGE_SESSION_MINUTES:-15}"
+      SAGE_IAP_MINT_TOKEN: "${SAGE_IAP_MINT_TOKEN:-}"
+      SAGE_IAP_BUNDLE_ID: "${SAGE_IAP_BUNDLE_ID:-us.innotel.sage}"
       # Authentik (Cerulean SSO) — the admin panel's identity provider.
       # These MUST be passed through: lib/oidc.ts reads them from process.env,
       # so a value that only lives in .env (compose substitution) never reaches
