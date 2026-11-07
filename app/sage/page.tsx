@@ -12,7 +12,7 @@ export const dynamic = "force-dynamic";
 export const metadata = {
   title: "Sage sessions — timed gateway keys",
   description:
-    "Fifteen minutes of Sage on our own OmniRoute gateway, as many turns as you can use inside the window. Pay per session, no account and no subscription.",
+    "Timed sessions of Sage on our own OmniRoute gateway — fifteen minutes on the standard and intensive sessions, five on the one-time trial — with as many turns as you can use inside the window. Pay per session, no account and no subscription.",
 };
 
 /**
@@ -46,13 +46,14 @@ export default function SageSessionsPage() {
               Sage
             </p>
             <h1 className="mt-3 text-4xl font-bold tracking-tight sm:text-5xl">
-              Fifteen minutes of Sage, on our gateway.
+              Sessions of Sage, on our gateway.
             </h1>
             <p className="mt-4 text-zinc-600 dark:text-zinc-400">
-              One key, one {minutes}-minute window: start the quiz, the essay or
-              the whole problem set inside it and use the key as many times as you
-              like. When the window closes the key is deleted from the gateway —
-              nothing to cancel, nothing left running.
+              One key, one timed window — {minutes} minutes on the standard and
+              intensive sessions, five on the one-time trial. Start the quiz, the
+              essay or the whole problem set inside it and use the key as many
+              times as you like. When the window closes the key is deleted from
+              the gateway — nothing to cancel, nothing left running.
             </p>
             <ul className="mt-5 grid gap-2 text-sm text-zinc-600 dark:text-zinc-400 sm:grid-cols-2">
               <li>· Works with any OpenAI-compatible client</li>

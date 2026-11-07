@@ -22,7 +22,8 @@ export const dynamic = "force-dynamic";
  * that owns the app, and the only thing left to decide is whether to pay out.
  *
  * Paying out is the same act as a Stripe purchase: one OmniRoute key with a spend
- * cap and a fifteen-minute life. The row is keyed on `iap:<transactionId>`
+ * cap and a window that the purchase names — five minutes for the trial, fifteen
+ * for the standard and intensive sessions. The row is keyed on `iap:<transactionId>`
  * instead of a Stripe session id, which means the unique index on
  * (stripe_session_id, seat) supplies the idempotency — a replayed receipt finds
  * the seat it already owns rather than minting a second key. The Sage server also
@@ -43,6 +44,12 @@ const schema = z.object({
   bundleId: z.string().min(1).max(64).optional(),
   environment: z.enum(["Production", "Sandbox"]).optional(),
   purchasedAt: z.string().max(40).optional(),
+  /**
+   * How long the window lasts, when the product bought says so. The five-minute
+   * trial and the fifteen-minute sessions share this route, so the length comes
+   * with the receipt instead of being assumed.
+   */
+  minutes: z.number().int().min(1).max(240).optional(),
 });
 
 function mintToken(): string {
@@ -109,7 +116,13 @@ export async function POST(req: Request) {
       { status: 400 },
     );
   }
-  const { planSlug, transactionId, email, bundleId: claimedBundle } = parsed.data;
+  const {
+    planSlug,
+    transactionId,
+    email,
+    bundleId: claimedBundle,
+    minutes,
+  } = parsed.data;
 
   // The signature check upstream already proved the bundle; this is the cheap
   // second look that catches a server pointed at the wrong app's products.
@@ -156,6 +169,8 @@ export async function POST(req: Request) {
       // follows the plan's catalogue price.
       amountCents: 0,
       currency: "usd",
+      // Undefined means the instance's default window.
+      minutes,
     });
     const row = rows[0];
     if (!row) throw new Error("the mint returned no session");

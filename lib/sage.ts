@@ -327,14 +327,22 @@ export async function mintKeySessions(
   return minted;
 }
 
-/** Fifteen minutes of gateway access, one key per seat. */
+/**
+ * Gateway access for one window, one key per seat.
+ *
+ * The window is the instance's default — fifteen minutes — unless the caller
+ * names its own, which the App Store route does: Apple sells a five-minute trial
+ * beside the fifteen-minute sessions, and the receipt says which one was bought
+ * rather than the length being guessed here.
+ */
 export async function mintSageSessions(
-  input: MintSageInput,
+  input: MintSageInput & { minutes?: number },
 ): Promise<SageSessionRow[]> {
+  const asked = Math.trunc(Number(input.minutes) || 0);
   return mintKeySessions({
     ...input,
     service: SAGE_SERVICE,
-    minutes: sageSessionMinutes(),
+    minutes: asked >= 1 && asked <= 240 ? asked : sageSessionMinutes(),
   });
 }
 
